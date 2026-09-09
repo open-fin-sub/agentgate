@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EmptyState from '../../components/EmptyState.vue'
+import StatusNotice from '../../components/StatusNotice.vue'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -97,7 +99,10 @@ function removeTurn(index: number) {
 }
 function save() {
   if (!item.value || props.readonly) return
-  if (!variablesValid.value) { error.value='请修正变量名称后再应用修改。'; return }
+  if (!variablesValid.value) {
+    error.value = '请修正变量名称后再应用修改。'
+    return
+  }
   error.value = caseErrors(item.value).join('；')
   if (error.value) return
   const rows = clone(props.modelValue)
@@ -106,7 +111,7 @@ function save() {
   else rows[index] = syncCase(clone(item.value))
   emit('update:modelValue', rows)
   item.value = null
-  ElMessage.success('已应用到本页草稿，请保存草稿以持久化')
+  ElMessage.success('已应用到本页，请保存草稿以保留修改')
 }
 function remove(id: string) {
   if (!props.readonly)
@@ -154,7 +159,11 @@ watch(
         ><el-option v-for="value in ['P0', 'P1', 'P2']" :key="value" :value="value"
       /></el-select>
     </div>
-    <div v-if="!visible.length" class="preview-empty">没有匹配的用例，可清除筛选或新增用例。</div>
+    <EmptyState
+      v-if="!visible.length"
+      title="没有匹配的用例"
+      description="清除筛选查看已有用例，或点击新增用例，填写输入与期望结果。"
+    ></EmptyState>
     <article v-for="row in visible" :key="row.id" class="prep-case">
       <div>
         <strong>{{ caseTitle(row) }}</strong>
@@ -186,7 +195,7 @@ watch(
     />
     <section v-if="item" class="prep-editor">
       <h3>{{ readonly ? '用例快照' : originalId ? '编辑用例' : '新增用例' }}</h3>
-      <el-alert v-if="error" :title="error" type="error" :closable="false" show-icon />
+      <StatusNotice v-if="error" :title="error" type="error" />
       <el-form label-position="top" :disabled="readonly" class="preview-form">
         <el-form-item v-if="!item.turns.length" label="问题 / 场景入口（必填）"
           ><el-input v-model="item.question" type="textarea" :rows="2"
@@ -199,8 +208,18 @@ watch(
         /></el-form-item>
         <FormSection title="处理流程要求" optional :open="!!item.expectedSkill">
           <el-form-item label="期望处理流程">
-            <el-select v-model="item.expectedSkill" clearable placeholder="不限制处理流程" aria-label="期望处理流程">
-              <el-option v-for="skill in state.targets.filter(target => target.type === 'Skill')" :key="skill.id" :value="skill.id" :label="skill.name" />
+            <el-select
+              v-model="item.expectedSkill"
+              clearable
+              placeholder="不限制处理流程"
+              aria-label="期望处理流程"
+            >
+              <el-option
+                v-for="skill in state.targets.filter((target) => target.type === 'Skill')"
+                :key="skill.id"
+                :value="skill.id"
+                :label="skill.name"
+              />
             </el-select>
           </el-form-item>
         </FormSection>
@@ -214,35 +233,46 @@ watch(
         </div>
         <el-button v-if="!readonly" @click="addTurn">添加对话轮次</el-button>
         <FormSection title="分类与备注" optional>
-        <div class="preview-grid">
-          <el-form-item label="类别"
-            ><el-select v-model="item.category"
-              ><el-option
-                v-for="value in ['正例', '负例', '边界']"
-                :key="value"
-                :value="value" /></el-select></el-form-item
-          ><el-form-item label="难度"
-            ><el-select v-model="item.difficulty"
-              ><el-option
-                v-for="value in ['简单', '中等', '困难']"
-                :key="value"
-                :value="value" /></el-select></el-form-item
-          ><el-form-item label="优先级"
-            ><el-select v-model="item.priority"
-              ><el-option
-                v-for="value in ['P0', 'P1', 'P2']"
-                :key="value"
-                :value="value" /></el-select
-          ></el-form-item>
-        </div>
-        <el-form-item label="标签（逗号分隔）"><el-input v-model="tags" /></el-form-item>
-        <el-form-item label="备注"><el-input v-model="item.note" type="textarea" /></el-form-item>
+          <div class="preview-grid">
+            <el-form-item label="类别"
+              ><el-select v-model="item.category"
+                ><el-option
+                  v-for="value in ['正例', '负例', '边界']"
+                  :key="value"
+                  :value="value" /></el-select></el-form-item
+            ><el-form-item label="难度"
+              ><el-select v-model="item.difficulty"
+                ><el-option
+                  v-for="value in ['简单', '中等', '困难']"
+                  :key="value"
+                  :value="value" /></el-select></el-form-item
+            ><el-form-item label="优先级"
+              ><el-select v-model="item.priority"
+                ><el-option
+                  v-for="value in ['P0', 'P1', 'P2']"
+                  :key="value"
+                  :value="value" /></el-select
+            ></el-form-item>
+          </div>
+          <el-form-item label="标签（逗号分隔）"><el-input v-model="tags" /></el-form-item>
+          <el-form-item label="备注"><el-input v-model="item.note" type="textarea" /></el-form-item>
         </FormSection>
-        <FormSection title="变量与附件" optional :open="item.variables !== '{}' || item.files.length > 0">
-        <el-form-item label="输入变量"><PayloadInput v-model="item.variables" label="变量" :disabled="readonly" object-only @validity="variablesValid=$event" /></el-form-item>
-        <el-form-item label="文件引用（每行一个；仅保存引用，不上传文件）"
-          ><el-input v-model="files" type="textarea"
-        /></el-form-item>
+        <FormSection
+          title="变量与附件"
+          optional
+          :open="item.variables !== '{}' || item.files.length > 0"
+        >
+          <el-form-item label="输入变量"
+            ><PayloadInput
+              v-model="item.variables"
+              label="变量"
+              :disabled="readonly"
+              object-only
+              @validity="variablesValid = $event"
+          /></el-form-item>
+          <el-form-item label="文件引用（每行一个；仅保存引用，不上传文件）"
+            ><el-input v-model="files" type="textarea"
+          /></el-form-item>
         </FormSection>
       </el-form>
       <h4>用例来源</h4>

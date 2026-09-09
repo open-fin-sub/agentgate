@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EmptyState from '../EmptyState.vue'
 import type { EvaluationCase } from '../../types/dataset'
 
 const props = defineProps<{
@@ -91,7 +92,7 @@ function move(index: number, offset: number) {
           <el-button link size="small" type="danger" @click="emit('remove', item)">删除</el-button>
         </div>
       </article>
-      <el-empty v-if="!items.length" description="草稿中还没有用例" :image-size="80" />
+      <EmptyState v-if="!items.length" title="还没有用例" description="可新增用例，填写输入与期望结果；也可以返回测评集导入文件。" />
     </div>
   </section>
 </template>

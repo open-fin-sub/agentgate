@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StatusNotice from '../../components/StatusNotice.vue'
 import FormSection from '../../components/FormSection.vue'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -302,14 +303,14 @@ watch(() => route.fullPath, initialize, { immediate: true })
       <p>固定对象、输入和评分标准，提交可追溯的本地 Mock 运行。</p>
     </div>
   </div>
-  <div v-if="readonly" class="notice warning" role="alert">
+  <StatusNotice type="warning" v-if="readonly">
     当前为只读角色，无权创建任务、保存模板或草稿。可查看配置并在资源管理中切换体验角色。
-  </div>
-  <div v-if="feedback" class="notice" role="status">{{ feedback }}</div>
-  <div v-if="sourceRunId" class="notice">
+  </StatusNotice>
+  <StatusNotice v-if="feedback">{{ feedback }}</StatusNotice>
+  <StatusNotice v-if="sourceRunId">
     来源：<RouterLink :to="`/preview/runs/${sourceRunId}`">{{ sourceRunId }}</RouterLink
     >。已沿用完整配置和固定样本；本次变更：{{ changes.join('、') || '无' }}。
-  </div>
+  </StatusNotice>
   <form @submit.prevent="submit">
     <section class="panel">
       <div class="panel-title">
@@ -394,32 +395,38 @@ watch(() => route.fullPath, initialize, { immediate: true })
           ><span class="hint">只使用已发布版本；预约执行不会追随最新版本。</span></label
         >
       </div>
-      <FormSection title="样本范围" optional description="默认使用全部用例；需要抽样或指定用例时再修改。">
-      <div class="preview-form form-grid">
-        <label class="field"
-          >采样率（%）<el-input-number
-            v-model="config.sampling"
-            :min="1"
-            :max="100"
-            aria-label="采样率"
-            @change="sample"
-          /><span class="hint">按发布顺序取前 N 条，固定 ID 可复现；可在下面调整范围。</span></label
-        >
-        <label class="field"
-          >固定样本（已选 {{ config.caseIds.length }} / {{ input?.cases.length ?? 0 }}）<el-select
-            v-model="config.caseIds"
-            multiple
-            collapse-tags
-            collapse-tags-tooltip
-            filterable
-            aria-label="固定样本"
-            ><el-option
-              v-for="item in input?.cases ?? []"
-              :key="item.id"
-              :value="item.id"
-              :label="`${item.id} · ${item.question}`" /></el-select
-        ></label>
-      </div>
+      <FormSection
+        title="样本范围"
+        optional
+        description="默认使用全部用例；需要抽样或指定用例时再修改。"
+      >
+        <div class="preview-form form-grid">
+          <label class="field"
+            >采样率（%）<el-input-number
+              v-model="config.sampling"
+              :min="1"
+              :max="100"
+              aria-label="采样率"
+              @change="sample"
+            /><span class="hint"
+              >按发布顺序取前 N 条，固定 ID 可复现；可在下面调整范围。</span
+            ></label
+          >
+          <label class="field"
+            >固定样本（已选 {{ config.caseIds.length }} / {{ input?.cases.length ?? 0 }}）<el-select
+              v-model="config.caseIds"
+              multiple
+              collapse-tags
+              collapse-tags-tooltip
+              filterable
+              aria-label="固定样本"
+              ><el-option
+                v-for="item in input?.cases ?? []"
+                :key="item.id"
+                :value="item.id"
+                :label="`${item.id} · ${item.question}`" /></el-select
+          ></label>
+        </div>
       </FormSection>
       <details>
         <summary>查看实际样本 ID 与输入来源</summary>
@@ -489,7 +496,11 @@ watch(() => route.fullPath, initialize, { immediate: true })
       <RouterLink to="/preview/resources">查看资源状态与权限 →</RouterLink>
     </section>
     <section class="panel">
-      <FormSection title="执行参数与预约" optional description="默认立即入队。需要调整并发、超时、重试或预约时再展开。">
+      <FormSection
+        title="执行参数与预约"
+        optional
+        description="默认立即入队。需要调整并发、超时、重试或预约时再展开。"
+      >
         <div class="preview-form form-grid">
           <label class="field"
             >并发数<el-input-number
@@ -518,7 +529,9 @@ watch(() => route.fullPath, initialize, { immediate: true })
                 value="infrastructure"
                 label="基础设施中断" /><el-option
                 value="missing-trace"
-                label="Trace 缺失" /><el-option value="missing-usage" label="Token 用量未采集" /></el-select
+                label="Trace 缺失" /><el-option
+                value="missing-usage"
+                label="Token 用量未采集" /></el-select
           ></label>
           <div class="field">
             <el-checkbox v-model="scheduled" @change="setSchedule">预约入队</el-checkbox
@@ -547,9 +560,11 @@ watch(() => route.fullPath, initialize, { immediate: true })
         执行：{{ resource?.name || '未选择' }} · 评分：{{ scoringResource?.name || '未选择' }} ·
         {{ scheduled ? `预约 ${localTime}（${timezone}）` : '立即入队' }}
       </p>
-      <ul v-if="errors.length" class="notice warning" aria-label="配置校验">
-        <li v-for="error in errors" :key="error">{{ error }}</li>
-      </ul>
+      <StatusNotice type="warning" v-if="errors.length" aria-label="配置校验"
+        ><ul>
+          <li v-for="error in errors" :key="error">{{ error }}</li>
+        </ul></StatusNotice
+      >
       <div class="action-row">
         <el-button
           type="primary"

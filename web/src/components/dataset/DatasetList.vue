@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EmptyState from '../EmptyState.vue'
 import { computed, ref } from 'vue'
 import type { DatasetSummary } from '../../types/dataset'
 
@@ -61,7 +62,7 @@ const filtered = computed(() => {
           <small>{{ item.case_count }} 用例</small>
         </span>
       </button>
-      <el-empty v-if="!filtered.length" description="暂无测评集" :image-size="72" />
+      <EmptyState v-if="!filtered.length" title="没有匹配的测评集" description="调整搜索词，或点击上方新建、导入，准备测评用例。" />
     </div>
     <div class="dataset-list-actions">
       <el-button size="small" @click="emit('import')">导入 JSON / Excel</el-button>

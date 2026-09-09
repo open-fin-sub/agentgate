@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import EmptyState from '../components/EmptyState.vue'
+import StatusNotice from '../components/StatusNotice.vue'
+import { userError } from '../apiErrors'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { readLineage } from '../api/lineage'
@@ -113,7 +116,7 @@ async function load() {
   } catch (e) {
     if (!signal.aborted) {
       conflict.value = e instanceof ApiError && e.status === 409
-      error.value = String(e)
+      error.value = userError(e)
     }
   } finally {
     if (!signal.aborted) loading.value = false
@@ -187,12 +190,12 @@ onUnmounted(() => controller?.abort())
     <button class="ag-button" :disabled="loading" @click="load">刷新关系</button>
   </div>
   <div v-if="loading" class="skeleton">正在读取已保存的关系…</div>
-  <div v-if="error" role="alert" class="notice error">
+  <StatusNotice type="error" v-if="error">
     <strong>{{ conflict ? '版本身份暂时无法唯一确定' : '关系读取失败' }}</strong>
     <p>
       {{
         conflict
-          ? '同版本可能存在多份内容快照，或本次运行引用的固定对象快照无法解析。请从带完整指纹的报告入口核对；具体原因见服务返回。'
+          ? '无法确认这份版本记录，请返回原报告重新打开关联记录；仍无法查看时请联系管理员。'
           : '请核对资产、发布版本或运行是否存在。未执行过的评估器也可能尚无可追溯快照。'
       }}
     </p>
@@ -200,7 +203,7 @@ onUnmounted(() => controller?.abort())
       <summary>查看服务返回原因</summary>
       {{ error }}
     </details>
-  </div>
+  </StatusNotice>
   <template v-if="graph && root">
     <section class="panel">
       <h2>
@@ -213,13 +216,12 @@ onUnmounted(() => controller?.abort())
       </details>
       <p v-else class="muted">{{ root.external_id }}</p>
       <details v-if="root.content_sha256">
-        <summary>固定内容指纹</summary>
+        <summary>高级：查看版本校验信息</summary>
         <code class="hash">{{ root.content_sha256 }}</code>
       </details>
-      <p class="notice">
-        关系来自后端保存的运行和版本引用。这里不包含用例内容、对象 Prompt 或执行
-        Trace；具体证据请进入任务报告查看。
-      </p>
+      <StatusNotice>
+        这里列出任务实际使用的版本及关联任务。需要核对输入、评分或执行过程，请打开相应报告。
+      </StatusNotice>
     </section>
     <section v-if="subject.kind !== 'run'" class="panel">
       <div class="panel-title">
@@ -234,9 +236,14 @@ onUnmounted(() => controller?.abort())
       </div>
       <p class="muted">
         本次返回 {{ relatedRuns.length }} 条，最多查询
-        {{ limit }} 条；接口未提供总量与翻页信息，不能据此认定已显示全部关联任务。
+        {{ limit }} 条。结果可能不是全部；可扩大查询上限，或到任务列表继续查找。
       </p>
-      <p v-if="!relatedRuns.length" class="empty-state">当前查询未返回关联任务。</p>
+      <EmptyState
+        v-if="!relatedRuns.length"
+        title="没有关联任务"
+        description="此版本尚无可查看的测评记录。可到任务列表选择其他报告。"
+        ><RouterLink class="ag-button" to="/runs">查看测评任务</RouterLink></EmptyState
+      >
       <p v-else class="muted small">以下按任务标识排列；创建时间、运行状态和判定请进入任务查看。</p>
       <div class="related-list">
         <article v-for="run in visibleRuns" :key="run.id">
@@ -274,7 +281,7 @@ onUnmounted(() => controller?.abort())
             <h3>{{ label(node) }}</h3>
             <p class="muted small">{{ node.external_id }}</p>
             <details v-if="node.content_sha256">
-              <summary>内容指纹</summary>
+              <summary>高级：查看版本校验信息</summary>
               <code class="hash">{{ node.content_sha256 }}</code>
             </details>
             <div class="action-row">
@@ -320,7 +327,11 @@ onUnmounted(() => controller?.abort())
           </table>
         </div>
       </details>
-      <p v-if="!graph.edges.length" class="empty-state">当前记录没有返回关联边。</p>
+      <EmptyState
+        v-if="!graph.edges.length"
+        title="没有更多关联记录"
+        description="可先查看上方版本信息与关联任务，或返回原报告核对本次测评。"
+      ></EmptyState>
     </section>
   </template>
 </template>

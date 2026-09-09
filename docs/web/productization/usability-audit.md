@@ -14,9 +14,9 @@
 |模式类|实例数|剩余|
 |---|---:|---:|
 |B-META|199|199|
-|G-COPY|21|21|
+|G-COPY|50|0|
 |D-CONTROL|41|41|
-|G-EMPTY|57|57|
+|G-EMPTY|57|0|
 |A-INPUT|33|0|
 |A-FORM|6|0|
 |I-FEEDBACK|25|25|
@@ -33,9 +33,9 @@
 |ID|文件:原始行|规则|模式类|严重度|问题|状态与证据|
 |---|---|---|---|---|---|---|
 |UX-0001|web/src/components/AppSidebar.vue:81|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0002|web/src/components/AppSidebar.vue:81|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
+|UX-0002|web/src/components/AppSidebar.vue:81|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0003|web/src/components/dataset/CaseEditor.vue:78|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0004|web/src/components/dataset/CaseEditor.vue:85|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0004|web/src/components/dataset/CaseEditor.vue:85|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0005|web/src/components/dataset/CaseEditor.vue:138|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
 |UX-0006|web/src/components/dataset/CaseEditor.vue:144|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0007|web/src/components/dataset/CaseEditor.vue:156|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
@@ -50,18 +50,18 @@
 |UX-0016|web/src/components/dataset/CaseTable.vue:90|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0017|web/src/components/dataset/CaseTable.vue:91|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0018|web/src/components/dataset/CaseTable.vue:91|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
-|UX-0019|web/src/components/dataset/CaseTable.vue:94|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0019|web/src/components/dataset/CaseTable.vue:94|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0020|web/src/components/dataset/DatasetList.vue:38|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0021|web/src/components/dataset/DatasetList.vue:59|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0022|web/src/components/dataset/DatasetList.vue:60|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0023|web/src/components/dataset/DatasetList.vue:64|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0023|web/src/components/dataset/DatasetList.vue:64|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0024|web/src/components/dataset/DatasetList.vue:67|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0025|web/src/components/dataset/DatasetList.vue:69|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0026|web/src/components/dataset/ExpectationEditor.vue:88|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0027|web/src/components/dataset/ExpectationEditor.vue:101|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0028|web/src/components/dataset/ExpectationEditor.vue:106|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0029|web/src/components/dataset/ExpectationEditor.vue:131|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
-|UX-0030|web/src/components/dataset/ExpectationEditor.vue:146|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0030|web/src/components/dataset/ExpectationEditor.vue:146|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0031|web/src/components/dataset/VersionSelector.vue:37|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0032|web/src/components/dataset/VersionSelector.vue:40|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0033|web/src/components/dataset/VersionSelector.vue:43|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
@@ -75,16 +75,16 @@
 |UX-0041|web/src/pages/CaseResultPage.vue:172|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0042|web/src/pages/CaseResultPage.vue:195|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0043|web/src/pages/CaseResultPage.vue:223|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0044|web/src/pages/CaseResultPage.vue:234|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
+|UX-0044|web/src/pages/CaseResultPage.vue:234|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0045|web/src/pages/CaseResultPage.vue:249|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0046|web/src/pages/CaseResultPage.vue:263|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
+|UX-0046|web/src/pages/CaseResultPage.vue:263|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0047|web/src/pages/CaseResultPage.vue:267|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0048|web/src/pages/CaseResultPage.vue:301|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
-|UX-0049|web/src/pages/CaseResultPage.vue:303|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0048|web/src/pages/CaseResultPage.vue:301|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
+|UX-0049|web/src/pages/CaseResultPage.vue:303|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0050|web/src/pages/CaseResultPage.vue:309|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0051|web/src/pages/CaseResultPage.vue:327|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0052|web/src/pages/CaseResultPage.vue:328|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0053|web/src/pages/CaseResultPage.vue:332|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0053|web/src/pages/CaseResultPage.vue:332|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0054|web/src/pages/CaseResultPage.vue:263|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
 |UX-0055|web/src/pages/DatasetWorkspace.vue:542|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0056|web/src/pages/DatasetWorkspace.vue:576|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
@@ -92,31 +92,31 @@
 |UX-0058|web/src/pages/DatasetWorkspace.vue:618|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0059|web/src/pages/DatasetWorkspace.vue:646|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0060|web/src/pages/DatasetWorkspace.vue:675|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0061|web/src/pages/EvaluatorWorkspacePage.vue:42|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
+|UX-0061|web/src/pages/EvaluatorWorkspacePage.vue:42|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0062|web/src/pages/EvaluatorWorkspacePage.vue:42|H1/H2/H3|H-TERMS|P2|统一业务词汇与状态含义，源码标识不改业务合同|待整改|
-|UX-0063|web/src/pages/EvaluatorWorkspacePage.vue:43|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
+|UX-0063|web/src/pages/EvaluatorWorkspacePage.vue:43|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0064|web/src/pages/EvaluatorWorkspacePage.vue:45|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
 |UX-0065|web/src/pages/EvaluatorWorkspacePage.vue:50|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0066|web/src/pages/EvaluatorWorkspacePage.vue:57|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0067|web/src/pages/EvaluatorWorkspacePage.vue:60|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0068|web/src/pages/EvaluatorWorkspacePage.vue:69|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
 |UX-0069|web/src/pages/EvaluatorWorkspacePage.vue:71|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0070|web/src/pages/EvaluatorWorkspacePage.vue:85|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
-|UX-0071|web/src/pages/EvaluatorWorkspacePage.vue:88|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
-|UX-0072|web/src/pages/EvaluatorWorkspacePage.vue:89|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0070|web/src/pages/EvaluatorWorkspacePage.vue:85|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0071|web/src/pages/EvaluatorWorkspacePage.vue:88|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
+|UX-0072|web/src/pages/EvaluatorWorkspacePage.vue:89|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0073|web/src/pages/LineagePage.vue:190|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
 |UX-0074|web/src/pages/LineagePage.vue:207|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0075|web/src/pages/LineagePage.vue:216|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
-|UX-0076|web/src/pages/LineagePage.vue:220|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
+|UX-0075|web/src/pages/LineagePage.vue:216|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0076|web/src/pages/LineagePage.vue:220|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0077|web/src/pages/LineagePage.vue:228|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0078|web/src/pages/LineagePage.vue:239|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0078|web/src/pages/LineagePage.vue:239|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0079|web/src/pages/LineagePage.vue:270|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0080|web/src/pages/LineagePage.vue:277|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
-|UX-0081|web/src/pages/LineagePage.vue:323|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0080|web/src/pages/LineagePage.vue:277|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0081|web/src/pages/LineagePage.vue:323|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0082|web/src/pages/OverviewPage.vue:49|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
 |UX-0083|web/src/pages/OverviewPage.vue:58|H1/H2/H3|H-TERMS|P2|统一业务词汇与状态含义，源码标识不改业务合同|待整改|
-|UX-0084|web/src/pages/OverviewPage.vue:100|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
-|UX-0085|web/src/pages/OverviewPage.vue:101|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0084|web/src/pages/OverviewPage.vue:100|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
+|UX-0085|web/src/pages/OverviewPage.vue:101|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0086|web/src/pages/OverviewPage.vue:124|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0087|web/src/pages/OverviewPage.vue:141|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0088|web/src/pages/OverviewPage.vue:141|H1/H2/H3|H-TERMS|P2|统一业务词汇与状态含义，源码标识不改业务合同|待整改|
@@ -126,15 +126,15 @@
 |UX-0092|web/src/pages/RunComparisonPage.vue:297|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0093|web/src/pages/RunComparisonPage.vue:301|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0094|web/src/pages/RunComparisonPage.vue:318|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0095|web/src/pages/RunComparisonPage.vue:328|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
+|UX-0095|web/src/pages/RunComparisonPage.vue:328|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0096|web/src/pages/RunComparisonPage.vue:402|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0097|web/src/pages/RunComparisonPage.vue:410|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0098|web/src/pages/RunComparisonPage.vue:439|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0099|web/src/pages/RunComparisonPage.vue:450|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0100|web/src/pages/RunComparisonPage.vue:460|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0100|web/src/pages/RunComparisonPage.vue:460|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0101|web/src/pages/RunComparisonPage.vue:463|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0102|web/src/pages/RunComparisonPage.vue:470|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
-|UX-0103|web/src/pages/RunCreatePage.vue:202|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
+|UX-0102|web/src/pages/RunComparisonPage.vue:470|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
+|UX-0103|web/src/pages/RunCreatePage.vue:202|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0104|web/src/pages/RunCreatePage.vue:204|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
 |UX-0105|web/src/pages/RunCreatePage.vue:213|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0106|web/src/pages/RunCreatePage.vue:216|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
@@ -145,14 +145,14 @@
 |UX-0111|web/src/pages/RunCreatePage.vue:292|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0112|web/src/pages/RunCreatePage.vue:295|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0113|web/src/pages/RunCreatePage.vue:296|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0114|web/src/pages/RunCreatePage.vue:308|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
-|UX-0115|web/src/pages/RunCreatePage.vue:316|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
+|UX-0114|web/src/pages/RunCreatePage.vue:308|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0115|web/src/pages/RunCreatePage.vue:316|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0116|web/src/pages/RunCreatePage.vue:325|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0117|web/src/pages/RunCreatePage.vue:308|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
 |UX-0118|web/src/pages/RunDetailPage.vue:141|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0119|web/src/pages/RunDetailPage.vue:187|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
-|UX-0120|web/src/pages/RunDetailPage.vue:221|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
-|UX-0121|web/src/pages/RunDetailPage.vue:224|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
+|UX-0120|web/src/pages/RunDetailPage.vue:221|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
+|UX-0121|web/src/pages/RunDetailPage.vue:224|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0122|web/src/pages/RunDetailPage.vue:239|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0123|web/src/pages/RunDetailPage.vue:268|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0124|web/src/pages/RunDetailPage.vue:323|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
@@ -160,21 +160,21 @@
 |UX-0126|web/src/pages/RunDetailPage.vue:336|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0127|web/src/pages/RunDetailPage.vue:343|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0128|web/src/pages/RunDetailPage.vue:370|C1/C2/C3|C-CONTEXT|P1|工作流下钻应复用抽屉并支持按当前过滤顺序前后查看|待整改|
-|UX-0129|web/src/pages/RunDetailPage.vue:387|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0129|web/src/pages/RunDetailPage.vue:387|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0130|web/src/pages/RunDetailPage.vue:426|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
 |UX-0131|web/src/pages/RunDetailPage.vue:423|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
 |UX-0132|web/src/pages/RunListPage.vue:104|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0133|web/src/pages/RunListPage.vue:109|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0134|web/src/pages/RunListPage.vue:116|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
-|UX-0135|web/src/pages/RunListPage.vue:121|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
-|UX-0136|web/src/pages/RunListPage.vue:122|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0135|web/src/pages/RunListPage.vue:121|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
+|UX-0136|web/src/pages/RunListPage.vue:122|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0137|web/src/pages/RunListPage.vue:130|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0138|web/src/pages/RunListPage.vue:147|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0139|web/src/pages/RunWorkspacePage.vue:125|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0140|web/src/pages/RunWorkspacePage.vue:132|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0141|web/src/pages/RunWorkspacePage.vue:139|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0142|web/src/pages/RunWorkspacePage.vue:146|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0143|web/src/pages/RunWorkspacePage.vue:177|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0143|web/src/pages/RunWorkspacePage.vue:177|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0144|web/src/pages/TargetListPage.vue:34|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
 |UX-0145|web/src/pages/TargetListPage.vue:40|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0146|web/src/preview/comparison.ts:22|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
@@ -187,10 +187,10 @@
 |UX-0153|web/src/preview/comparison.ts:442|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|非缺陷：原始扫描 currency 子串误命中 concurrency（并发数）；并发数是执行参数，不是货币成本，保留。|
 |UX-0154|web/src/preview/comparison.ts:443|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|非缺陷：原始扫描 currency 子串误命中 concurrency（并发数）；并发数是执行参数，不是货币成本，保留。|
 |UX-0155|web/src/preview/components/AnalysisStatic.vue:89|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0156|web/src/preview/components/AnalysisStatic.vue:128|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0156|web/src/preview/components/AnalysisStatic.vue:128|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0157|web/src/preview/components/AnalysisStatic.vue:129|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0158|web/src/preview/components/AnalysisStatic.vue:136|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
-|UX-0159|web/src/preview/components/AnalysisStatic.vue:169|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0159|web/src/preview/components/AnalysisStatic.vue:169|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0160|web/src/preview/components/AnalysisStatic.vue:177|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0161|web/src/preview/components/AnalysisStatic.vue:179|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0162|web/src/preview/components/AnalysisStatic.vue:182|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
@@ -202,7 +202,7 @@
 |UX-0168|web/src/preview/components/AnalysisSuggestion.vue:320|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0169|web/src/preview/components/AnalysisSuggestion.vue:372|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0170|web/src/preview/components/AnalysisSuggestion.vue:385|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0171|web/src/preview/components/AnalysisSuggestion.vue:396|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
+|UX-0171|web/src/preview/components/AnalysisSuggestion.vue:396|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0172|web/src/preview/components/AnalysisSuggestion.vue:410|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
 |UX-0173|web/src/preview/components/AnalysisSuggestion.vue:415|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0174|web/src/preview/components/AnalysisSuggestion.vue:421|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
@@ -224,21 +224,21 @@
 |UX-0190|web/src/preview/components/CompareCreate.vue:406|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
 |UX-0191|web/src/preview/components/CompareEvidence.vue:12|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0192|web/src/preview/components/CompareEvidence.vue:15|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0193|web/src/preview/components/CompareEvidence.vue:21|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0193|web/src/preview/components/CompareEvidence.vue:21|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0194|web/src/preview/components/CompareEvidence.vue:24|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0195|web/src/preview/components/CompareEvidence.vue:31|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0196|web/src/preview/components/CompareEvidence.vue:32|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0197|web/src/preview/components/CompareEvidence.vue:36|C1/C2/C3|C-CONTEXT|P1|工作流下钻应复用抽屉并支持按当前过滤顺序前后查看|待整改|
-|UX-0198|web/src/preview/components/CompareEvidence.vue:45|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0198|web/src/preview/components/CompareEvidence.vue:45|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0199|web/src/preview/components/CompareEvidence.vue:32|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
 |UX-0200|web/src/preview/components/CompareLineage.vue:54|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0201|web/src/preview/components/CompareLineage.vue:79|H1/H2/H3|H-TERMS|P2|统一业务词汇与状态含义，源码标识不改业务合同|待整改|
-|UX-0202|web/src/preview/components/CompareLineage.vue:83|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0202|web/src/preview/components/CompareLineage.vue:83|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0203|web/src/preview/components/CompareLineage.vue:86|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0204|web/src/preview/components/ComparePreflight.vue:96|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
 |UX-0205|web/src/preview/components/ComparePreflight.vue:31|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|非缺陷：原始扫描 currency 子串误命中 concurrency（并发数）；并发数是执行参数，不是货币成本，保留。|
 |UX-0206|web/src/preview/components/ComparePreflight.vue:37|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
-|UX-0207|web/src/preview/components/PrepCaseEditor.vue:152|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0207|web/src/preview/components/PrepCaseEditor.vue:152|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0208|web/src/preview/components/PrepCaseEditor.vue:157|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0209|web/src/preview/components/PrepCaseEditor.vue:162|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0210|web/src/preview/components/PrepCaseEditor.vue:164|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
@@ -250,7 +250,7 @@
 |UX-0216|web/src/preview/components/PrepCaseEditor.vue:228|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
 |UX-0217|web/src/preview/components/PrepCaseEditor.vue:129|A3|A-FORM|P1|必填/可选及高级分区需要收敛|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
 |UX-0218|web/src/preview/components/PrepDatasetPrepare.vue:529|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0219|web/src/preview/components/PrepDatasetPrepare.vue:552|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
+|UX-0219|web/src/preview/components/PrepDatasetPrepare.vue:552|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|后续范围：自动生成向导在本轮隐藏；旧链接进入手工创建。用户已拍板延后，本轮不整改隐藏的生成说明。|
 |UX-0220|web/src/preview/components/PrepDatasetPrepare.vue:559|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|后续范围：用户已拍板延后自动生成；入口隐藏，旧链接只展示手工创建。preparation.spec.ts 桌面/手机验证通过。|
 |UX-0221|web/src/preview/components/PrepDatasetPrepare.vue:561|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|后续范围：用户已拍板延后自动生成；入口隐藏，旧链接只展示手工创建。preparation.spec.ts 桌面/手机验证通过。|
 |UX-0222|web/src/preview/components/PrepDatasetPrepare.vue:614|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
@@ -260,11 +260,11 @@
 |UX-0226|web/src/preview/components/PrepEvaluatorEditor.vue:78|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
 |UX-0227|web/src/preview/components/PrepEvaluatorEditor.vue:107|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0228|web/src/preview/components/PrepEvaluatorEditor.vue:142|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
-|UX-0229|web/src/preview/components/PrepEvaluatorEditor.vue:153|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
+|UX-0229|web/src/preview/components/PrepEvaluatorEditor.vue:153|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0230|web/src/preview/components/PrepEvaluatorEditor.vue:56|A3|A-FORM|P1|必填/可选及高级分区需要收敛|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
 |UX-0231|web/src/preview/components/PrepJsonImport.vue:159|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0232|web/src/preview/components/PrepJsonImport.vue:175|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
-|UX-0233|web/src/preview/components/PrepTrial.vue:56|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
+|UX-0232|web/src/preview/components/PrepJsonImport.vue:175|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0233|web/src/preview/components/PrepTrial.vue:56|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0234|web/src/preview/components/PrepTrial.vue:77|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
 |UX-0235|web/src/preview/components/PrepTrial.vue:80|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0236|web/src/preview/components/PrepTrial.vue:86|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
@@ -282,34 +282,34 @@
 |UX-0248|web/src/preview/execution.ts:235|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
 |UX-0249|web/src/preview/execution.ts:256|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
 |UX-0250|web/src/preview/pages/AnalysisPage.vue:253|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0251|web/src/preview/pages/AnalysisPage.vue:256|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0251|web/src/preview/pages/AnalysisPage.vue:256|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0252|web/src/preview/pages/AnalysisPage.vue:257|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0253|web/src/preview/pages/AnalysisPage.vue:263|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0254|web/src/preview/pages/AnalysisPage.vue:267|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0255|web/src/preview/pages/AnalysisPage.vue:291|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0256|web/src/preview/pages/AnalysisPage.vue:292|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0256|web/src/preview/pages/AnalysisPage.vue:292|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0257|web/src/preview/pages/AnalysisPage.vue:300|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0258|web/src/preview/pages/AnalysisPage.vue:311|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0258|web/src/preview/pages/AnalysisPage.vue:311|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0259|web/src/preview/pages/AnalysisPage.vue:341|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0260|web/src/preview/pages/AnalysisPage.vue:355|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
-|UX-0261|web/src/preview/pages/AnalysisPage.vue:356|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0260|web/src/preview/pages/AnalysisPage.vue:355|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
+|UX-0261|web/src/preview/pages/AnalysisPage.vue:356|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0262|web/src/preview/pages/AnalysisPage.vue:375|C1/C2/C3|C-CONTEXT|P1|工作流下钻应复用抽屉并支持按当前过滤顺序前后查看|待整改|
-|UX-0263|web/src/preview/pages/AnalysisPage.vue:395|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
-|UX-0264|web/src/preview/pages/AnalysisPage.vue:396|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0263|web/src/preview/pages/AnalysisPage.vue:395|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
+|UX-0264|web/src/preview/pages/AnalysisPage.vue:396|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0265|web/src/preview/pages/AnalysisPage.vue:406|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0266|web/src/preview/pages/AnalysisPage.vue:425|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0267|web/src/preview/pages/AnalysisPage.vue:434|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0267|web/src/preview/pages/AnalysisPage.vue:434|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0268|web/src/preview/pages/AnalysisPage.vue:435|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0269|web/src/preview/pages/AnalysisPage.vue:388|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|非缺陷：中文子串误命中“生成本次”，不是货币成本。|
-|UX-0270|web/src/preview/pages/CasePage.vue:349|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
-|UX-0271|web/src/preview/pages/CasePage.vue:351|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0270|web/src/preview/pages/CasePage.vue:349|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
+|UX-0271|web/src/preview/pages/CasePage.vue:351|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0272|web/src/preview/pages/CasePage.vue:356|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0273|web/src/preview/pages/CasePage.vue:358|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0274|web/src/preview/pages/CasePage.vue:361|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0275|web/src/preview/pages/CasePage.vue:374|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0276|web/src/preview/pages/CasePage.vue:389|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0277|web/src/preview/pages/CasePage.vue:392|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0278|web/src/preview/pages/CasePage.vue:398|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0278|web/src/preview/pages/CasePage.vue:398|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0279|web/src/preview/pages/CasePage.vue:410|H1/H2/H3|H-TERMS|P2|统一业务词汇与状态含义，源码标识不改业务合同|待整改|
 |UX-0280|web/src/preview/pages/CasePage.vue:412|H1/H2/H3|H-TERMS|P2|统一业务词汇与状态含义，源码标识不改业务合同|待整改|
 |UX-0281|web/src/preview/pages/CasePage.vue:415|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
@@ -326,13 +326,13 @@
 |UX-0292|web/src/preview/pages/CasePage.vue:594|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0293|web/src/preview/pages/CasePage.vue:597|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0294|web/src/preview/pages/CasePage.vue:392|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
-|UX-0295|web/src/preview/pages/ComparisonPage.vue:240|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0295|web/src/preview/pages/ComparisonPage.vue:240|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0296|web/src/preview/pages/ComparisonPage.vue:241|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0297|web/src/preview/pages/ComparisonPage.vue:250|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0298|web/src/preview/pages/ComparisonPage.vue:252|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0299|web/src/preview/pages/ComparisonPage.vue:265|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
 |UX-0300|web/src/preview/pages/ComparisonPage.vue:273|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0301|web/src/preview/pages/ComparisonPage.vue:276|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0301|web/src/preview/pages/ComparisonPage.vue:276|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0302|web/src/preview/pages/ComparisonPage.vue:277|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0303|web/src/preview/pages/ComparisonPage.vue:289|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0304|web/src/preview/pages/ComparisonPage.vue:292|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
@@ -344,13 +344,13 @@
 |UX-0310|web/src/preview/pages/ComparisonPage.vue:353|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0311|web/src/preview/pages/ComparisonPage.vue:432|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
 |UX-0312|web/src/preview/pages/ComparisonPage.vue:445|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
-|UX-0313|web/src/preview/pages/ComparisonPage.vue:472|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0313|web/src/preview/pages/ComparisonPage.vue:472|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0314|web/src/preview/pages/ComparisonPage.vue:480|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0315|web/src/preview/pages/ComparisonPage.vue:485|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0316|web/src/preview/pages/ComparisonPage.vue:500|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0317|web/src/preview/pages/ComparisonPage.vue:511|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0318|web/src/preview/pages/ComparisonPage.vue:518|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0319|web/src/preview/pages/ComparisonsPage.vue:82|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0319|web/src/preview/pages/ComparisonsPage.vue:82|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0320|web/src/preview/pages/ComparisonsPage.vue:94|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0321|web/src/preview/pages/ComparisonsPage.vue:98|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0322|web/src/preview/pages/ComparisonsPage.vue:102|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
@@ -367,30 +367,30 @@
 |UX-0333|web/src/preview/pages/DatasetsPage.vue:416|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0334|web/src/preview/pages/DatasetsPage.vue:427|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
 |UX-0335|web/src/preview/pages/DatasetsPage.vue:430|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
-|UX-0336|web/src/preview/pages/DatasetsPage.vue:442|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0336|web/src/preview/pages/DatasetsPage.vue:442|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0337|web/src/preview/pages/DatasetsPage.vue:445|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0338|web/src/preview/pages/DatasetsPage.vue:487|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0338|web/src/preview/pages/DatasetsPage.vue:487|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0339|web/src/preview/pages/DatasetsPage.vue:506|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0340|web/src/preview/pages/DatasetsPage.vue:507|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0341|web/src/preview/pages/EvaluatorsPage.vue:257|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0342|web/src/preview/pages/EvaluatorsPage.vue:266|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0343|web/src/preview/pages/EvaluatorsPage.vue:309|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
 |UX-0344|web/src/preview/pages/EvaluatorsPage.vue:313|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
-|UX-0345|web/src/preview/pages/EvaluatorsPage.vue:357|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
-|UX-0346|web/src/preview/pages/EvaluatorsPage.vue:358|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0345|web/src/preview/pages/EvaluatorsPage.vue:357|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
+|UX-0346|web/src/preview/pages/EvaluatorsPage.vue:358|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0347|web/src/preview/pages/EvaluatorsPage.vue:366|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0348|web/src/preview/pages/EvaluatorsPage.vue:367|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0349|web/src/preview/pages/OverviewPage.vue:54|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0350|web/src/preview/pages/OverviewPage.vue:91|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0351|web/src/preview/pages/OverviewPage.vue:96|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0352|web/src/preview/pages/OverviewPage.vue:101|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0352|web/src/preview/pages/OverviewPage.vue:101|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0353|web/src/preview/pages/OverviewPage.vue:164|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0354|web/src/preview/pages/OverviewPage.vue:167|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0355|web/src/preview/pages/OverviewPage.vue:174|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
-|UX-0356|web/src/preview/pages/OverviewPage.vue:177|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0355|web/src/preview/pages/OverviewPage.vue:174|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
+|UX-0356|web/src/preview/pages/OverviewPage.vue:177|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0357|web/src/preview/pages/OverviewPage.vue:19|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|非缺陷：原始扫描 currency 子串误命中 concurrency（并发数）；并发数是执行参数，不是货币成本，保留。|
 |UX-0358|web/src/preview/pages/ResourcesPage.vue:212|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0359|web/src/preview/pages/ResourcesPage.vue:220|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0359|web/src/preview/pages/ResourcesPage.vue:220|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0360|web/src/preview/pages/ResourcesPage.vue:103|E1/E2|E-ROLE|P1|普通用户只读摘要，管理入口复用RoleGate|待整改|
 |UX-0361|web/src/preview/pages/ResourcesPage.vue:12|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
 |UX-0362|web/src/preview/pages/ResourcesPage.vue:89|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
@@ -414,8 +414,8 @@
 |UX-0380|web/src/preview/pages/RunCreatePage.vue:489|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|非缺陷：原始扫描 currency 子串误命中 concurrency（并发数）；并发数是执行参数，不是货币成本，保留。|
 |UX-0381|web/src/preview/pages/RunCreatePage.vue:495|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|非缺陷：原始扫描 currency 子串误命中 concurrency（并发数）；并发数是执行参数，不是货币成本，保留。|
 |UX-0382|web/src/preview/pages/RunCreatePage.vue:520|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
-|UX-0383|web/src/preview/pages/RunPage.vue:315|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
-|UX-0384|web/src/preview/pages/RunPage.vue:317|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0383|web/src/preview/pages/RunPage.vue:315|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
+|UX-0384|web/src/preview/pages/RunPage.vue:317|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0385|web/src/preview/pages/RunPage.vue:324|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0386|web/src/preview/pages/RunPage.vue:327|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0387|web/src/preview/pages/RunPage.vue:364|H1/H2/H3|H-TERMS|P2|统一业务词汇与状态含义，源码标识不改业务合同|待整改|
@@ -423,11 +423,11 @@
 |UX-0389|web/src/preview/pages/RunPage.vue:395|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0390|web/src/preview/pages/RunPage.vue:403|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0391|web/src/preview/pages/RunPage.vue:407|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0392|web/src/preview/pages/RunPage.vue:412|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
+|UX-0392|web/src/preview/pages/RunPage.vue:412|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0393|web/src/preview/pages/RunPage.vue:450|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0394|web/src/preview/pages/RunPage.vue:487|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0395|web/src/preview/pages/RunPage.vue:560|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
-|UX-0396|web/src/preview/pages/RunPage.vue:561|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0395|web/src/preview/pages/RunPage.vue:560|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
+|UX-0396|web/src/preview/pages/RunPage.vue:561|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0397|web/src/preview/pages/RunPage.vue:579|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0398|web/src/preview/pages/RunPage.vue:584|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0399|web/src/preview/pages/RunPage.vue:680|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
@@ -443,8 +443,8 @@
 |UX-0409|web/src/preview/pages/RunPage.vue:412|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
 |UX-0410|web/src/preview/pages/RunPage.vue:572|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
 |UX-0411|web/src/preview/pages/RunPage.vue:605|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
-|UX-0412|web/src/preview/pages/RunsPage.vue:168|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
-|UX-0413|web/src/preview/pages/RunsPage.vue:169|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0412|web/src/preview/pages/RunsPage.vue:168|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
+|UX-0413|web/src/preview/pages/RunsPage.vue:169|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0414|web/src/preview/pages/RunsPage.vue:176|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0415|web/src/preview/pages/RunsPage.vue:204|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0416|web/src/preview/pages/RunsPage.vue:210|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
@@ -454,14 +454,14 @@
 |UX-0420|web/src/preview/pages/TargetsPage.vue:81|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0421|web/src/preview/pages/TargetsPage.vue:135|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0422|web/src/preview/pages/TargetsPage.vue:155|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0423|web/src/preview/pages/TargetsPage.vue:180|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0423|web/src/preview/pages/TargetsPage.vue:180|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0424|web/src/preview/pages/TargetsPage.vue:184|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0425|web/src/preview/pages/TargetsPage.vue:190|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0426|web/src/preview/pages/TargetsPage.vue:207|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|待整改|
+|UX-0426|web/src/preview/pages/TargetsPage.vue:207|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0427|web/src/preview/pages/TargetsPage.vue:210|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0428|web/src/preview/pages/TargetsPage.vue:216|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0429|web/src/preview/PreviewWorkspace.vue:25|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0430|web/src/preview/PreviewWorkspace.vue:25|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|待整改|
+|UX-0430|web/src/preview/PreviewWorkspace.vue:25|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0431|web/src/preview/seed.ts:319|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
 |UX-0432|web/src/preview/seed.ts:331|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|非缺陷：原始扫描 currency 子串误命中 concurrency（并发数）；并发数是执行参数，不是货币成本，保留。|
 |UX-0433|web/src/preview/seed.ts:431|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|非缺陷：原始扫描 currency 子串误命中 concurrency（并发数）；并发数是执行参数，不是货币成本，保留。|
@@ -491,6 +491,35 @@
 |UX-0457|web/src/preview/components/AnalysisStatic.vue:214|A1/A4|A-INPUT|P1|人工补查：展示辅助函数或多行模板中的原始结构未被首轮扫描捕获|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
 |UX-0458|web/src/preview/components/PrepTrial.vue:63|A1/A4|A-INPUT|P1|人工补查：展示辅助函数或多行模板中的原始结构未被首轮扫描捕获|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
 |UX-0459|web/src/preview/components/PrepJsonImport.vue:163|A1/A4|A-INPUT|P1|人工补查：展示辅助函数或多行模板中的原始结构未被首轮扫描捕获|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
+|UX-0460|web/src/preview/components/PrepEvaluation.ts:62|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0461|web/src/preview/components/PrepEvaluation.ts:64|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0462|web/src/preview/components/PrepEvaluation.ts:75|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0463|web/src/preview/components/PrepEvaluation.ts:78|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0464|web/src/preview/components/PrepEvaluation.ts:80|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0465|web/src/preview/components/PrepEvaluation.ts:83|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0466|web/src/preview/components/PrepEvaluation.ts:86|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0467|web/src/preview/components/PrepEvaluation.ts:88|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0468|web/src/preview/components/PrepEvaluation.ts:89|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0469|web/src/preview/components/PrepEvaluation.ts:91|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0470|web/src/preview/components/PrepEvaluation.ts:94|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0471|web/src/preview/components/PrepEvaluation.ts:99|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0472|web/src/preview/components/PrepEvaluation.ts:101|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0473|web/src/preview/components/PrepEvaluation.ts:103|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0474|web/src/preview/components/PrepEvaluation.ts:106|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0475|web/src/preview/components/PrepEvaluation.ts:115|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0476|web/src/preview/components/PrepEvaluation.ts:145|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0477|web/src/preview/components/PrepEvaluation.ts:310|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0478|web/src/preview/components/PrepEvaluation.ts:332|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0479|web/src/preview/components/PrepEvaluation.ts:340|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0480|web/src/preview/components/PrepCases.ts:30|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0481|web/src/preview/components/PrepCases.ts:32|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0482|web/src/preview/components/PrepJsonImport.vue:85|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0483|web/src/preview/components/PrepJsonImport.vue:106|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0484|web/src/preview/components/PrepJsonImport.vue:111|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0485|web/src/preview/pages/ResourcesPage.vue:123|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0486|web/src/preview/pages/ResourcesPage.vue:251|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0487|web/src/preview/pages/AnalysisPage.vue:278|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0488|web/src/preview/pages/ComparisonPage.vue:443|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 
 ## 当前 assumptions 与联合工作项
 

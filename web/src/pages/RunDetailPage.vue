@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import EmptyState from '../components/EmptyState.vue'
+import StatusNotice from '../components/StatusNotice.vue'
+import { userError } from '../apiErrors'
 import JsonFallback from '../components/JsonFallback.vue'
 import MetadataGroup from '../components/MetadataGroup.vue'
 import { catalogLabel } from '../catalogLabels'
@@ -82,7 +85,7 @@ async function load() {
       if (!signal.aborted) report.value = value
     } else report.value = null
   } catch (e) {
-    if (!signal.aborted) error.value = String(e)
+    if (!signal.aborted) error.value = userError(e)
   } finally {
     if (!signal.aborted) {
       loading.value = false
@@ -186,9 +189,9 @@ function showDimension(key: string) {
       >
     </div>
   </div>
-  <div v-if="error" class="notice error" role="alert">
+  <StatusNotice type="error" v-if="error">
     状态或报告读取失败：{{ error }} <button class="text-button" @click="load">重新加载</button>
-  </div>
+  </StatusNotice>
   <div v-if="loading" class="skeleton">正在读取当前任务…</div>
   <section v-if="progress && !report" class="panel">
     <div class="panel-title">
@@ -215,21 +218,23 @@ function showDimension(key: string) {
         progress.started_at ? new Date(progress.started_at).toLocaleString('zh-CN') : '尚未开始'
       }}</span>
     </div>
-    <div v-if="progress.error" class="notice error">{{ progress.error }}</div>
+    <StatusNotice type="error" v-if="progress.error" message="任务执行中断。请核对对象与评分标准后重新创建测评；仍失败时请联系管理员。" />
+    <JsonFallback v-if="progress.error" :model-value="progress.error" readonly label="执行错误详情" />
     <p class="muted">
       {{
         progress.status === 'pending' || progress.status === 'running'
           ? '每 2 秒更新进度，完成后自动显示正式报告。'
-          : '本次运行没有完成态报告。现有数据和状态仍保留。'
+          : '本次任务已结束，但没有形成完整报告。可核对当前状态，再重新创建测评。'
       }}
     </p>
-    <p class="muted small">取消、恢复及部分报告尚未开放，见能力与接入。</p>
+    <p v-if="progress.status === 'pending' || progress.status === 'running'" class="muted small">任务状态会自动更新。你可以返回任务列表，完成后再查看报告。</p>
+    <RouterLink v-else class="ag-button" to="/runs/new">重新创建测评</RouterLink>
   </section>
   <template v-if="report"
-    ><div class="notice" :class="{ warning: report.release_gate.outcome === 'fail' }">
+    ><StatusNotice :type="report.release_gate.outcome === 'fail' ? 'warning' : 'info'">
       <strong>{{ gateLabels[report.release_gate.reason_code] }}</strong>
       <div>执行已完成。判定依据为本次运行保存的规则，未自动发布任何 Agent。</div>
-    </div>
+    </StatusNotice>
     <nav class="local-tabs" aria-label="报告内容">
       <button :class="{ active: tab === 'summary' }" @click="tab = 'summary'">总体结果</button
       ><button :class="{ active: tab === 'cases' }" @click="tab = 'cases'">评估结果与用例</button
@@ -319,14 +324,34 @@ function showDimension(key: string) {
           </table>
         </div>
       </section>
-      <div v-if="report.release_gate.missing_results.length" class="notice error">
-        <p>有 {{ report.release_gate.missing_results.length }} 项检查缺少结果，请核对以下用例与评分标准后重新测评。</p>
-        <MetadataGroup v-for="[caseId, evaluatorId] in report.release_gate.missing_results" :key="`${caseId}:${evaluatorId}`" :items="[
-          {label:'用例',value:report.run.manifest.dataset.cases.find(c=>c.id===caseId)?.name ?? '名称未提供'},
-          {label:'评分标准',value:catalogLabel(report.run.manifest.evaluator_specs.find(e=>e.id===evaluatorId)?.name ?? '名称未提供')}
-        ]" />
-      </div></template
-    >
+      <StatusNotice type="error" v-if="report.release_gate.missing_results.length">
+        <p>
+          有
+          {{
+            report.release_gate.missing_results.length
+          }}
+          项检查缺少结果，请核对以下用例与评分标准后重新测评。
+        </p>
+        <MetadataGroup
+          v-for="[caseId, evaluatorId] in report.release_gate.missing_results"
+          :key="`${caseId}:${evaluatorId}`"
+          :items="[
+            {
+              label: '用例',
+              value:
+                report.run.manifest.dataset.cases.find((c) => c.id === caseId)?.name ??
+                '名称未提供',
+            },
+            {
+              label: '评分标准',
+              value: catalogLabel(
+                report.run.manifest.evaluator_specs.find((e) => e.id === evaluatorId)?.name ??
+                  '名称未提供',
+              ),
+            },
+          ]"
+        /> </StatusNotice
+    ></template>
     <section v-else-if="tab === 'cases'" class="panel table-panel">
       <div class="panel-title">
         <h2>逐项结果 · {{ results.length }} 条</h2>
@@ -387,7 +412,11 @@ function showDimension(key: string) {
           </tbody>
         </table>
       </div>
-      <div v-if="!results.length" class="empty-state">没有匹配的评估结果，请调整条件。</div>
+      <EmptyState
+        v-if="!results.length"
+        title="没有匹配的评分结果"
+        description="调整用例或评估器筛选，查看其他结果；任务进行中时可稍后回来查看。"
+      ></EmptyState>
     </section>
     <section v-else class="panel">
       <h2>固定版本与执行配置</h2>
@@ -427,7 +456,6 @@ function showDimension(key: string) {
       <details>
         <summary>查看本次完整配置快照</summary>
         <JsonFallback :model-value="report.run.manifest" readonly />
-      </details>
-    </section></template
-  >
+      </details></section
+  ></template>
 </template>

@@ -162,7 +162,8 @@ test('failed requests have recovery; missing version is never silently replaced'
     route.fulfill({ status: 503, json: { detail: '验收网络错误' } }),
   )
   await page.goto('/')
-  await expect(page.getByRole('alert')).toContainText('验收网络错误')
+  await expect(page.getByRole('alert')).toContainText('暂时无法完成操作，请稍后重试。')
+  await expect(page.getByRole('alert')).not.toContainText('验收网络错误')
   await expect(page.locator('.stat-number')).toHaveCount(0)
   await page.unroute('**/api/overview')
   await page.getByRole('button', { name: '重新加载' }).click()

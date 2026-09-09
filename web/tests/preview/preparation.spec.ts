@@ -8,7 +8,7 @@ test('unsupported rule fields and malformed schema constraints cannot silently p
     parseRule(JSON.stringify({ type: 'regex', pattern: 'ok', applicableField: 'missing' })),
   ).toThrow('未支持的规则字段')
   expect(() => parseRule(JSON.stringify({ type: 'json', required: 'amount' }))).toThrow(
-    'required 必须是字符串数组',
+    '必填字段需逐项填写名称',
   )
   expect(() =>
     parseRule(
@@ -143,7 +143,7 @@ test('JSON mapping rejects invalid rows and accepts the exported Mock envelope',
     ])) })
   await page.getByRole('button', { name: '校验全部行并预览', exact: true }).click()
   await expect(page.getByText(/第 1 行.*问题不能为空/)).toBeVisible()
-  await expect(page.getByText(/第 2 行.*变量必须是 JSON 对象/)).toBeVisible()
+  await expect(page.getByText(/第 2 行.*变量需要成组填写字段名与值/)).toBeVisible()
   await expect(page.locator('.prep-case')).toHaveCount(0)
   await page.locator('input[type="file"]').setInputFiles({ name: 'valid.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({
       source: 'AgentGate Mock 体验数据',
@@ -178,7 +178,7 @@ test('rule trial, validation and version upgrades preserve evaluator and histori
   await page.getByLabel('匹配表达式', { exact: true }).fill('[')
   await page.getByLabel('版本说明（发布时必填）', { exact: true }).fill('校验新规则')
   await page.getByRole('button', { name: '发布新版本', exact: true }).click()
-  await expect(page.getByText(/规则无效：/)).toBeVisible()
+  await expect(page.getByText(/文本匹配表达式或匹配选项无效/)).toBeVisible()
   await page.getByRole('button', { name: '正则模板', exact: true }).click()
   await page.getByRole('radio', { name: '文本', exact: true }).press('Space')
   await expect(page.getByRole('radio', { name: '文本', exact: true })).toBeChecked()

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import StatusNotice from '../components/StatusNotice.vue'
+import { userError } from '../apiErrors'
 import { catalogLabel } from '../catalogLabels'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -73,7 +75,7 @@ async function loadVersions(id: string, preferred: number | null = null) {
         versionError.value = `所需 v${preferred} 不可用，请明确选择其他发布版本。`
     }
   } catch (e) {
-    if (alive && current === versionRequest) versionError.value = String(e)
+    if (alive && current === versionRequest) versionError.value = userError(e)
   } finally {
     if (alive && current === versionRequest) {
       versionLoading.value = false
@@ -141,7 +143,7 @@ async function initialize() {
     ready.value = true
     await loadVersions(datasetId.value, preferred)
   } catch (e) {
-    if (alive) error.value = String(e)
+    if (alive) error.value = userError(e)
   } finally {
     if (alive) loading.value = false
   }
@@ -166,7 +168,7 @@ async function submit() {
     })
     await router.push(`/runs/${run.run_id}`)
   } catch (e) {
-    error.value = `提交未完成：${String(e)}。请先查看任务列表核实是否已创建，再决定是否重试。`
+    error.value = `提交未完成：${userError(e)}。请先查看任务列表核实是否已创建，再决定是否重试。`
   } finally {
     submitting.value = false
   }
@@ -186,17 +188,17 @@ onUnmounted(() => {
       <p>选择对象、固定输入和评分标准，直接提交一次测评。</p>
     </div>
   </div>
-  <div class="notice warning">
+  <StatusNotice type="warning">
     当前执行对象为内置信贷 Agent 演示接入，结果由真实执行产生。<RouterLink to="/capabilities"
       >查看完整接入范围</RouterLink
     >
-  </div>
-  <div v-if="route.query.source" class="notice">
-    已从历史报告带入对象、测评集和可用评分标准。新运行使用当前服务的其他默认配置；来源关联暂不持久化，不能作为完整可复现实验。
-  </div>
-  <div v-if="error" class="notice error" role="alert">
+  </StatusNotice>
+  <StatusNotice v-if="route.query.source">
+    已带入原报告的对象、测评集和可用评分标准。请核对版本与执行设置后提交新测评。
+  </StatusNotice>
+  <StatusNotice type="error" v-if="error">
     {{ error }} <button v-if="!ready" class="text-button" @click="initialize">重新加载</button>
-  </div>
+  </StatusNotice>
   <div v-if="loading" class="skeleton">正在读取可用对象和测评配置…</div>
   <form v-else-if="ready" @submit.prevent="submit">
     <section class="panel">
@@ -244,12 +246,12 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
-      <div v-if="versionError" class="notice error" role="alert">
+      <StatusNotice type="error" v-if="versionError">
         {{ versionError }}
         <button type="button" class="text-button" @click="loadVersions(datasetId)">
           重新加载发布版本
         </button>
-      </div>
+      </StatusNotice>
     </section>
     <section class="panel">
       <div class="panel-title">
@@ -258,12 +260,12 @@ onUnmounted(() => {
         </h2>
         <RouterLink to="/evaluators">查看可用评分标准</RouterLink>
       </div>
-      <div v-if="reuseIssue" role="alert" class="notice warning">
+      <StatusNotice type="warning" v-if="reuseIssue">
         {{ reuseIssue }}
         <button type="button" class="text-button" @click="resetStandards">
           按当前标准重新配置
         </button>
-      </div>
+      </StatusNotice>
       <div class="toolbar">
         <button
           type="button"
@@ -293,23 +295,20 @@ onUnmounted(() => {
         >
       </div>
       <p v-if="!selected.length" class="muted small">至少选择一个适用于本次输入的评估器。</p>
-      <p
+      <StatusNotice
         v-if="evaluators.some((item) => item.kind === 'llm_judge' && selected.includes(item.id))"
-        class="notice"
       >
-        已选择 LLM
-        评分，将调用服务端配置的模型。同一输入的评分可能存在差异；实际调用信息保存在用例报告中。
-      </p>
+        已选择 LLM 评分。同一输入的评分可能存在差异，完成后可在用例报告查看评分理由与调用记录。
+      </StatusNotice>
     </section>
     <section class="panel">
       <details>
         <summary>执行说明</summary>
         <p>
-          提交后由当前服务调度执行。规则评分无需模型调用；LLM
-          标准使用服务端已配置的模型。当前接口尚不支持自定义并发、超时、采样、预约或 Web 模型配置。
+          提交后立即入队，具体开始时间取决于执行容量。执行设置沿用当前环境的默认值；需要调整时请联系管理员。
         </p>
         <p class="muted small">
-          配置自动暂存在当前浏览器会话，不含任何密钥；它不是服务端任务草稿。
+          未提交配置会暂存在当前浏览器会话。关闭浏览器前请完成提交，或记录需要保留的选择。
         </p>
       </details>
       <div class="detail-row">

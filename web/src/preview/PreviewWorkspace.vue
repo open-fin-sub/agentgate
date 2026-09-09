@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StatusNotice from '../components/StatusNotice.vue'
 import { ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { providePreview } from './workspace'
@@ -21,19 +22,17 @@ async function confirmReset() {
 <template>
   <div class="preview-banner" role="note">
     <div>
-      <strong>Mock 体验工作区</strong
-      ><span>虚构业务数据 · 修改保存在当前浏览器 · 不调用外部平台</span>
+      <strong>Mock 体验工作区</strong><span>模拟数据，仅用于体验。修改保存在当前浏览器。</span>
     </div>
     <button class="text-button" @click="confirmReset">重置体验</button>
   </div>
-  <el-alert
+  <StatusNotice
     v-if="warning || conflict"
     class="preview-storage-alert"
-    :closable="false"
     type="warning"
     :title="warning || '另一个标签页已修改体验数据。重新加载将丢弃本页未保存输入，并读取最新版本。'"
     ><el-button @click="reload">重新加载体验数据</el-button
-    ><el-button @click="confirmReset">重置体验数据</el-button></el-alert
+    ><el-button @click="confirmReset">重置体验数据</el-button></StatusNotice
   >
   <RouterView :key="viewRevision" />
 </template>

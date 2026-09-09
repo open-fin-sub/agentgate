@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EmptyState from '../../components/EmptyState.vue'
 import { computed, ref } from 'vue'
 import { usePreview } from '../workspace'
 const { state } = usePreview()
@@ -98,10 +99,12 @@ function rate(run: (typeof state.runs)[number]) {
         <div class="overview-bar"><span :style="{ width: `${rate(run) ?? 0}%` }"></span></div>
         <strong>{{ rate(run) === null ? '无适用样本' : `${rate(run)}%` }}</strong>
       </div>
-      <el-empty v-if="!group.length" description="此对象暂没有上述固定配置的结果。" /><RouterLink
-        to="/preview/comparisons"
-        >选择固定基线开展版本对比 →</RouterLink
-      >
+      <EmptyState
+        v-if="!group.length"
+        title="还没有此配置的测评结果"
+        description="可调整对象与配置筛选，或创建测评后回来查看质量变化。"
+      ></EmptyState
+      ><RouterLink to="/preview/comparisons">选择固定基线开展版本对比 →</RouterLink>
     </section>
     <section class="panel">
       <h2>接下来处理</h2>
@@ -171,10 +174,13 @@ function rate(run: (typeof state.runs)[number]) {
         >
       </article>
     </div>
-    <el-empty v-if="!runs.length" description="此对象暂无测评任务"
+    <EmptyState
+      v-if="!runs.length"
+      title="此对象还没有测评任务"
+      description="创建首次测评，选择输入和评分标准，查看对象的质量表现。"
       ><RouterLink class="ag-button" :to="`/preview/runs/new?target=${target}`"
         >创建首个测评</RouterLink
-      ></el-empty
+      ></EmptyState
     >
   </section>
   <section v-if="latest" class="panel">

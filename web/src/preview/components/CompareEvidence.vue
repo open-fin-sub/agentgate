@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EmptyState from '../../components/EmptyState.vue'
 import TokenUsage from '../../components/TokenUsage.vue'
 import ValueView from '../../components/ValueView.vue'
 import { useRoute } from 'vue-router'
@@ -20,7 +21,11 @@ const labels = { pass: '通过', fail: '失败', review: '待复核', NA: '不�
       <strong>期望</strong>
       <ValueView :value="sample.expected" />
     </template>
-    <p v-else class="preview-empty">此侧未包含用例快照。</p>
+    <EmptyState
+      v-else
+      title="此侧缺少用例快照"
+      description="请核对另一侧证据，或从原报告检查该用例是否包含在测评范围内。"
+    ></EmptyState>
     <template v-if="result">
       <p>
         <span :class="['badge', result.outcome]">{{ labels[result.outcome] }}</span> ·
@@ -32,7 +37,12 @@ const labels = { pass: '通过', fail: '失败', review: '待复核', NA: '不�
       <p class="muted">
         路由 {{ result.actualSkill || '未采集' }} · {{ formatMetric('latency', result.latency) }} ·
       </p>
-      <TokenUsage :input="result.inputTokens" :output="result.outputTokens" :total="result.tokens" scope="本条用例" />
+      <TokenUsage
+        :input="result.inputTokens"
+        :output="result.outputTokens"
+        :total="result.tokens"
+        scope="本条用例"
+      />
       <RouterLink
         :to="{
           path: `/preview/runs/${run.id}/cases/${result.caseId}`,
@@ -44,7 +54,11 @@ const labels = { pass: '通过', fail: '失败', review: '待复核', NA: '不�
         →</RouterLink
       >
     </template>
-    <p v-else class="preview-empty">尚无结果；不计为零分。</p>
+    <EmptyState
+      v-else
+      title="此侧没有评分结果"
+      description="请核对原任务进度或错误原因。缺少结果不计为零分。"
+    ></EmptyState>
   </article>
 </template>
 

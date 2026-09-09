@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StatusNotice from '../../components/StatusNotice.vue'
 import FormSection from '../../components/FormSection.vue'
 import { computed, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
@@ -242,11 +243,10 @@ function create() {
   <section class="panel">
     <h2>创建版本对比</h2>
     <p class="muted">全部为本地 Mock 体验。新实验的输入、标准、参数和判定规则在提交时固定。</p>
-    <el-alert
+    <StatusNotice
       v-if="state.role === 'viewer'"
       title="当前为只读角色，无权创建对比或执行实验。"
       type="warning"
-      :closable="false"
     />
     <el-form class="preview-form" label-position="top" @submit.prevent="create">
       <el-form-item label="创建方式"
@@ -267,7 +267,9 @@ function create() {
         ></el-form-item>
       </div>
       <template v-if="mode === 'historical'">
-        <p class="notice">仅保存已有运行的比较关联；执行时间、配置差异和缺失结果会显示在报告中。</p>
+        <StatusNotice
+          >仅保存已有运行的比较关联；执行时间、配置差异和缺失结果会显示在报告中。</StatusNotice
+        >
         <el-form-item label="基线运行 A"
           ><el-select v-model="baselineId" @change="changeBaseline"
             ><el-option
@@ -364,7 +366,11 @@ function create() {
               : '执行与评分均使用私有资源，不进入公共队列。'
           }}
         </p>
-        <FormSection title="共同参数与样本范围" optional description="默认使用全部用例和当前执行参数；仅在需要限制范围或预约时修改。">
+        <FormSection
+          title="共同参数与样本范围"
+          optional
+          description="默认使用全部用例和当前执行参数；仅在需要限制范围或预约时修改。"
+        >
           <div class="preview-columns compare-form-grid">
             <el-form-item label="模型标识（Mock）"
               ><el-input v-model="config.model"
@@ -415,11 +421,11 @@ function create() {
                 :label="`${item.id} · ${item.question}`" /></el-select
           ></el-form-item>
         </FormSection>
-        <p class="notice">
+        <StatusNotice>
           执行量：{{ candidateVersions.length + 1 }} 个版本 × {{ caseCount }} 条 =
           {{ (candidateVersions.length + 1) * caseCount }} 次 Mock
           样本执行。各版本使用同一输入范围；无真实 Agent 或 LLM 调用。
-        </p>
+        </StatusNotice>
       </template>
       <details open>
         <summary>
@@ -453,7 +459,7 @@ function create() {
           </div>
         </div>
       </details>
-      <p v-if="error" role="alert" class="notice error">{{ error }}</p>
+      <StatusNotice type="error" v-if="error">{{ error }}</StatusNotice>
       <p v-if="issues.length" class="muted">待补充：{{ issues.join(' ') }}</p>
       <el-button type="primary" native-type="submit" :disabled="state.role === 'viewer'">{{
         mode === 'historical' ? '生成已有结果对比' : '创建并执行 Mock 实验'

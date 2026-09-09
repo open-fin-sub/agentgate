@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StatusNotice from '../../components/StatusNotice.vue'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -12,7 +13,9 @@ import PrepLineage from './PrepLineage.vue'
 const { state, change } = usePreview()
 const route = useRoute(),
   router = useRouter()
-const mode = computed(() => route.query.mode === 'generate' ? 'manual' : String(route.query.mode ?? 'manual'))
+const mode = computed(() =>
+  route.query.mode === 'generate' ? 'manual' : String(route.query.mode ?? 'manual'),
+)
 const targetId = ref(String(route.query.target ?? ''))
 const versionId = ref(String(route.query.targetVersion ?? route.query.version ?? 'v1'))
 const target = computed(() => state.targets.find((item) => item.id === targetId.value))
@@ -418,7 +421,9 @@ function imported(rows: TestCase[]) {
 }
 function editCases(rows: TestCase[]) {
   const source = sourceRisk.value ? riskSourceUrl.value : ''
-  cases.value = source ? rows.map(row => ({ ...row, sources: [...new Set([...row.sources, source])] })) : rows
+  cases.value = source
+    ? rows.map((row) => ({ ...row, sources: [...new Set([...row.sources, source])] }))
+    : rows
   if (source) sourceRefs.value = [...new Set([...sourceRefs.value, source])]
   reviewed.value = false
 }
@@ -497,11 +502,11 @@ onUnmounted(() => {
 </script>
 <template>
   <section class="panel">
-    <div v-if="sourceRisk" class="notice">
+    <StatusNotice v-if="sourceRisk">
       <strong>已带入静态风险：{{ sourceRisk.title }}</strong>
       <p>请根据这项风险手工填写验证问题与期望，再审阅并发布测评集。</p>
       <RouterLink :to="riskSourceUrl">查看来源静态分析</RouterLink>
-    </div>
+    </StatusNotice>
     <h2>
       {{
         mode === 'generate'
@@ -514,14 +519,13 @@ onUnmounted(() => {
       }}
     </h2>
     <p class="muted">准备 → 审阅 → 保存草稿 → 发布固定版本 → 配置测评。</p>
-    <el-alert
+    <StatusNotice
       v-if="state.role === 'viewer'"
       title="当前为只读角色，不能保存或发布测评集。"
       type="warning"
-      :closable="false"
     />
     <p v-if="cacheMessage" class="muted" role="status">{{ cacheMessage }}</p>
-    <el-alert v-if="cacheError" :title="cacheError" type="error" :closable="false" />
+    <StatusNotice v-if="cacheError" :title="cacheError" type="error" />
     <el-form label-position="top" class="preview-grid"
       ><el-form-item label="测评对象"
         ><el-select :model-value="targetId" filterable @update:model-value="selectTarget"
@@ -538,17 +542,15 @@ onUnmounted(() => {
             :label="item.label"
             :value="item.id" /></el-select></el-form-item
     ></el-form>
-    <el-alert
+    <StatusNotice
       v-if="targetId && !target"
-      title="404：传入的对象不存在，请重新选择。"
+      title="找不到所选对象，请重新选择测评对象。"
       type="error"
-      :closable="false"
     />
-    <el-alert
+    <StatusNotice
       v-if="target && !version && (mode === 'generate' || mode === 'merge')"
       title="404：指定对象版本不存在。"
       type="error"
-      :closable="false"
     />
     <template v-if="mode === 'generate'"
       ><p>Mock：本地模板读取所选 Prompt、说明、Skill 与工具生成可编辑样例，不调用 LLM。</p>
@@ -603,12 +605,11 @@ onUnmounted(() => {
       <p v-if="!fixedSkills.length" class="muted">
         所选 Agent 未提供关联 Skill 固定定义，无法推荐来源。
       </p>
-      <el-alert
+      <StatusNotice
         v-for="skill in uncoveredSkills"
         :key="skill.id"
         :title="`${skill.name} ${skill.version} 未覆盖：尚无关联 Skill 的已发布测评集，请先准备并发布。`"
         type="warning"
-        :closable="false"
       />
       <p v-if="!sourceOptions.length" class="muted">所选版本没有可合并的关联 Skill 发布集。</p>
       <el-button class="prep-space" @click="previewMerge">检查来源与冲突</el-button>
@@ -648,7 +649,9 @@ onUnmounted(() => {
     @update:model-value="editCases"
   />
   <section class="panel">
-    <p v-if="route.query.mode === 'generate'" class="notice">请手工添加用例，或返回测评集列表导入文件。自动生成本轮范围外，后续再提供。</p>
+    <StatusNotice v-if="route.query.mode === 'generate'"
+      >请手工添加用例，或返回测评集列表导入文件。自动生成本轮范围外，后续再提供。</StatusNotice
+    >
     <el-form label-position="top"
       ><el-form-item label="保存方式"
         ><el-checkbox v-model="reusable">保存为可长期复用的命名测评集</el-checkbox></el-form-item
@@ -660,7 +663,7 @@ onUnmounted(() => {
         ><el-input v-model="name" maxlength="100" /></el-form-item></el-form
     ><el-checkbox v-model="reviewed"
       >已审阅全部用例，并核对期望、变量、文件和 Agent 上下文适配</el-checkbox
-    ><el-alert v-if="error" :title="error" type="error" :closable="false" show-icon />
+    ><StatusNotice v-if="error" :title="error" type="error" />
     <div class="action-row prep-space">
       <el-button type="primary" :disabled="state.role === 'viewer' || generating" @click="save"
         >保存草稿，继续发布</el-button

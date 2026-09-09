@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EmptyState from '../../components/EmptyState.vue'
+import StatusNotice from '../../components/StatusNotice.vue'
 import ValueView from '../../components/ValueView.vue'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -254,10 +256,12 @@ function generateSuggestions() {
             :label="`${item.name} · ${item.config.targetVersion} · ${runStatusLabels[item.status]}`" /></el-select
       ></label>
     </section>
-    <section v-if="!run" class="panel preview-empty">
-      <h2>404 · 运行不存在</h2>
-      <p>请选择有效的运行；重置体验数据可能移除了历史记录。</p>
-    </section>
+    <EmptyState
+      v-if="!run"
+      title="找不到测评任务"
+      description="请从任务列表重新选择报告；重置体验数据可能移除了原记录。"
+      ><RouterLink class="ag-button" to="/preview/runs">选择测评任务</RouterLink></EmptyState
+    >
     <template v-else>
       <section class="panel">
         <div class="panel-title">
@@ -271,12 +275,11 @@ function generateSuggestions() {
           {{ records.filter((item) => item.result.outcome === 'error').length }} 条；待复核
           {{ records.filter((item) => item.result.outcome === 'review').length }} 条。
         </p>
-        <p v-if="run.status !== 'completed'" class="notice warning">
+        <StatusNotice type="warning" v-if="run.status !== 'completed'">
           这是当前部分结果，不是完成后的完整分布。运行继续时此页自动更新。
-        </p>
+        </StatusNotice>
         <p class="muted">
-          以下按观测到的错误类型与标签作本地分组，属于 Mock
-          聚类体验；没有调用语义聚类服务，也不声称已找到根因。
+          问题按错误类型与标签分组。请选择一组查看证据，再核对可能原因；分组结果本身不是根因结论。
         </p>
         <div class="preview-grid cluster-grid">
           <button
@@ -309,7 +312,11 @@ function generateSuggestions() {
           行 = 预期 Skill；列 = 实际 Skill。{{ routed.length }} 条有路由证据，排除
           {{ records.length - routed.length }} 条 NA / error 或缺失路由记录。点击格子筛选样本。
         </p>
-        <p v-if="!routed.length" class="preview-empty">暂无足够的实际路由数据，不生成虚假矩阵。</p>
+        <EmptyState
+          v-if="!routed.length"
+          title="缺少路由记录"
+          description="当前记录不足以显示路由分布。请查看下方样本证据，或选择其他已完成任务。"
+        ></EmptyState>
         <div v-else class="table-scroll" tabindex="0" aria-label="路由混淆矩阵，可横向滚动">
           <table class="preview-table data-table matrix">
             <thead>
@@ -337,10 +344,10 @@ function generateSuggestions() {
       </section>
       <section id="analysis-evidence" class="panel">
         <h2>筛选发生记录 → 输出与 Trace</h2>
-        <p v-if="group || expected || actual" class="notice">
+        <StatusNotice v-if="group || expected || actual">
           当前：{{ groupLabels[group as IssueGroup] ?? '全部类型'
           }}<template v-if="expected"> · 预期 {{ expected }} → 实际 {{ actual }}</template>
-        </p>
+        </StatusNotice>
         <div class="action-row evidence-filters">
           <label>搜索用例<el-input v-model="search" clearable /></label
           ><label
@@ -353,9 +360,11 @@ function generateSuggestions() {
           ><el-button @click="clearFilters">清除筛选</el-button>
         </div>
         <p class="muted">{{ filtered.length }} 条匹配发生记录，筛选已保存在 URL。</p>
-        <p v-if="!filtered.length" class="preview-empty">
-          没有匹配的样本；可清除筛选或等待运行返回结果。
-        </p>
+        <EmptyState
+          v-if="!filtered.length"
+          title="没有匹配的样本"
+          description="请清除筛选查看其他样本；任务进行中时，结果会继续更新。"
+        ></EmptyState>
         <article v-for="item in filtered" :key="item.sample.id" class="evidence-row">
           <div class="action-row">
             <strong>{{ item.sample.id }}</strong
@@ -393,9 +402,11 @@ function generateSuggestions() {
           展示同一资产的建议；每条保留原运行与固定版本。采纳、外部修改、关联版本、验证结果分别记录。
         </p>
         <p v-if="state.role === 'viewer'">只读角色无权生成或修改建议。</p>
-        <p v-if="!suggestions.length" class="preview-empty">
-          暂无建议。可以从当前发生记录生成，或直接查看证据自行处理。
-        </p>
+        <EmptyState
+          v-if="!suggestions.length"
+          title="还没有问题建议"
+          description="可从当前问题记录生成建议，或先查看样本证据核对原因。"
+        ></EmptyState>
         <div class="suggestion-list">
           <button
             v-for="suggestion in suggestions"
@@ -422,9 +433,9 @@ function generateSuggestions() {
           </button>
         </div>
       </section>
-      <p v-if="route.query.suggestion && !requestedSuggestion" class="notice error" role="alert">
+      <StatusNotice type="error" v-if="route.query.suggestion && !requestedSuggestion">
         404 · 建议不存在，请选择有效建议。
-      </p>
+      </StatusNotice>
       <AnalysisSuggestion
         v-if="selectedSuggestion"
         :key="selectedSuggestion.id"
@@ -432,10 +443,12 @@ function generateSuggestions() {
       />
     </template>
   </template>
-  <section v-else class="panel preview-empty">
-    <h2>404 · 分析视图不存在</h2>
-    <p>请选择运行证据或静态定义风险。</p>
-  </section>
+  <EmptyState
+    v-else
+    title="找不到分析视图"
+    description="请从测评任务查看问题证据，或从测评对象检查定义风险。"
+    ><RouterLink class="ag-button" to="/preview/runs">查看测评任务</RouterLink></EmptyState
+  >
 </template>
 
 <style scoped>

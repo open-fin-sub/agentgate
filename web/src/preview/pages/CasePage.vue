@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EmptyState from '../../components/EmptyState.vue'
+import StatusNotice from '../../components/StatusNotice.vue'
 import TokenUsage from '../../components/TokenUsage.vue'
 import ValueView from '../../components/ValueView.vue'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
@@ -347,10 +349,12 @@ onUnmounted(() => window.removeEventListener('keydown', keyboard))
 </script>
 <template>
   <RouterLink class="back-link" :to="reportLink">← 返回报告（保留筛选）</RouterLink>
-  <section v-if="!run || !testCase" class="panel preview-empty" role="alert">
-    <h1>用例不存在或无权访问</h1>
-    <p>未找到该运行中的固定用例 {{ String(route.params.caseId) }}，请从原报告重新进入。</p>
-  </section>
+  <EmptyState
+    v-if="!run || !testCase"
+    title="找不到用例"
+    description="请从原报告重新选择用例；重置体验数据可能移除了原记录。"
+    ><RouterLink class="ag-button" to="/preview/runs">查看测评任务</RouterLink></EmptyState
+  >
   <template v-else>
     <div class="page-intro">
       <div>
@@ -374,10 +378,10 @@ onUnmounted(() => window.removeEventListener('keydown', keyboard))
       </div>
       <span class="muted small">沿用报告筛选 · ← / → 切换，R 定位复核，Ctrl / ⌘ + Enter 保存</span>
     </div>
-    <div v-if="readonly" class="notice warning">
+    <StatusNotice type="warning" v-if="readonly">
       当前为只读角色，无权保存人工复核、修订用例、加入回归集或复跑。
-    </div>
-    <div v-if="feedback" class="notice" role="status">{{ feedback }}</div>
+    </StatusNotice>
+    <StatusNotice v-if="feedback">{{ feedback }}</StatusNotice>
     <section class="panel">
       <h2>机器原始判定</h2>
       <template v-if="result"
@@ -386,18 +390,24 @@ onUnmounted(() => window.removeEventListener('keydown', keyboard))
           ><strong>{{ scoreText(result.score) }}</strong
           ><span>{{ result.reason }}</span>
         </div>
-<TokenUsage :input="result.inputTokens" :output="result.outputTokens" :total="result.tokens" :latency="result.latency" scope="本条用例" />
-        <p v-if="result.outcome === 'NA' || result.outcome === 'error'" class="notice warning">
+        <TokenUsage
+          :input="result.inputTokens"
+          :output="result.outputTokens"
+          :total="result.tokens"
+          :latency="result.latency"
+          scope="本条用例"
+        />
+        <StatusNotice type="warning" v-if="result.outcome === 'NA' || result.outcome === 'error'">
           {{
             result.outcome === 'NA'
               ? '不适用：该标准缺少适用条件。'
               : '执行错误：没有可用于质量评分的有效执行结果。'
           }}不计入平均分与通过率分母，不能按零分解释。
-        </p></template
+        </StatusNotice></template
       >
-      <p v-else class="notice warning">
+      <StatusNotice type="warning" v-else>
         该用例尚未返回结果。原始输入可查看，当前不能填写无证据的人工评分。
-      </p>
+      </StatusNotice>
       <div v-if="latestReview" class="review-summary">
         <strong>最新人工复核（独立记录）</strong>
         <p>
@@ -438,16 +448,16 @@ onUnmounted(() => window.removeEventListener('keydown', keyboard))
         <h2>实际输出</h2>
         <ValueView :value="result?.output || '暂无有效输出'" />
         <p class="case-space">实际 Skill：{{ result?.actualSkill || '缺失' }}</p>
-        <p
+        <StatusNotice
+          type="warning"
           v-if="
             result?.actualSkill &&
             testCase.expectedSkill &&
             result.actualSkill !== testCase.expectedSkill
           "
-          class="notice warning"
         >
           实际 Skill 与期望不一致，请结合路由和工具证据定位原因。
-        </p>
+        </StatusNotice>
       </section>
     </div>
     <section v-if="testCase.turns.length" class="panel">
@@ -482,18 +492,18 @@ onUnmounted(() => window.removeEventListener('keydown', keyboard))
           >{{ check.evaluatorId }} v{{ check.evaluatorVersion }}</RouterLink
         ><span class="muted small"> · 维度 {{ check.dimension || '未提供' }}</span>
       </article>
-      <p v-if="absentChecks.length" class="notice warning">
+      <StatusNotice type="warning" v-if="absentChecks.length">
         检查缺失：{{
           absentChecks.map((item) => `${item.id} v${item.version}`).join('、')
         }}。可能尚未执行、因前置失败短路或证据未返回；缺少原因时无法确定，不补成通过或零分。
-      </p>
+      </StatusNotice>
       <p v-if="!result?.checks.length" class="muted">尚无评估器检查证据。</p>
     </section>
     <section class="panel">
       <h2>执行 Trace</h2>
-      <p v-if="!result?.trace.length" class="notice warning">
+      <StatusNotice type="warning" v-if="!result?.trace.length">
         Trace 缺失或尚未返回。只能依据现有输入、输出和检查定位，无法确认具体调用或失败轮次。
-      </p>
+      </StatusNotice>
       <details
         v-for="step in result?.trace ?? []"
         :key="step.id"
@@ -505,7 +515,7 @@ onUnmounted(() => window.removeEventListener('keydown', keyboard))
           {{ step.title }} · {{ step.duration == null ? '耗时缺失' : `${step.duration} ms`
           }}{{ step.error ? ' · 有错误' : '' }}
         </summary>
-        <p v-if="step.error" class="notice error">{{ step.error }}</p>
+        <StatusNotice type="error" v-if="step.error">{{ step.error }}</StatusNotice>
         <p><strong>输入</strong></p>
         <ValueView :value="step.input || '输入缺失'" />
         <p class="case-space"><strong>输出</strong></p>

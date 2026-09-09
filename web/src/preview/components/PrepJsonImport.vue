@@ -75,16 +75,18 @@ function parse() {
         ? value.cases
         : null
     if (!Array.isArray(rows) || !rows.length)
-      throw new Error('JSON 必须为非空数组或包含 cases 数组的对象')
+      throw new Error('文件中没有可导入的用例，请下载模板并至少填写一条用例。')
     rows.forEach((row, index) => {
       if (!row || typeof row !== 'object' || Array.isArray(row))
-        errors.value.push(`第 ${index + 1} 行：必须是对象`)
+        errors.value.push(`第 ${index + 1} 行：缺少用例字段，请按模板填写问题和期望。`)
     })
     if (errors.value.length) return
     parsed.value = rows as Record<string, unknown>[]
     ready.value = true
   } catch (error) {
-    errors.value = [`JSON 解析失败：${String(error)}`]
+    errors.value = [error instanceof SyntaxError
+      ? '文件格式无法识别，请下载模板整理内容后重新上传。'
+      : error instanceof Error ? error.message : '无法读取用例，请重新上传文件。']
   }
 }
 function validate() {
@@ -105,17 +107,17 @@ function validate() {
               (turn.expected !== undefined && typeof turn.expected !== 'string'),
           )
         )
-          errors.value.push(`第 ${index + 1} 行：turns 必须是 {input, expected} 数组`)
+          errors.value.push(`第 ${index + 1} 行：每轮对话都需要输入文本，可选填写期望文本，请参照模板修正。`)
         else
           item.turns = value.map((turn) => ({ input: turn.input, expected: turn.expected ?? '' }))
       } else if (key === 'tags' || key === 'files') {
         if (!Array.isArray(value) || value.some((entry) => typeof entry !== 'string'))
-          errors.value.push(`第 ${index + 1} 行：${key} 必须是字符串数组`)
+          errors.value.push(`第 ${index + 1} 行：${labels[key]}必须是文本列表，请参照模板修正。`)
         else item[key] = value
       } else if (key === 'variables')
         item.variables = typeof value === 'string' ? value : JSON.stringify(value)
       else if (typeof value !== 'string')
-        errors.value.push(`第 ${index + 1} 行：${key} 必须是字符串`)
+        errors.value.push(`第 ${index + 1} 行：${labels[key]}必须填写文本。`)
       else Object.assign(item, { [key]: value })
     }
     item.sources = ['JSON 导入']
@@ -157,18 +159,23 @@ function exportErrors() {
   <section class="panel">
     <h2>导入用例</h2>
     <p class="muted">选择文件后核对字段与错误，再确认导入。支持 .json 文件，最大 5 MB。</p>
-    <el-upload :auto-upload="false" :show-file-list="false" accept=".json,application/json" :on-change="loadFile">
+    <el-upload
+      :auto-upload="false"
+      :show-file-list="false"
+      accept=".json,application/json"
+      :on-change="loadFile"
+    >
       <el-button type="primary">选择用例文件</el-button>
     </el-upload>
     <FormSection title="高级：粘贴文件内容" optional>
       <el-input
-      v-model="raw"
-      aria-label="JSON 导入内容"
-      type="textarea"
-      :rows="8"
-      placeholder="粘贴 JSON 数组，或包含 cases 的对象"
-      @input="ready = false"
-    />
+        v-model="raw"
+        aria-label="JSON 导入内容"
+        type="textarea"
+        :rows="8"
+        placeholder="粘贴 JSON 数组，或包含 cases 的对象"
+        @input="ready = false"
+      />
       <el-button @click="parse">读取粘贴内容</el-button>
     </FormSection>
     <div class="action-row">

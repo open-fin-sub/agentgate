@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StatusNotice from '../../components/StatusNotice.vue'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePreview, clone, uid } from '../workspace'
@@ -297,13 +298,13 @@ function startRegression() {
       {{ decisionLabels[suggestion.decision] }}
     </p>
     <h2>{{ suggestion.title }}</h2>
-    <p class="notice">{{ verification }}</p>
+    <StatusNotice>{{ verification }}</StatusNotice>
     <p><strong>来源事实：</strong>{{ suggestion.evidence }}</p>
     <p><strong>待验证假设：</strong>{{ suggestion.hypothesis }}</p>
     <p><strong>建议动作：</strong>{{ suggestion.action }}</p>
-    <p v-if="!sourceRun" role="alert" class="notice error">
+    <StatusNotice type="error" v-if="!sourceRun">
       404 · 来源运行不存在，无法关联证据或创建回归。
-    </p>
+    </StatusNotice>
     <template v-else
       ><p>
         <RouterLink :to="`/preview/runs/${sourceRun.id}`">来源运行 {{ sourceRun.name }}</RouterLink>
@@ -385,14 +386,15 @@ function startRegression() {
               :label="`v${version.version} · ${version.note}`"
               :disabled="version.version === sourceRun.config.datasetVersion" /></el-select
         ></label>
-        <p class="notice warning">
+        <StatusNotice type="warning">
           旧输入与新输入只能描述性比较；复验用于核对修订后的期望，不把差值归因于 Agent 改善。
-        </p>
+        </StatusNotice>
       </div>
       <details>
         <summary>本次回归的 Mock 阈值</summary>
         <p>
-          平均分 ≥ 0.8；适用 Case 通过率 ≥ 80%；执行错误率 ≤ 0%；平均耗时 ≤ 3000 ms；平均单例 Token 用量 ≤ 2000。完整结果及模拟统计场景在对比报告逐项展示。
+          平均分 ≥ 0.8；适用 Case 通过率 ≥ 80%；执行错误率 ≤ 0%；平均耗时 ≤ 3000 ms；平均单例 Token
+          用量 ≤ 2000。完整结果及模拟统计场景在对比报告逐项展示。
         </p>
       </details>
       <el-button
@@ -406,7 +408,7 @@ function startRegression() {
         }}</el-button
       >
     </template>
-    <p v-if="error" role="alert" class="notice error">{{ error }}</p>
+    <StatusNotice type="error" v-if="error">{{ error }}</StatusNotice>
     <details v-if="allAttempts.length || relatedAudit.length">
       <summary>回归历史与操作留痕</summary>
       <ul>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EmptyState from '../components/EmptyState.vue'
+import StatusNotice from '../components/StatusNotice.vue'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { capabilities } from '../data/capabilities'
@@ -38,7 +40,7 @@ function exportMatrix() {
           {
             title: 'AgentGate 需求与接入差距',
             generatedAt: new Date().toISOString(),
-            notice: '拟议接口尚未实现；Mock入口仅体验，不代表服务端已交付',
+            notice: '已核对后端基线 9686d59。各条目分别列出现有接口与联合接入缺口；Mock 入口仅用于模拟体验。',
             filters: { search: search.value, group: group.value, status: status.value },
             requirements: visible.value,
           },
@@ -64,11 +66,9 @@ function exportMatrix() {
     </div>
     <el-button @click="exportMatrix">导出当前清单</el-button>
   </div>
-  <el-alert
-    title="Mock 用于评审完整使用流程。表内拟议接口均需后端确认与实现，不能作为现有 API 调用。"
+  <StatusNotice
+    title="按条目查看已具备能力与接入缺口。体验入口使用模拟数据；真实入口连接当前服务。"
     type="info"
-    :closable="false"
-    show-icon
   />
   <div class="cap-stats">
     <div>
@@ -163,7 +163,11 @@ function exportMatrix() {
         </tbody>
       </table>
     </div>
-    <el-empty v-if="!visible.length" description="没有匹配的需求，请调整筛选。" />
+    <EmptyState
+      v-if="!visible.length"
+      title="没有匹配的需求"
+      description="调整需求关键词或能力状态，查看相关使用场景与接入要求。"
+    ></EmptyState>
   </section>
   <el-drawer
     :model-value="!!selected"
@@ -181,7 +185,7 @@ function exportMatrix() {
       <p>{{ selected.missing }}</p>
       <h3>影响谁、怎样使用</h3>
       <p>{{ selected.impact }}</p>
-      <h3>拟议接口与字段 · 尚未实现</h3>
+      <h3>现有接口与待接入约定</h3>
       <pre class="cap-contract">{{ selected.proposal }}</pre>
       <h3>转为真实能力的验收条件</h3>
       <p>{{ selected.acceptance }}</p>

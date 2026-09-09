@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import EmptyState from '../components/EmptyState.vue'
+import StatusNotice from '../components/StatusNotice.vue'
+import { userError } from '../apiErrors'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api, ApiError, type Report } from '../api/client'
@@ -124,7 +127,7 @@ async function loadRuns() {
   try {
     runs.value = await runsApi.list('completed', 200, listController.signal)
   } catch (e) {
-    if (!listController.signal.aborted) listError.value = String(e)
+    if (!listController.signal.aborted) listError.value = userError(e)
   }
 }
 async function load() {
@@ -158,7 +161,7 @@ async function load() {
   } catch (e) {
     if (!signal.aborted) {
       conflict.value = e instanceof ApiError && e.status === 409
-      error.value = String(e)
+      error.value = userError(e)
     }
   } finally {
     if (!signal.aborted) loading.value = false
@@ -215,10 +218,10 @@ onUnmounted(() => {
   <form class="panel" @submit.prevent="submit">
     <h2>选择已有运行</h2>
     <p class="muted">列表展示最近最多 200 个已完成运行；也可从历史报告“作为基线对比”进入。</p>
-    <div v-if="listError" class="notice error" role="alert">
+    <StatusNotice type="error" v-if="listError">
       运行列表读取失败：{{ listError }}
       <button type="button" class="text-button" @click="loadRuns">重试列表</button>
-    </div>
+    </StatusNotice>
     <div class="split-grid">
       <label class="field"
         >基线运行 A<select v-model="baseline" aria-label="基线运行 A" required>
@@ -260,7 +263,7 @@ onUnmounted(() => {
       {{ loading ? '正在比较…' : '比较结果' }}
     </button>
   </form>
-  <div v-if="error" class="notice error" role="alert">
+  <StatusNotice type="error" v-if="error">
     <strong>{{ conflict ? '这两次运行不满足比较条件' : '暂时无法读取对比' }}</strong>
     <p>
       {{
@@ -274,13 +277,13 @@ onUnmounted(() => {
       {{ error }}
     </details>
     <button class="text-button" @click="load">重试当前对比</button>
-  </div>
+  </StatusNotice>
   <div v-if="loading" class="skeleton">正在核对两次运行并读取结果…</div>
-  <div v-if="selectionDirty" class="notice" role="status">
+  <StatusNotice v-if="selectionDirty">
     运行选择已更改，请点击“比较结果”更新。上一次组合的结果已隐藏。
-  </div>
+  </StatusNotice>
   <template v-if="result && !selectionDirty && baselineReport && candidateReport">
-    <div class="notice">
+    <StatusNotice>
       <p>已核对：同一业务对象、输入内容与用例顺序、主评分标准、指标方案和判定规则。</p>
       <p>
         未核对：并发、超时、重试、调用配置、凭据和模型环境。本页不提供统计显著性或受控实验的上线结论。
@@ -290,7 +293,7 @@ onUnmounted(() => {
           >{{ baselineReport.run.manifest.dataset.content_sha256.slice(0, 12) }}…</code
         >
       </p>
-    </div>
+    </StatusNotice>
     <div class="split-grid">
       <section v-for="(report, index) in reports" :key="report.run.id" class="panel">
         <h2>
@@ -318,15 +321,15 @@ onUnmounted(() => {
         总体分数变化：<strong>{{ delta(result.overall_score_delta) }}</strong> ·
         差值为候选减基线，评分范围 0～1。
       </p>
-      <p
+      <StatusNotice
+        type="warning"
         v-if="
           baselineReport.run.manifest.dataset.version !==
           candidateReport.run.manifest.dataset.version
         "
-        class="notice warning"
       >
-        测评集版本号不同；本次由后端确认内容与有序用例相同后返回差异，仍不代表完整受控实验。
-      </p>
+        两次使用的测评集版本号不同，但输入内容和用例顺序相同。请同时核对执行设置，避免将其他差异归因于对象版本。
+      </StatusNotice>
       <p class="muted small metric-scroll-hint">
         窄屏可横向滑动查看完整指标；键盘可聚焦表格区域后使用方向键。
       </p>
@@ -457,7 +460,11 @@ onUnmounted(() => {
           </div>
         </details>
       </article>
-      <p v-if="!filtered.length" class="empty-state">当前条件没有匹配的结果。</p>
+      <EmptyState
+        v-if="!filtered.length"
+        title="没有匹配的结果"
+        description="调整用例或变化类型筛选，查看其他结果。"
+      ></EmptyState>
       <div v-if="caseGroups.length > 10" class="action-row">
         <button class="ag-button" :disabled="page === 1" @click="page--">上一页</button
         ><span>第 {{ page }} / {{ Math.ceil(caseGroups.length / 10) }} 页 · 按完整用例分页</span
@@ -467,9 +474,11 @@ onUnmounted(() => {
       </div>
     </section>
   </template>
-  <div v-else-if="!loading && !error" class="empty-state">
-    选择基线和候选运行，查看真实指标与用例变化。
-  </div>
+  <EmptyState
+    v-else-if="!loading && !error"
+    title="选择两份报告开始对比"
+    description="先在上方选择基线和候选任务，再点击对比，核对指标与用例变化。"
+  ></EmptyState>
 </template>
 
 <style scoped>

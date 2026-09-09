@@ -78,7 +78,7 @@ const active = (path: string) =>
       </section>
     </nav>
     <div v-if="!collapsed" class="nav-bottom">
-      {{ preview ? 'Mock 体验 · 本地浏览器数据' : '真实接入 · 当前后端能力' }}
+      {{ preview ? '模拟体验工作区' : '测评工作区' }}
     </div>
   </aside>
 </template>

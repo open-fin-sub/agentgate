@@ -58,10 +58,11 @@ function field(value: unknown, path: string): unknown {
 }
 
 export function parseRule(text: string): JsonObject {
-  const config: unknown = JSON.parse(text)
-  if (!object(config)) return fail('规则必须是 JSON 对象')
+  let config: unknown
+  try { config = JSON.parse(text) } catch { return fail('无法读取评分规则，请重新选择规则模板，或修正高级内容。') }
+  if (!object(config)) return fail('规则缺少字段配置，请重新选择规则模板。')
   if (!['json', 'regex', 'field', 'tool'].includes(String(config.type)))
-    fail('规则 type 仅支持 json、regex、field、tool')
+    fail('请选择字段、格式、文本匹配或工具参数规则。')
   const common = config.type === 'regex' ? ['type'] : ['type', 'applicableField']
   const supported =
     config.type === 'regex'
@@ -72,38 +73,39 @@ export function parseRule(text: string): JsonObject {
   const unknown = Object.keys(config).filter((key) => ![...common, ...supported].includes(key))
   if (unknown.length) fail(`未支持的规则字段：${unknown.join(', ')}；请使用模板内字段`)
   if (config.applicableField !== undefined && typeof config.applicableField !== 'string')
-    fail('applicableField 必须是字段路径字符串')
+    fail('适用字段请填写字段路径文本。')
   if (config.type === 'regex') {
     if (typeof config.pattern !== 'string' || !config.pattern || config.pattern.length > 300)
-      fail('正则 pattern 必须是 1～300 字符的字符串')
+      fail('文本匹配表达式需填写 1～300 个字符。')
     if (config.flags !== undefined && typeof config.flags !== 'string')
-      fail('正则 flags 必须是字符串')
+      fail('匹配选项需填写文本，请使用规则模板内的选项。')
     if (/\([^)]*[+*][^)]*\)[+*{]/.test(String(config.pattern)))
       fail('体验正则不支持嵌套重复量词，请简化表达式')
-    new RegExp(String(config.pattern), String(config.flags ?? 'u'))
+    try { new RegExp(String(config.pattern), String(config.flags ?? 'u')) }
+    catch { fail('文本匹配表达式或匹配选项无效，请检查括号、转义与选项后重试。') }
   }
   if (config.type === 'field') {
-    if (typeof config.path !== 'string' || !config.path.trim()) fail('字段规则必须填写 path')
+    if (typeof config.path !== 'string' || !config.path.trim()) fail('请填写要检查的字段路径。')
     if (!['equals', 'contains', 'exists', 'gte', 'lte'].includes(String(config.operator)))
-      fail('operator 仅支持 equals、contains、exists、gte、lte')
-    if (config.operator !== 'exists' && config.value === undefined) fail('该字段规则必须填写 value')
+      fail('请选择等于、包含、存在、不小于或不大于作为比较方式。')
+    if (config.operator !== 'exists' && config.value === undefined) fail('请填写规则的期望值。')
     if (['gte', 'lte'].includes(String(config.operator)) && typeof config.value !== 'number')
-      fail('范围比较 value 必须是数字')
+      fail('范围比较的期望值必须是数字。')
   }
   if (config.type === 'tool' && (typeof config.tool !== 'string' || !config.tool.trim()))
-    fail('工具规则必须填写 tool 名称')
+    fail('请填写要检查的工具名称。')
   if (
     config.required !== undefined &&
     (!Array.isArray(config.required) || config.required.some((name) => typeof name !== 'string'))
   )
-    fail('required 必须是字符串数组')
+    fail('必填字段需逐项填写名称，请使用字段编辑器或导入模板。')
   if (config.properties !== undefined) {
-    if (!object(config.properties)) fail('properties 必须是对象')
+    if (!object(config.properties)) fail('字段配置格式无效，请使用字段编辑器重新填写。')
     for (const [name, schema] of Object.entries(config.properties as JsonObject)) {
-      if (!object(schema)) fail(`${name} 的配置必须是对象`)
+      if (!object(schema)) fail(`${name} 缺少字段配置，请核对类型与取值限制。`)
       const entry = schema as JsonObject
       if (Object.keys(entry).some((key) => !['type', 'enum', 'minimum', 'maximum'].includes(key)))
-        fail(`${name} 仅支持 type、enum、minimum、maximum`)
+        fail(`${name} 包含无法识别的限制，请仅设置类型、允许值、最小值和最大值。`)
       if (
         entry.type !== undefined &&
         !['string', 'number', 'integer', 'boolean', 'object', 'array', 'null'].includes(
@@ -112,7 +114,7 @@ export function parseRule(text: string): JsonObject {
       )
         fail(`${name} 的字段类型不支持`)
       if (entry.enum !== undefined && (!Array.isArray(entry.enum) || !entry.enum.length))
-        fail(`${name}.enum 必须为非空数组`)
+        fail(`${name} 的允许值列表至少需要一项。`)
       if (
         ['minimum', 'maximum'].some(
           (key) => entry[key] !== undefined && typeof entry[key] !== 'number',
@@ -142,7 +144,7 @@ export function evaluatorErrors(
     try {
       parseRule(version.rule)
     } catch (error) {
-      errors.push(`规则无效：${String(error)}`)
+      errors.push(error instanceof Error ? error.message : '规则校验未完成，请核对配置后重试。')
     }
   }
   if (version.kind === 'llm') {
@@ -307,7 +309,7 @@ export function evaluateSample(
     try {
       output = JSON.parse(sample.output)
     } catch {
-      return result(name, 'fail', '输出不是有效 JSON')
+      return result(name, 'fail', '输出无法按字段读取，请核对输出格式。')
     }
     if (config.applicableField && field(output, String(config.applicableField)) === undefined)
       return result(name, 'NA', `缺少适用条件字段 ${config.applicableField}`)
@@ -326,10 +328,10 @@ export function evaluateSample(
       return result(
         name,
         passed ? 'pass' : 'fail',
-        `${config.path} ${config.operator} 检查${passed ? '通过' : '失败'}`,
+        `字段 ${config.path} 的${({ equals: '等于', contains: '包含', exists: '存在', gte: '不小于', lte: '不大于' } as Record<string, string>)[String(config.operator)]}检查${passed ? '通过' : '失败'}`,
       )
     }
-    if (!object(output)) return result(name, 'fail', '输出应为 JSON 对象')
+    if (!object(output)) return result(name, 'fail', '输出应包含字段名与值，请核对输出格式。')
     if (config.type === 'tool') {
       if (output.tool !== config.tool)
         return result(
@@ -337,7 +339,7 @@ export function evaluateSample(
           'fail',
           `期望工具 ${config.tool}，实际 ${String(output.tool ?? '缺失')}`,
         )
-      if (!object(output.arguments)) return result(name, 'fail', '工具 arguments 必须是 JSON 对象')
+      if (!object(output.arguments)) return result(name, 'fail', '工具调用缺少有效参数，请核对参数字段。')
       output = output.arguments
     }
     const issues = checkObject(output as JsonObject, config)

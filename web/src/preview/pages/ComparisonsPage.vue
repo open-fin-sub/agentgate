@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EmptyState from '../../components/EmptyState.vue'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePreview } from '../workspace'
@@ -79,10 +80,11 @@ function created(id: string) {
       ></label>
     </div>
     <p class="muted">{{ rows.length }} 条对比；新实验与已有结果比较分别标明来源。</p>
-    <div v-if="!rows.length" class="preview-empty">
-      <h2>没有匹配的对比</h2>
-      <p>调整筛选，或从已有运行生成第一条对比。</p>
-    </div>
+    <EmptyState
+      v-if="!rows.length"
+      title="没有匹配的对比"
+      description="调整筛选，或选择已有测评结果创建对比。"
+    ></EmptyState>
     <article v-for="row in rows" :key="row.comparison.id" class="comparison-row">
       <div>
         <h2>
@@ -92,9 +94,7 @@ function created(id: string) {
         </h2>
         <p>
           {{ row.baseline?.target.name ?? '基线记录不存在' }} ·
-          {{
-            row.comparison.mode === 'controlled' ? '共同配置新实验' : '已有结果比较 / 事后规则'
-          }}
+          {{ row.comparison.mode === 'controlled' ? '共同配置新实验' : '已有结果比较 / 事后规则' }}
           · {{ new Date(row.comparison.createdAt).toLocaleString() }}
         </p>
       </div>

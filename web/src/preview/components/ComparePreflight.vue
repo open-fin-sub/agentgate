@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StatusNotice from '../../components/StatusNotice.vue'
 import JsonFallback from '../../components/JsonFallback.vue'
 import { computed } from 'vue'
 import type { Run } from '../types'
@@ -51,14 +52,14 @@ function summary(label: string, run: Run, raw: string) {
 <template>
   <section class="panel">
     <h2>控制变量检查</h2>
-    <p :class="['notice', { warning: !result.controlled }]">
+    <StatusNotice :type="result.controlled ? 'info' : 'warning'">
       {{
         result.controlled
           ? '配置与输入快照一致，可进行受控样本比较。'
           : '控制变量存在差异：仅作描述性比较，不能形成受控发布结论。'
       }}
       同一资产允许目标版本不同。人工确认配对不会改变此检查。
-    </p>
+    </StatusNotice>
     <p>
       基线 {{ baseline.config.targetVersion }} → 候选
       {{ candidate.config.targetVersion }}；各自保留执行时快照。

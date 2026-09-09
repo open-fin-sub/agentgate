@@ -105,7 +105,7 @@ test('real forward and reverse lineage preserve exact content and reach reports'
   await evaluator.getByRole('link', { name: '查看此版本关联任务', exact: true }).click()
   await expect(page).toHaveURL(/kind=evaluator/)
   expect(new URL(page.url()).searchParams.get('hash')).toMatch(/^[a-f0-9]{64}$/)
-  await expect(page.getByText(/不能据此认定已显示全部关联任务/)).toBeVisible()
+  await expect(page.getByText(/结果可能不是全部；可扩大查询上限/)).toBeVisible()
   await expect(page.getByRole('link', { name: '查看任务与报告' }).first()).toBeVisible()
   await page.goto(`/lineage?kind=dataset&id=loan-risk-policy&version=1`)
   await expect(page.getByRole('heading', { name: '关联测评任务', exact: true })).toBeVisible()

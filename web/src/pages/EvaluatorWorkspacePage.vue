@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import EmptyState from '../components/EmptyState.vue'
+import StatusNotice from '../components/StatusNotice.vue'
+import { userError } from '../apiErrors'
 import { catalogLabel } from '../catalogLabels'
 import { computed, onMounted, ref } from 'vue'
 import { api, type EvaluatorOption } from '../api/client'
@@ -25,7 +28,7 @@ async function load() {
   try {
     rows.value = await api.evaluators()
   } catch (e) {
-    error.value = String(e)
+    error.value = userError(e)
   } finally {
     loading.value = false
   }
@@ -40,13 +43,9 @@ onMounted(load)
     </div>
     <RouterLink class="ag-button primary" to="/runs/new">选择标准并测评</RouterLink>
   </div>
-  <div class="notice">
-    当前为服务提供的只读目录，提交测评时会显式选择标准。环境配置 LLM Judge
-    后才会出现相应标准；新建、编辑、版本发布和试评尚未开放。
-  </div>
-  <div v-if="error" role="alert" class="notice error">
+  <StatusNotice type="error" v-if="error">
     {{ error }} <button class="text-button" @click="load">重试</button>
-  </div>
+  </StatusNotice>
   <div class="toolbar">
     <label class="field"
       >查找评分标准<input v-model="query" placeholder="名称、指标或质量维度"
@@ -74,21 +73,26 @@ onMounted(load)
         实现 {{ item.implementation_id }} · {{ item.implementation_version }}
       </p>
     </details>
-    <p v-if="item.kind === 'llm_judge'" class="notice">
-      此标准会通过已配置的模型进行评分；调用记录在报告中查看，凭据和模型配置由服务端管理。
-    </p>
+    <StatusNotice v-if="item.kind === 'llm_judge'">
+      此标准由模型评分。完成测评后，可在用例报告中查看评分理由与调用记录。
+    </StatusNotice>
     <RouterLink
       :to="{
         path: '/lineage',
-        query: { kind: 'evaluator', id: item.id, version: item.version, returnTo: route.fullPath },
+        query: {
+          kind: 'evaluator',
+          id: item.id,
+          version: item.version,
+          hash: item.content_sha256,
+          returnTo: route.fullPath,
+        },
       }"
       >查看此版本的关联任务</RouterLink
     >
-    <p class="muted small">
-      目录未返回内容指纹；同版本存在多份快照时，请从任务报告按固定指纹查询。
-    </p>
   </div>
-  <div v-if="!loading && !visible.length && !error" class="empty-state">
-    没有匹配的评估器，请调整搜索条件。
-  </div>
+  <EmptyState
+    v-if="!loading && !visible.length && !error"
+    title="没有匹配的评估器"
+    description="请调整搜索词；仍找不到所需标准时，请联系管理员确认可用评分标准。"
+  ></EmptyState>
 </template>

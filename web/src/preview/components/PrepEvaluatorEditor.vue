@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StatusNotice from '../../components/StatusNotice.vue'
 import { computed } from 'vue'
 import type { EvaluatorVersion } from '../types'
 import { clone, usePreview } from '../workspace'
@@ -77,8 +78,11 @@ function resource(id: string) {
           >{{ label }}</el-button
         >
       </div>
-      <PrepRuleBuilder :model-value="value.rule" :readonly="readonly" @update:model-value="set('rule',$event)" /></template
-    >
+      <PrepRuleBuilder
+        :model-value="value.rule"
+        :readonly="readonly"
+        @update:model-value="set('rule', $event)"
+    /></template>
     <template v-else-if="value.kind === 'llm'"
       ><el-form-item label="评分 Prompt"
         ><el-input
@@ -135,15 +139,16 @@ function resource(id: string) {
       <el-button v-if="!readonly" @click="addChild">添加子评估器</el-button>
       <p class="muted">权重合计 {{ weights.toFixed(2) }}；执行顺序同显示顺序。</p>
       <FormSection title="条件终止" optional>
-      <el-form-item label="遇到失败后的处理方式"
-        ><el-switch
-          :model-value="value.shortCircuit"
-          active-text="前序 fail / error 时跳过后续项"
-          @update:model-value="set('shortCircuit', Boolean($event))"
-      /></el-form-item>
-      <p class="notice">
-        条件终止为未来 Mock 交互样例。当前后端已明确推迟短路执行；真实复合评分不能据此跳过子项。
-      </p></FormSection></template
+        <el-form-item label="遇到失败后的处理方式"
+          ><el-switch
+            :model-value="value.shortCircuit"
+            active-text="前序检查未通过或出错时，跳过后续检查"
+            @update:model-value="set('shortCircuit', Boolean($event))"
+        /></el-form-item>
+        <StatusNotice>
+          模拟前序检查未通过后停止其余检查。被跳过的检查不计为通过，也不计零分。
+        </StatusNotice></FormSection
+      ></template
     >
     <el-form-item v-if="value.kind !== 'rule'" label="通过阈值（0～1，分数 ≥ 阈值时通过）"
       ><el-input-number

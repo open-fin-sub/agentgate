@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EmptyState from '../../components/EmptyState.vue'
+import StatusNotice from '../../components/StatusNotice.vue'
 import { computed, ref, watch } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -293,26 +295,23 @@ function useDataset() {
     </div>
     <RouterLink v-if="id || route.query.mode" to="/preview/datasets">返回测评集列表</RouterLink>
   </div>
-  <el-alert
+  <StatusNotice
     v-if="state.role === 'viewer'"
     title="只读角色：可以查看、导出历史版本，不能创建、修改、复制或归档。"
     type="warning"
-    :closable="false"
   />
-  <el-alert
+  <StatusNotice
     v-if="id && !dataset"
     title="404：测评集不存在。请返回列表选择可用记录。"
     type="error"
-    :closable="false"
   />
   <template v-else-if="dataset">
-    <el-alert
+    <StatusNotice
       v-if="dataset.archived"
       title="此测评集已归档，历史版本和报告仍可查看。恢复后才能修改或用于新任务。"
       type="warning"
-      :closable="false"
     />
-    <el-alert v-if="revisionError" :title="revisionError" type="error" :closable="false" />
+    <StatusNotice v-if="revisionError" :title="revisionError" type="error" />
     <section class="panel">
       <div class="action-row">
         <el-tag>{{
@@ -386,11 +385,10 @@ function useDataset() {
         · 原任务仍引用 v{{ sourceRun.config.datasetVersion }}，发布不会改变原报告。
       </p>
     </section>
-    <el-alert
+    <StatusNotice
       v-if="!editing && !version"
       title="404：指定发布版本不存在；可选择已有版本或继续编辑草稿。"
       type="error"
-      :closable="false"
     />
     <PrepCaseEditor
       v-if="editing || version"
@@ -424,7 +422,7 @@ function useDataset() {
               :disabled="readonly"
               type="textarea"
               placeholder="说明修订原因及主要变化" /></el-form-item></el-form
-        ><el-alert v-if="error" :title="error" type="error" :closable="false" />
+        ><StatusNotice v-if="error" :title="error" type="error" />
         <div class="action-row prep-space">
           <el-button :disabled="readonly" @click="saveDraft">保存草稿</el-button
           ><el-button type="primary" :disabled="readonly" @click="publish">发布新版本</el-button>
@@ -438,9 +436,7 @@ function useDataset() {
       </section>
       <section class="panel">
         <h2>相关任务</h2>
-        <p v-if="!relatedRuns.length" class="muted">
-          当前{{ editing ? '草稿基础' : '发布' }}版本暂无关联任务。
-        </p>
+        <EmptyState v-if="!relatedRuns.length" title="此版本还没有关联任务" description="可使用已发布版本创建测评；草稿请先审阅并发布。" />
         <p v-for="run in relatedRuns" :key="run.id">
           <RouterLink :to="`/preview/runs/${run.id}`">{{ run.name }}</RouterLink> · {{ run.status }}
         </p>
@@ -483,9 +479,11 @@ function useDataset() {
         /></el-select>
       </div>
     </section>
-    <section v-if="!visible.length" class="panel preview-empty">
-      没有匹配的测评集，请调整筛选或新建。
-    </section>
+    <EmptyState
+      v-if="!visible.length"
+      title="没有匹配的测评集"
+      description="调整筛选，或手工创建、导入测评集，准备测评输入。"
+    ></EmptyState>
     <article v-for="item in visible" :key="item.id" class="panel">
       <div class="action-row">
         <h2>

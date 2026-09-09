@@ -16,7 +16,7 @@ test('capability matrix locates a story, exposes proposed contracts, and exports
   await page.getByRole('textbox', { name: '搜索需求和用户故事' }).fill('US-05.9')
   await expect(page.getByRole('button', { name: '组合 Skill 测评集', exact: true })).toBeVisible()
   await page.getByRole('button', { name: '组合 Skill 测评集', exact: true }).click()
-  await expect(page.getByRole('heading', { name: '拟议接口与字段 · 尚未实现' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '现有接口与待接入约定' })).toBeVisible()
   await expect(page.locator('.cap-contract')).toContainText('/api/input-preparations/merge')
   await page.getByRole('button', { name: '关闭此对话框' }).click()
   const download = page.waitForEvent('download')

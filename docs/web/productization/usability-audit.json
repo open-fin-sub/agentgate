@@ -19,8 +19,9 @@
       "line": 81,
       "evidence": "{{ preview ? 'Mock 体验 · 本地浏览器数据' : '真实接入 · 当前后端能力' }}",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0002"
+      "status": "已验证",
+      "id": "UX-0002",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "D-CONTROL",
@@ -41,8 +42,9 @@
       "line": 85,
       "evidence": "<el-empty v-if=\"!form\" description=\"选择或新建一个用例\" />",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0004"
+      "status": "已验证",
+      "id": "UX-0004",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "A-INPUT",
@@ -209,8 +211,9 @@
       "line": 94,
       "evidence": "<el-empty v-if=\"!items.length\" description=\"草稿中还没有用例\" :image-size=\"80\" />",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0019"
+      "status": "已验证",
+      "id": "UX-0019",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "D-CONTROL",
@@ -253,8 +256,9 @@
       "line": 64,
       "evidence": "<el-empty v-if=\"!filtered.length\" description=\"暂无测评集\" :image-size=\"72\" />",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0023"
+      "status": "已验证",
+      "id": "UX-0023",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "D-CONTROL",
@@ -331,8 +335,9 @@
       "line": 146,
       "evidence": "<el-empty v-if=\"!rows.length\" description=\"暂无字段、状态或输出期望\" :image-size=\"58\" />",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0030"
+      "status": "已验证",
+      "id": "UX-0030",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "D-CONTROL",
@@ -485,8 +490,9 @@
       "line": 234,
       "evidence": "? '服务将此异常标记为可重试；当前尚未开放重试操作。'",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0044"
+      "status": "已验证",
+      "id": "UX-0044",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "B-META",
@@ -507,8 +513,9 @@
       "line": 263,
       "evidence": "<p class=\"muted small\">这里只统计该评估器调用；不代表 Agent 的整体 Token 或费用。</p>",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0046"
+      "status": "已验证",
+      "id": "UX-0046",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "B-META",
@@ -529,8 +536,9 @@
       "line": 301,
       "evidence": "<p v-if=\"!selected.checks.length\" class=\"muted\">该评估器没有返回逐项检查记录。</p>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0048"
+      "status": "已验证",
+      "id": "UX-0048",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "G-EMPTY",
@@ -540,8 +548,9 @@
       "line": 303,
       "evidence": "<p v-else class=\"empty-state\">本用例缺少评估结果，请返回报告检查缺失项。</p>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0049"
+      "status": "已验证",
+      "id": "UX-0049",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -584,8 +593,9 @@
       "line": 332,
       "evidence": "<p v-if=\"!traceLoading && !traceError && !spans.length\" class=\"empty-state\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0053"
+      "status": "已验证",
+      "id": "UX-0053",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "RC-TOKEN",
@@ -673,8 +683,9 @@
       "line": 42,
       "evidence": "当前为服务提供的只读目录，提交测评时会显式选择标准。环境配置 LLM Judge",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0061"
+      "status": "已验证",
+      "id": "UX-0061",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "H-TERMS",
@@ -695,8 +706,9 @@
       "line": 43,
       "evidence": "后才会出现相应标准；新建、编辑、版本发布和试评尚未开放。",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0063"
+      "status": "已验证",
+      "id": "UX-0063",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -773,8 +785,9 @@
       "line": 85,
       "evidence": "目录未返回内容指纹；同版本存在多份快照时，请从任务报告按固定指纹查询。",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0070"
+      "status": "已验证",
+      "id": "UX-0070",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -784,8 +797,9 @@
       "line": 88,
       "evidence": "<div v-if=\"!loading && !visible.length && !error\" class=\"empty-state\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0071"
+      "status": "已验证",
+      "id": "UX-0071",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "G-EMPTY",
@@ -795,8 +809,9 @@
       "line": 89,
       "evidence": "没有匹配的评估器，请调整搜索条件。",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0072"
+      "status": "已验证",
+      "id": "UX-0072",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -828,8 +843,9 @@
       "line": 216,
       "evidence": "<summary>固定内容指纹</summary>",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0075"
+      "status": "已验证",
+      "id": "UX-0075",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "G-COPY",
@@ -839,8 +855,9 @@
       "line": 220,
       "evidence": "关系来自后端保存的运行和版本引用。这里不包含用例内容、对象 Prompt 或执行",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0076"
+      "status": "已验证",
+      "id": "UX-0076",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "D-CONTROL",
@@ -861,8 +878,9 @@
       "line": 239,
       "evidence": "<p v-if=\"!relatedRuns.length\" class=\"empty-state\">当前查询未返回关联任务。</p>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0078"
+      "status": "已验证",
+      "id": "UX-0078",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -883,8 +901,9 @@
       "line": 277,
       "evidence": "<summary>内容指纹</summary>",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0080"
+      "status": "已验证",
+      "id": "UX-0080",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -894,8 +913,9 @@
       "line": 323,
       "evidence": "<p v-if=\"!graph.edges.length\" class=\"empty-state\">当前记录没有返回关联边。</p>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0081"
+      "status": "已验证",
+      "id": "UX-0081",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -927,8 +947,9 @@
       "line": 100,
       "evidence": "<div v-if=\"!runs.length\" class=\"empty-state\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0084"
+      "status": "已验证",
+      "id": "UX-0084",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "G-EMPTY",
@@ -938,8 +959,9 @@
       "line": 101,
       "evidence": "<h2>还没有测评记录</h2>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0085"
+      "status": "已验证",
+      "id": "UX-0085",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -1048,8 +1070,9 @@
       "line": 328,
       "evidence": "测评集版本号不同；本次由后端确认内容与有序用例相同后返回差异，仍不代表完整受控实验。",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0095"
+      "status": "已验证",
+      "id": "UX-0095",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "D-CONTROL",
@@ -1103,8 +1126,9 @@
       "line": 460,
       "evidence": "<p v-if=\"!filtered.length\" class=\"empty-state\">当前条件没有匹配的结果。</p>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0100"
+      "status": "已验证",
+      "id": "UX-0100",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -1125,8 +1149,9 @@
       "line": 470,
       "evidence": "<div v-else-if=\"!loading && !error\" class=\"empty-state\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0102"
+      "status": "已验证",
+      "id": "UX-0102",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "G-COPY",
@@ -1136,8 +1161,9 @@
       "line": 202,
       "evidence": "已从历史报告带入对象、测评集和可用评分标准。新运行使用当前服务的其他默认配置；来源关联暂不持久化，不能作为完整可复现实验。",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0103"
+      "status": "已验证",
+      "id": "UX-0103",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -1257,8 +1283,9 @@
       "line": 308,
       "evidence": "评分，将调用服务端配置的模型。评分调用可能产生费用并返回非确定性结果；实际调用信息保存在用例报告中。",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0114"
+      "status": "已验证",
+      "id": "UX-0114",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "G-COPY",
@@ -1268,8 +1295,9 @@
       "line": 316,
       "evidence": "标准使用服务端已配置的模型。当前接口尚不支持自定义并发、超时、采样、预约或 Web 模型配置。",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0115"
+      "status": "已验证",
+      "id": "UX-0115",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "B-META",
@@ -1324,8 +1352,9 @@
       "line": 221,
       "evidence": ": '本次运行没有完成态报告。现有数据和状态仍保留。'",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0120"
+      "status": "已验证",
+      "id": "UX-0120",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "G-COPY",
@@ -1335,8 +1364,9 @@
       "line": 224,
       "evidence": "<p class=\"muted small\">取消、恢复及部分报告尚未开放，见能力与接入。</p>",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0121"
+      "status": "已验证",
+      "id": "UX-0121",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "B-META",
@@ -1424,8 +1454,9 @@
       "line": 387,
       "evidence": "<div v-if=\"!results.length\" class=\"empty-state\">没有匹配的评估结果，请调整条件。</div>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0129"
+      "status": "已验证",
+      "id": "UX-0129",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "A-INPUT",
@@ -1492,8 +1523,9 @@
       "line": 121,
       "evidence": "<div v-if=\"!visible.length\" class=\"empty-state\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0135"
+      "status": "已验证",
+      "id": "UX-0135",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "G-EMPTY",
@@ -1503,8 +1535,9 @@
       "line": 122,
       "evidence": "<h2>{{ route.query.q || status ? '没有匹配的任务' : '还没有测评任务' }}</h2>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0136"
+      "status": "已验证",
+      "id": "UX-0136",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -1580,8 +1613,9 @@
       "line": 177,
       "evidence": "<el-empty v-if=\"!loading && rows.length === 0\" description=\"当前筛选下暂无运行\" />",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0143"
+      "status": "已验证",
+      "id": "UX-0143",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -1732,8 +1766,9 @@
       "line": 128,
       "evidence": "<div v-if=\"!target || !version\" role=\"alert\" class=\"preview-empty\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0156"
+      "status": "已验证",
+      "id": "UX-0156",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -1766,8 +1801,9 @@
       "line": 169,
       "evidence": "<p v-if=\"!history.length\" class=\"preview-empty\">此对象版本尚无静态分析记录。</p>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0159"
+      "status": "已验证",
+      "id": "UX-0159",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -1898,8 +1934,9 @@
       "line": 396,
       "evidence": "Mock CNY。完整结果及模拟统计场景在对比报告逐项展示。",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0171"
+      "status": "已验证",
+      "id": "UX-0171",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -2148,8 +2185,9 @@
       "line": 21,
       "evidence": "<p v-else class=\"preview-empty\">此侧未包含用例快照。</p>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0193"
+      "status": "已验证",
+      "id": "UX-0193",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -2203,8 +2241,9 @@
       "line": 45,
       "evidence": "<p v-else class=\"preview-empty\">尚无结果；不计为零分。</p>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0198"
+      "status": "已验证",
+      "id": "UX-0198",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "RC-TOKEN",
@@ -2248,8 +2287,9 @@
       "line": 83,
       "evidence": "<p v-if=\"!audit.length\" class=\"muted\">此对比暂无操作记录；种子数据仅为 Mock 示例。</p>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0202"
+      "status": "已验证",
+      "id": "UX-0202",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -2306,8 +2346,9 @@
       "line": 152,
       "evidence": "<div v-if=\"!visible.length\" class=\"preview-empty\">没有匹配的用例，可清除筛选或新增用例。</div>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0207"
+      "status": "已验证",
+      "id": "UX-0207",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -2440,8 +2481,9 @@
       "line": 552,
       "evidence": "><p>Mock：本地模板读取所选 Prompt、说明、Skill 与工具生成可编辑样例，不调用 LLM。</p>",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0219"
+      "status": "后续范围",
+      "id": "UX-0219",
+      "resolution": "自动生成向导在本轮隐藏；旧链接进入手工创建。用户已拍板延后，本轮不整改隐藏的生成说明。"
     },
     {
       "pattern": "A-INPUT",
@@ -2553,8 +2595,9 @@
       "line": 153,
       "evidence": "条件终止为未来 Mock 交互样例。当前后端已明确推迟短路执行；真实复合评分不能据此跳过子项。",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0229"
+      "status": "已验证",
+      "id": "UX-0229",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "A-FORM",
@@ -2587,8 +2630,9 @@
       "line": 175,
       "evidence": "<p class=\"muted\">Excel 链接将进入真实接入工作区，需要后端支持；此体验页不解析 Excel。</p>",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0232"
+      "status": "已验证",
+      "id": "UX-0232",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "G-COPY",
@@ -2598,8 +2642,9 @@
       "line": 56,
       "evidence": "title=\"仅用于校验评分配置，不创建正式运行或上线结论。规则在本地实际校验；LLM 为明确的 Mock 词面匹配示例，不调用模型。\"",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0233"
+      "status": "已验证",
+      "id": "UX-0233",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -2805,8 +2850,9 @@
       "line": 256,
       "evidence": "<section v-if=\"!run\" class=\"panel preview-empty\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0251"
+      "status": "已验证",
+      "id": "UX-0251",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -2860,8 +2906,9 @@
       "line": 292,
       "evidence": ": '暂无发生记录'",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0256"
+      "status": "已验证",
+      "id": "UX-0256",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -2882,8 +2929,9 @@
       "line": 311,
       "evidence": "<p v-if=\"!routed.length\" class=\"preview-empty\">暂无足够的实际路由数据，不生成虚假矩阵。</p>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0258"
+      "status": "已验证",
+      "id": "UX-0258",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -2904,8 +2952,9 @@
       "line": 355,
       "evidence": "<p v-if=\"!filtered.length\" class=\"preview-empty\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0260"
+      "status": "已验证",
+      "id": "UX-0260",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "G-EMPTY",
@@ -2915,8 +2964,9 @@
       "line": 356,
       "evidence": "没有匹配的样本；可清除筛选或等待运行返回结果。",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0261"
+      "status": "已验证",
+      "id": "UX-0261",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "C-CONTEXT",
@@ -2937,8 +2987,9 @@
       "line": 395,
       "evidence": "<p v-if=\"!suggestions.length\" class=\"preview-empty\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0263"
+      "status": "已验证",
+      "id": "UX-0263",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "G-EMPTY",
@@ -2948,8 +2999,9 @@
       "line": 396,
       "evidence": "暂无建议。可以从当前发生记录生成，或直接查看证据自行处理。",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0264"
+      "status": "已验证",
+      "id": "UX-0264",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -2981,8 +3033,9 @@
       "line": 434,
       "evidence": "<section v-else class=\"panel preview-empty\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0267"
+      "status": "已验证",
+      "id": "UX-0267",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -3015,8 +3068,9 @@
       "line": 349,
       "evidence": "<section v-if=\"!run || !testCase\" class=\"panel preview-empty\" role=\"alert\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0270"
+      "status": "已验证",
+      "id": "UX-0270",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "G-EMPTY",
@@ -3026,8 +3080,9 @@
       "line": 351,
       "evidence": "<p>未找到该运行中的固定用例 {{ String(route.params.caseId) }}，请从原报告重新进入。</p>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0271"
+      "status": "已验证",
+      "id": "UX-0271",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -3103,8 +3158,9 @@
       "line": 398,
       "evidence": ": '执行错误：没有可用于质量评分的有效执行结果。'",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0278"
+      "status": "已验证",
+      "id": "UX-0278",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "H-TERMS",
@@ -3291,8 +3347,9 @@
       "line": 240,
       "evidence": "<section v-if=\"!comparison\" class=\"panel preview-empty\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0295"
+      "status": "已验证",
+      "id": "UX-0295",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -3357,8 +3414,9 @@
       "line": 276,
       "evidence": "<section v-if=\"!baseline || !candidate\" class=\"panel preview-empty\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0301"
+      "status": "已验证",
+      "id": "UX-0301",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -3491,8 +3549,9 @@
       "line": 472,
       "evidence": "<p v-if=\"!filtered.length\" class=\"preview-empty\">没有匹配的样本，调整筛选查看其他分组。</p>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0313"
+      "status": "已验证",
+      "id": "UX-0313",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -3557,8 +3616,9 @@
       "line": 82,
       "evidence": "<div v-if=\"!rows.length\" class=\"preview-empty\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0319"
+      "status": "已验证",
+      "id": "UX-0319",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -3744,8 +3804,9 @@
       "line": 442,
       "evidence": "当前{{ editing ? '草稿基础' : '发布' }}版本暂无关联任务。",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0336"
+      "status": "已验证",
+      "id": "UX-0336",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -3766,8 +3827,9 @@
       "line": 487,
       "evidence": "<section v-if=\"!visible.length\" class=\"panel preview-empty\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0338"
+      "status": "已验证",
+      "id": "UX-0338",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -3843,8 +3905,9 @@
       "line": 357,
       "evidence": "<section v-if=\"!visible.length\" class=\"panel preview-empty\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0345"
+      "status": "已验证",
+      "id": "UX-0345",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "G-EMPTY",
@@ -3854,8 +3917,9 @@
       "line": 358,
       "evidence": "没有匹配的评估器，请调整筛选或新建。",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0346"
+      "status": "已验证",
+      "id": "UX-0346",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -3920,8 +3984,9 @@
       "line": 101,
       "evidence": "<el-empty v-if=\"!group.length\" description=\"此对象暂没有上述固定配置的结果。\" /><RouterLink",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0352"
+      "status": "已验证",
+      "id": "UX-0352",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -3953,8 +4018,9 @@
       "line": 174,
       "evidence": "<el-empty v-if=\"!runs.length\" description=\"此对象暂无测评任务\"",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0355"
+      "status": "已验证",
+      "id": "UX-0355",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "G-EMPTY",
@@ -3964,8 +4030,9 @@
       "line": 177,
       "evidence": "></el-empty",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0356"
+      "status": "已验证",
+      "id": "UX-0356",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "RC-TOKEN",
@@ -3998,8 +4065,9 @@
       "line": 220,
       "evidence": "<el-empty v-if=\"!pending.length\" description=\"当前没有等待任务\" :image-size=\"60\" />",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0359"
+      "status": "已验证",
+      "id": "UX-0359",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "E-ROLE",
@@ -4271,8 +4339,9 @@
       "line": 315,
       "evidence": "<section v-if=\"!run\" class=\"panel preview-empty\" role=\"alert\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0383"
+      "status": "已验证",
+      "id": "UX-0383",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "G-EMPTY",
@@ -4282,8 +4351,9 @@
       "line": 317,
       "evidence": "<p>未找到运行 {{ String(route.params.id) }}。请返回列表选择可访问的记录。</p>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0384"
+      "status": "已验证",
+      "id": "UX-0384",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -4370,8 +4440,9 @@
       "line": 412,
       "evidence": "Mock，不能作为生产质量或费用承诺。",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0392"
+      "status": "已验证",
+      "id": "UX-0392",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "B-META",
@@ -4403,8 +4474,9 @@
       "line": 560,
       "evidence": "<div v-if=\"!rows.length\" class=\"preview-empty\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0395"
+      "status": "已验证",
+      "id": "UX-0395",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "G-EMPTY",
@@ -4414,8 +4486,9 @@
       "line": 561,
       "evidence": "<p>此筛选没有用例结果；缺失的评估器检查不会伪造为通过。</p>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0396"
+      "status": "已验证",
+      "id": "UX-0396",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -4598,8 +4671,9 @@
       "line": 168,
       "evidence": "<section v-if=\"!rows.length\" class=\"panel preview-empty\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0412"
+      "status": "已验证",
+      "id": "UX-0412",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "G-EMPTY",
@@ -4609,8 +4683,9 @@
       "line": 169,
       "evidence": "<h2>没有符合条件的任务</h2>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0413"
+      "status": "已验证",
+      "id": "UX-0413",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -4719,8 +4794,9 @@
       "line": 180,
       "evidence": "<p v-if=\"!datasets.length\" class=\"preview-empty\">",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0423"
+      "status": "已验证",
+      "id": "UX-0423",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -4752,8 +4828,9 @@
       "line": 207,
       "evidence": "<div v-if=\"!rows.length\" class=\"panel preview-empty\">没有匹配的对象，请调整搜索条件。</div>",
       "issue": "核对空态说明、可行下一步及统一模式",
-      "status": "待整改",
-      "id": "UX-0426"
+      "status": "已验证",
+      "id": "UX-0426",
+      "resolution": "改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。"
     },
     {
       "pattern": "B-META",
@@ -4796,8 +4873,9 @@
       "line": 25,
       "evidence": "><span>虚构业务数据 · 修改保存在当前浏览器 · 不调用外部平台</span>",
       "issue": "开发/实现说明改为用户任务语言，能力说明集中到能力页",
-      "status": "待整改",
-      "id": "UX-0430"
+      "status": "已验证",
+      "id": "UX-0430",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     },
     {
       "pattern": "RC-TOKEN",
@@ -5159,6 +5237,354 @@
       "status": "已验证",
       "origin": "人工复核原始基线",
       "resolution": "复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。"
+    },
+    {
+      "id": "UX-0460",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 62,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "if (!object(config)) return fail('规则必须是 JSON 对象')",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0461",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 64,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "fail('规则 type 仅支持 json、regex、field、tool')",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0462",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 75,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "fail('applicableField 必须是字段路径字符串')",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0463",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 78,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "fail('正则 pattern 必须是 1～300 字符的字符串')",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0464",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 80,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "fail('正则 flags 必须是字符串')",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0465",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 83,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "new RegExp(String(config.pattern), String(config.flags ?? 'u'))",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0466",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 86,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "if (typeof config.path !== 'string' || !config.path.trim()) fail('字段规则必须填写 path')",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0467",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 88,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "fail('operator 仅支持 equals、contains、exists、gte、lte')",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0468",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 89,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "if (config.operator !== 'exists' && config.value === undefined) fail('该字段规则必须填写 value')",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0469",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 91,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "fail('范围比较 value 必须是数字')",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0470",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 94,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "fail('工具规则必须填写 tool 名称')",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0471",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 99,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "fail('required 必须是字符串数组')",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0472",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 101,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "if (!object(config.properties)) fail('properties 必须是对象')",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0473",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 103,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "if (!object(schema)) fail(`${name} 的配置必须是对象`)",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0474",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 106,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "fail(`${name} 仅支持 type、enum、minimum、maximum`)",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0475",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 115,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "fail(`${name}.enum 必须为非空数组`)",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0476",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 145,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "errors.push(`规则无效：${String(error)}`)",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0477",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 310,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "return result(name, 'fail', '输出不是有效 JSON')",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0478",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 332,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "if (!object(output)) return result(name, 'fail', '输出应为 JSON 对象')",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0479",
+      "file": "web/src/preview/components/PrepEvaluation.ts",
+      "line": 340,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "if (!object(output.arguments)) return result(name, 'fail', '工具 arguments 必须是 JSON 对象')",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0480",
+      "file": "web/src/preview/components/PrepCases.ts",
+      "line": 30,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "errors.push('变量必须是 JSON 对象')",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0481",
+      "file": "web/src/preview/components/PrepCases.ts",
+      "line": 32,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "errors.push('变量 JSON 格式错误')",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0482",
+      "file": "web/src/preview/components/PrepJsonImport.vue",
+      "line": 85,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "errors.value = [`JSON 解析失败：${String(error)}`]",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0483",
+      "file": "web/src/preview/components/PrepJsonImport.vue",
+      "line": 106,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "errors.value.push(`第 ${index + 1} 行：turns 必须是 {input, expected} 数组`)",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0484",
+      "file": "web/src/preview/components/PrepJsonImport.vue",
+      "line": 111,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "errors.value.push(`第 ${index + 1} 行：${key} 必须是字符串数组`)",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0485",
+      "file": "web/src/preview/pages/ResourcesPage.vue",
+      "line": 123,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "仅模拟浏览器中的操作权限，不代表服务端认证与数据隔离已实现。只读角色在工作区操作层拒绝写入；真实上线需要接口鉴权。",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0486",
+      "file": "web/src/preview/pages/ResourcesPage.vue",
+      "line": 251,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "title=\"只填写虚构别名，不输入真实密钥。真实凭据保管服务尚未接入。\"",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0487",
+      "file": "web/src/preview/pages/AnalysisPage.vue",
+      "line": 278,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "聚类体验；没有调用语义聚类服务，也不声称已找到根因。",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
+    },
+    {
+      "id": "UX-0488",
+      "file": "web/src/preview/pages/ComparisonPage.vue",
+      "line": 443,
+      "rule": "G1/I3",
+      "pattern": "G-COPY",
+      "severity": "P2",
+      "issue": "补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。",
+      "evidence": "{{ statisticalExample?.actualPairedCount }} 对。生产统计方法及最低样本合同尚未接入。",
+      "status": "已验证",
+      "resolution": "改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。"
     }
   ],
   "pages": [

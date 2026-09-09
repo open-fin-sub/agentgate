@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { userError } from '../apiErrors'
+import StatusNotice from '../components/StatusNotice.vue'
 import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -156,7 +158,7 @@ async function selectDataset(datasetId: string, preferredVersionId = '') {
     caseView.value = 'list'
     loadError.value = ''
   } catch (error) {
-    loadError.value = error instanceof Error ? error.message : '无法读取测评集'
+    loadError.value = userError(error, '无法读取测评集，请重试。')
   } finally {
     if (current === datasetRequest) loading.value = false
   }
@@ -189,7 +191,14 @@ function newCase(): EvaluationCase {
       {
         id: crypto.randomUUID(),
         input: { skill: 'loan_approval' },
-        expectations: [{ id: crypto.randomUUID(), name: null, kind: 'skill_route', condition: { kind: 'equals', expected: 'loan_approval' } }],
+        expectations: [
+          {
+            id: crypto.randomUUID(),
+            name: null,
+            kind: 'skill_route',
+            condition: { kind: 'equals', expected: 'loan_approval' },
+          },
+        ],
         notes: '',
       },
     ],
@@ -428,14 +437,20 @@ async function importDataset(event: Event) {
     ) {
       importIssues.value = error.detail.issues
       importError.value = '文件校验未通过，请按工作表、行和列修正后重新导入。'
-    } else importError.value = error instanceof Error ? error.message : '导入失败'
+    } else importError.value = error instanceof SyntaxError
+      ? '文件格式无法识别，请使用导出模板整理内容后重新导入。'
+      : datasetError(error, '导入未完成，请重新选择文件后重试。')
   } finally {
     input.value = ''
   }
 }
 
+function datasetError(error: unknown, fallback: string) {
+  if (error instanceof ApiError || error instanceof TypeError) return userError(error, fallback)
+  return error instanceof Error ? error.message : fallback
+}
 function showError(error: unknown, fallback: string) {
-  ElMessage.error(error instanceof Error ? error.message : fallback)
+  ElMessage.error(datasetError(error, fallback))
 }
 
 async function performAction(action: () => Promise<unknown>) {
@@ -471,7 +486,7 @@ async function loadRoute(query = route.query) {
     }
     loadError.value = ''
   } catch (error) {
-    loadError.value = error instanceof Error ? error.message : '无法加载测评集'
+    loadError.value = datasetError(error, '无法加载测评集，请重试。')
     activeVersionId.value = ''
     editedCase.value = null
   } finally {
@@ -516,15 +531,15 @@ onMounted(() => {
         }}</span>
       </div>
     </div>
-    <div v-if="loadError" class="notice error" role="alert">
+    <StatusNotice type="error" v-if="loadError">
       {{ loadError }} <button class="text-button" @click="loadRoute()">重新加载</button>
-    </div>
-    <div v-if="activeVersion?.status === 'published'" class="notice">
+    </StatusNotice>
+    <StatusNotice v-if="activeVersion?.status === 'published'">
       已发布版本只读。修订时先创建草稿；如果已有草稿，请先检查其基于的版本，再继续编辑。
-    </div>
-    <div v-if="dirty" class="notice warning" role="status">
+    </StatusNotice>
+    <StatusNotice type="warning" v-if="dirty">
       当前用例有未保存的修改。请点击“保存用例”后再发布。
-    </div>
+    </StatusNotice>
 
     <div class="dataset-context-bar">
       <div>
@@ -565,7 +580,7 @@ onMounted(() => {
       />
     </section>
 
-    <div v-if="importError" class="notice error" role="alert">
+    <StatusNotice type="error" v-if="importError">
       {{ importError }}
       <ul v-if="importIssues.length">
         <li v-for="(issue, index) in importIssues" :key="index">
@@ -573,7 +588,7 @@ onMounted(() => {
           {{ issue.column ?? '—' }} 列：{{ issue.message }}
         </li>
       </ul>
-    </div>
+    </StatusNotice>
     <VersionSelector
       v-if="activeDatasetId"
       :versions="versions"
@@ -587,13 +602,11 @@ onMounted(() => {
       @export-excel="exportExcel"
     />
 
-    <el-alert
+    <StatusNotice
       v-if="validationIssues.length"
       class="validation-alert"
       title="草稿尚不能发布"
       type="error"
-      :closable="false"
-      show-icon
     >
       <ul>
         <li v-for="issue in validationIssues" :key="`${issue.path}-${issue.message}`">
@@ -601,7 +614,7 @@ onMounted(() => {
           >：{{ issue.message }}
         </li>
       </ul>
-    </el-alert>
+    </StatusNotice>
 
     <div class="dataset-view-switch local-tabs" aria-label="用例工作区">
       <button :class="{ active: caseView === 'list' }" @click="caseView = 'list'">

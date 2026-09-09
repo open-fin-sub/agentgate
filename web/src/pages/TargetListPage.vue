@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import StatusNotice from '../components/StatusNotice.vue'
+import { userError } from '../apiErrors'
 import { catalogLabel } from '../catalogLabels'
 import { onMounted, ref } from 'vue'
 import { api, type Version } from '../api/client'
@@ -11,7 +13,7 @@ async function load() {
   try {
     versions.value = await api.versions()
   } catch (e) {
-    error.value = String(e)
+    error.value = userError(e)
   } finally {
     loading.value = false
   }
@@ -25,15 +27,14 @@ onMounted(load)
       <p>确认对象及版本，再选择适合的用例与评分标准。</p>
     </div>
   </div>
-  <div class="notice warning">
-    当前服务提供内置信贷 Agent 演示接入。外部 Agent、单 Skill 接入尚未提供。<RouterLink
-      to="/capabilities"
-      >查看接入范围</RouterLink
+  <StatusNotice type="warning">
+    可选择下列信贷助手版本进行测评。需要接入其他对象，请联系管理员并<RouterLink to="/capabilities"
+      >查看接入要求</RouterLink
     >
-  </div>
-  <div v-if="error" class="notice error" role="alert">
+  </StatusNotice>
+  <StatusNotice type="error" v-if="error">
     {{ error }} <button class="text-button" @click="load">重试</button>
-  </div>
+  </StatusNotice>
   <div v-if="loading" class="skeleton">正在加载对象版本…</div>
   <div v-else-if="!error" class="panel">
     <div class="panel-title">

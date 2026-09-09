@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EmptyState from '../../components/EmptyState.vue'
+import StatusNotice from '../../components/StatusNotice.vue'
 import TokenUsage from '../../components/TokenUsage.vue'
 import JsonFallback from '../../components/JsonFallback.vue'
 import { computed, nextTick, reactive, ref, watch } from 'vue'
@@ -314,10 +316,12 @@ watch(() => route.fullPath, readQuery, { immediate: true })
 </script>
 <template>
   <RouterLink class="back-link" :to="listReturn">← 测评任务</RouterLink>
-  <section v-if="!run" class="panel preview-empty" role="alert">
-    <h1>任务不存在或无权访问</h1>
-    <p>未找到运行 {{ String(route.params.id) }}。请返回列表选择可访问的记录。</p>
-  </section>
+  <EmptyState
+    v-if="!run"
+    title="找不到测评任务"
+    description="请从列表重新选择记录；重置体验数据可能移除了原任务。"
+    ><RouterLink class="ag-button" to="/preview/runs">查看测评任务</RouterLink></EmptyState
+  >
   <template v-else-if="metrics && reportRun">
     <div class="page-intro">
       <div>
@@ -338,10 +342,10 @@ watch(() => route.fullPath, readQuery, { immediate: true })
         >
       </div>
     </div>
-    <div v-if="readonly" class="notice warning">
+    <StatusNotice type="warning" v-if="readonly">
       当前为只读角色，无权取消、终止、复跑或写入复核；报告和证据仍可查看。
-    </div>
-    <div v-if="feedback" class="notice" role="status">{{ feedback }}</div>
+    </StatusNotice>
+    <StatusNotice v-if="feedback">{{ feedback }}</StatusNotice>
     <section class="panel quality-panel">
       <div class="panel-title">
         <h2>{{ qualityConclusion(reportRun) }}</h2>
@@ -361,11 +365,11 @@ watch(() => route.fullPath, readQuery, { immediate: true })
           run.config.threshold
         }}，无不通过、待复核或执行错误，结果完整。运行完成与质量达标分别判断。
       </p>
-      <p v-if="mode === 'human'" class="notice">
+      <StatusNotice v-if="mode === 'human'">
         采用每条用例最新人工复核：确认问题→不通过，非
         Badcase→通过，待复核→需复核；填写人工分数时替代 Case 分数，未填写时沿用机器分数。NA／error
         仍保留原判。评估器检查与原始证据不变，此口径不是生产上线门禁。
-      </p>
+      </StatusNotice>
       <div class="preview-grid run-kpis">
         <button class="preview-kpi" @click="selectOutcome('')">
           <span>平均 Case 分数</span><strong>{{ scoreText(metrics.score) }}</strong
@@ -379,11 +383,18 @@ watch(() => route.fullPath, readQuery, { immediate: true })
         </button>
         <div class="preview-kpi">
           <span>总 Token 用量</span><strong>{{ tokenText(metrics.tokens) }}</strong
-          ><small>{{ metrics.tokensMissing }} 条用量未采集 · 已返回 {{ metrics.completed }} 条</small>
+          ><small
+            >{{ metrics.tokensMissing }} 条用量未采集 · 已返回 {{ metrics.completed }} 条</small
+          >
         </div>
       </div>
       <div class="action-row result-summary">
-        <TokenUsage :input="metrics.inputTokens" :output="metrics.outputTokens" :total="metrics.tokens" scope="已返回的用例结果；任一用量缺失时不展示完整合计" />
+        <TokenUsage
+          :input="metrics.inputTokens"
+          :output="metrics.outputTokens"
+          :total="metrics.tokens"
+          scope="已返回的用例结果；任一用量缺失时不展示完整合计"
+        />
         <el-button v-for="outcome in outcomes" :key="outcome" @click="selectOutcome(outcome)"
           >{{ outcomeLabels[outcome] }} {{ metrics.counts[outcome] }}</el-button
         ><el-button @click="selectOutcome('pending')">未返回 {{ metrics.pending }}</el-button>
@@ -396,9 +407,7 @@ watch(() => route.fullPath, readQuery, { immediate: true })
         </p>
         <p>
           平均延迟 {{ metrics.latency == null ? '缺失' : `${metrics.latency.toFixed(0)} ms` }} · p95
-          {{ metrics.p95 == null ? '缺失' : `${metrics.p95} ms` }}（{{
-            metrics.latencyCount
-          }}
+          {{ metrics.p95 == null ? '缺失' : `${metrics.p95} ms` }}（{{ metrics.latencyCount }}
           条已知延迟；p95 为排序后最近秩）。
         </p>
         <p>
@@ -419,7 +428,7 @@ watch(() => route.fullPath, readQuery, { immediate: true })
     <section class="panel">
       <h2>执行状态</h2>
       <RunProgress :run="run" :state="state" />
-      <p v-if="run.error" class="notice error" role="alert">{{ run.error }}</p>
+      <StatusNotice type="error" v-if="run.error">{{ run.error }}</StatusNotice>
       <div class="action-row run-spacing">
         <el-button v-if="isActive(run)" type="danger" plain :disabled="readonly" @click="stop">{{
           run.status === 'running' ? '终止运行' : '取消任务'
@@ -560,10 +569,12 @@ watch(() => route.fullPath, readQuery, { immediate: true })
       <p v-if="filters.evaluator" class="muted small">
         结果筛选按所选评估器的机器检查判定；Case 分数仍按所选报告口径展示。
       </p>
-      <div v-if="!rows.length" class="preview-empty">
-        <p>此筛选没有用例结果；缺失的评估器检查不会伪造为通过。</p>
-        <el-button @click="clearFilters">查看全部用例</el-button>
-      </div>
+      <EmptyState
+        v-if="!rows.length"
+        title="没有匹配的用例结果"
+        description="清除筛选查看全部用例；未返回的评分结果不会计为通过。"
+        ><el-button @click="clearFilters">查看全部用例</el-button></EmptyState
+      >
       <div v-else class="table-scroll">
         <table class="preview-table data-table">
           <thead>
@@ -711,12 +722,15 @@ watch(() => route.fullPath, readQuery, { immediate: true })
       </div>
       <details>
         <summary>查看不可变输入、对象、评估器快照与执行参数</summary>
-        <JsonFallback :model-value="{
-              config: run.config,
-              target: run.target,
-              evaluators: run.evaluators,
-              cases: run.cases,
-            }" readonly />
+        <JsonFallback
+          :model-value="{
+            config: run.config,
+            target: run.target,
+            evaluators: run.evaluators,
+            cases: run.cases,
+          }"
+          readonly
+        />
       </details>
     </section>
     <section class="panel">

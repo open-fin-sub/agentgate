@@ -27,9 +27,9 @@ export function caseErrors(item: TestCase): string[] {
   try {
     const value: unknown = JSON.parse(item.variables)
     if (!value || typeof value !== 'object' || Array.isArray(value))
-      errors.push('变量必须是 JSON 对象')
+      errors.push('变量需要成组填写字段名与值，请按导入模板修正。')
   } catch {
-    errors.push('变量 JSON 格式错误')
+    errors.push('无法读取变量，请使用变量编辑器重新填写，或按导入模板修正。')
   }
   if (!['正例', '负例', '边界'].includes(item.category)) errors.push('类别须为正例、负例或边界')
   if (!['简单', '中等', '困难'].includes(item.difficulty)) errors.push('难度须为简单、中等或困难')

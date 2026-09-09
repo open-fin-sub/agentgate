@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StatusNotice from '../../components/StatusNotice.vue'
 import { ref, reactive, watch } from 'vue'
 import type { EvaluatorVersion, Outcome } from '../types'
 import { usePreview } from '../workspace'
@@ -19,7 +20,10 @@ const validOutput = ref(true)
 function trial() {
   error.value = ''
   result.value = null
-  if (!validOutput.value) { error.value='请修正实际输出中的字段名称后再试评。'; return }
+  if (!validOutput.value) {
+    error.value = '请修正实际输出中的字段名称后再试评。'
+    return
+  }
   if (!sample.input.trim() || !sample.output.trim()) {
     error.value = '请填写样本输入和实际输出。'
     return
@@ -55,16 +59,18 @@ watch(
 <template>
   <section class="panel">
     <h2>单样本试评</h2>
-    <el-alert
-      title="仅用于校验评分配置，不创建正式运行或上线结论。规则在本地实际校验；LLM 为明确的 Mock 词面匹配示例，不调用模型。"
+    <StatusNotice
+      title="检查输入、输出与评分配置是否符合预期。模型评分为模拟结果；正式判定请查看真实测评报告。"
       type="info"
-      :closable="false"
     />
     <el-form label-position="top" class="preview-form"
       ><el-form-item label="样本输入"
         ><el-input v-model="sample.input" type="textarea" /></el-form-item
       ><el-form-item label="实际输出" required
-        ><PayloadInput v-model="sample.output" label="实际输出" @validity="validOutput=$event" /></el-form-item
+        ><PayloadInput
+          v-model="sample.output"
+          label="实际输出"
+          @validity="validOutput = $event" /></el-form-item
       ><el-form-item label="期望输出（可选）"
         ><el-input v-model="sample.expected" type="textarea" /></el-form-item
       ><el-form-item label="试评方式"
@@ -77,7 +83,7 @@ watch(
             label="error 失败示例"
             value="error" /></el-select></el-form-item></el-form
     ><el-button type="primary" @click="trial">运行单样本试评</el-button
-    ><el-alert v-if="error" :title="error" type="error" :closable="false" />
+    ><StatusNotice v-if="error" :title="error" type="error" />
     <div v-if="result" class="prep-result" role="status">
       <h3>
         {{ result.outcome }} ·

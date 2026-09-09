@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import EmptyState from '../components/EmptyState.vue'
+import StatusNotice from '../components/StatusNotice.vue'
+import { userError } from '../apiErrors'
 import { catalogLabel } from '../catalogLabels'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -44,7 +47,7 @@ async function loadTrace(signal: AbortSignal) {
     const value = await api.trace(String(route.params.runId), String(route.params.caseId), signal)
     if (!signal.aborted) trace.value = value
   } catch (e) {
-    if (!signal.aborted) traceError.value = String(e)
+    if (!signal.aborted) traceError.value = userError(e)
   } finally {
     if (!signal.aborted) traceLoading.value = false
   }
@@ -64,7 +67,7 @@ async function load() {
     if (!currentCase.value) error.value = '本次任务中没有这个用例，请返回报告选择。'
     else await loadTrace(signal)
   } catch (e) {
-    if (!signal.aborted) error.value = String(e)
+    if (!signal.aborted) error.value = userError(e)
   } finally {
     if (!signal.aborted) loading.value = false
   }
@@ -138,9 +141,9 @@ onUnmounted(() => controller?.abort())
       >查看用例与修订版本</RouterLink
     >
   </div>
-  <div v-if="error" class="notice error" role="alert">
+  <StatusNotice type="error" v-if="error">
     {{ error }} <button class="text-button" @click="load">重新加载</button>
-  </div>
+  </StatusNotice>
   <div v-if="loading && !report" class="skeleton">正在读取本次用例与评估证据…</div>
   <template v-if="currentCase && report">
     <RouterLink
@@ -157,9 +160,9 @@ onUnmounted(() => controller?.abort())
       }"
       >此用例版本的关联任务</RouterLink
     >
-    <div class="notice">
+    <StatusNotice>
       这里展示本次任务保存的输入、检查项和执行记录。修订测评集会产生新版本，不会改变这份报告。
-    </div>
+    </StatusNotice>
     <div class="split-grid">
       <section class="panel">
         <h2>用例输入与预期</h2>
@@ -214,7 +217,7 @@ onUnmounted(() => controller?.abort())
             }"
             >使用此评分版本的任务</RouterLink
           >
-          <div v-if="selected.error_detail" class="notice error" role="alert">
+          <StatusNotice type="error" v-if="selected.error_detail">
             <strong
               >评分执行异常 ·
               {{
@@ -227,11 +230,11 @@ onUnmounted(() => controller?.abort())
             <p>
               {{
                 selected.error_detail.retryable
-                  ? '服务将此异常标记为可重试；当前尚未开放重试操作。'
-                  : '此异常未标记为可重试，请检查评分配置。'
+                  ? '请核对连接与评分标准后，从报告重新创建测评。'
+                  : '请联系管理员核对评分标准，再重新测评。'
               }}
             </p>
-          </div>
+          </StatusNotice>
           <section v-if="selected.judge_record" class="evidence-card" aria-label="LLM 评分调用信息">
             <h3>LLM 评分调用</h3>
             <div class="detail-row">
@@ -241,12 +244,23 @@ onUnmounted(() => controller?.abort())
                 {{ selected.judge_record.resolved_model ?? '未返回' }}</span
               >
             </div>
-            <TokenUsage :input="selected.judge_record.input_tokens" :output="selected.judge_record.output_tokens" :total="selected.judge_record.input_tokens != null && selected.judge_record.output_tokens != null ? selected.judge_record.input_tokens + selected.judge_record.output_tokens : null" :latency="selected.judge_record.latency_ms" scope="这次评分调用，不含被测对象的其他调用" />
+            <TokenUsage
+              :input="selected.judge_record.input_tokens"
+              :output="selected.judge_record.output_tokens"
+              :total="
+                selected.judge_record.input_tokens != null &&
+                selected.judge_record.output_tokens != null
+                  ? selected.judge_record.input_tokens + selected.judge_record.output_tokens
+                  : null
+              "
+              :latency="selected.judge_record.latency_ms"
+              scope="这次评分调用，不含被测对象的其他调用"
+            />
             <JsonFallback :model-value="selected.judge_record" readonly label="评分调用原始记录" />
           </section>
-          <div v-if="selected.outcome === 'review'" class="notice warning">
-            该结果需要人工判断。当前服务尚未提供保存人工复核结论的功能。
-          </div>
+          <StatusNotice type="warning" v-if="selected.outcome === 'review'">
+            请核对预期与实际输出，并将结论交给任务负责人。此报告保留原始评分结果。
+          </StatusNotice>
           <article v-for="check in selected.checks" :key="check.id" class="evidence-card">
             <div class="panel-title">
               <h3>{{ check.name }}</h3>
@@ -270,9 +284,13 @@ onUnmounted(() => controller?.abort())
               定位关联执行步骤
             </button>
           </article>
-          <p v-if="!selected.checks.length" class="muted">该评估器没有返回逐项检查记录。</p>
+          <EmptyState v-if="!selected.checks.length" title="没有逐项检查记录" description="请先查看上方评分理由，并结合输入、输出与执行步骤核对结果。" />
         </template>
-        <p v-else class="empty-state">本用例缺少评估结果，请返回报告检查缺失项。</p>
+        <EmptyState
+          v-else
+          title="本用例缺少评分结果"
+          description="请返回报告核对任务进度和缺失结果；已采集的输入与输出仍可查看。"
+        ></EmptyState>
       </section>
     </div>
     <section class="panel">
@@ -282,10 +300,10 @@ onUnmounted(() => controller?.abort())
       </div>
       <p class="muted">高亮表示当前评分标准关联的异常步骤；不代表已经确认根因。</p>
       <div v-if="traceLoading" class="skeleton">正在读取执行记录…</div>
-      <div v-if="traceError" class="notice error" role="alert">
+      <StatusNotice type="error" v-if="traceError">
         执行记录读取失败：{{ traceError }}
         <button class="text-button" @click="loadTrace(controller.signal)">重试执行记录</button>
-      </div>
+      </StatusNotice>
       <details
         v-for="span in spans"
         :id="`span-${span.span_id}`"
@@ -301,9 +319,11 @@ onUnmounted(() => controller?.abort())
         </summary>
         <ValueView :value="span.attributes" />
       </details>
-      <p v-if="!traceLoading && !traceError && !spans.length" class="empty-state">
-        本次用例没有采集到执行步骤。
-      </p>
+      <EmptyState
+        v-if="!traceLoading && !traceError && !spans.length"
+        title="未采集到执行步骤"
+        description="可先核对输入、输出与评分依据；需要调用详情时，请联系任务负责人。"
+      ></EmptyState>
       <JsonFallback v-if="trace" :model-value="trace" readonly label="完整执行记录" />
     </section>
   </template>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EmptyState from '../../components/EmptyState.vue'
+import StatusNotice from '../../components/StatusNotice.vue'
 import ValueView from '../../components/ValueView.vue'
 import JsonFallback from '../../components/JsonFallback.vue'
 import { computed, ref } from 'vue'
@@ -86,7 +88,7 @@ function retry() {
 <template>
   <section class="panel">
     <h2>执行前检查定义风险</h2>
-    <div v-if="preparedDataset" class="notice">
+    <StatusNotice v-if="preparedDataset">
       <p>
         已补充验证用例：{{ preparedDataset.name }} · v{{
           route.query.datasetVersion
@@ -105,11 +107,10 @@ function retry() {
         }"
         >使用补充用例进行测评</RouterLink
       >
-    </div>
-    <p class="notice">
-      静态检查读取对象定义，不执行用例。下方是可解释的 Mock
-      规则检查示例；静态风险不计入运行失败率，也不是已验证根因。
-    </p>
+    </StatusNotice>
+    <StatusNotice>
+      检查对象定义中的潜在风险。请结合样本证据确认原因；定义风险不计入测评失败率。此处结果为模拟数据。
+    </StatusNotice>
     <div class="preview-columns static-grid">
       <label
         >目标资产<el-select v-model="targetId"
@@ -127,14 +128,24 @@ function retry() {
             :label="item.label" /></el-select
       ></label>
     </div>
-    <div v-if="!target || !version" role="alert" class="preview-empty">
-      <h3>404 · 对象或定义版本不存在</h3>
-      <p>请选择有效的对象与版本。</p>
-    </div>
+    <EmptyState
+      v-if="!target || !version"
+      title="找不到对象或定义版本"
+      description="请选择可查看的对象与版本，再检查定义风险。"
+      ><RouterLink class="ag-button" to="/preview/targets">选择测评对象</RouterLink></EmptyState
+    >
     <template v-else>
       <details>
         <summary>本次读取的实际定义形状</summary>
-        <JsonFallback :model-value="{ id: target.id, name: target.name, description: target.description, version }" readonly />
+        <JsonFallback
+          :model-value="{
+            id: target.id,
+            name: target.name,
+            description: target.description,
+            version,
+          }"
+          readonly
+        />
       </details>
       <p class="muted">
         本版本包含 {{ version.skillDefinitions?.length ?? 0 }} 份固定 Skill 定义和
@@ -162,7 +173,11 @@ function retry() {
   </section>
   <section class="panel">
     <h2>静态检查历史</h2>
-    <p v-if="!history.length" class="preview-empty">此对象版本尚无静态分析记录。</p>
+    <EmptyState
+      v-if="!history.length"
+      title="还没有定义检查记录"
+      description="点击上方“检查此版本定义”，查看所选版本的潜在风险。"
+    ></EmptyState>
     <template v-else
       ><label
         >选择检查记录<el-select v-model="analysisId"
@@ -177,22 +192,22 @@ function retry() {
         ><p v-if="analysis.status === 'completed'">
           {{ analysis.risks.length }} 项定义风险 / 证据缺口 · 独立于运行 Badcase
         </p>
-        <p v-if="analysis.status !== 'completed'" class="notice warning">
+        <StatusNotice type="warning" v-if="analysis.status !== 'completed'">
           {{
             analysis.status === 'running'
               ? '检查尚未完成，暂不形成完整结论。'
               : 'Mock 检查服务暂时不可用，本次未返回风险结论；失败不计入运行失败率。'
           }}
-        </p>
+        </StatusNotice>
         <el-button
           v-if="analysis.status === 'failed'"
           :disabled="state.role === 'viewer'"
           @click="retry"
           >重试检查（保留失败记录）</el-button
         >
-        <p v-if="!analysis.risks.length && analysis.status === 'completed'" class="notice">
+        <StatusNotice v-if="!analysis.risks.length && analysis.status === 'completed'">
           Mock 规则没有发现所检查的风险；不表示定义已经全面验证。
-        </p>
+        </StatusNotice>
         <article v-for="risk in analysis.risks" :key="risk.id" class="static-risk">
           <h3>
             <span class="badge review">{{ risk.severity }}风险</span> {{ risk.title }}

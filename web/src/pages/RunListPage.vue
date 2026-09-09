@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import EmptyState from '../components/EmptyState.vue'
+import StatusNotice from '../components/StatusNotice.vue'
+import { userError } from '../apiErrors'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { runsApi } from '../api/runs'
@@ -41,7 +44,7 @@ async function load() {
     if (signal.aborted) return
     rows.value = result
   } catch (e) {
-    if (!signal.aborted) error.value = String(e)
+    if (!signal.aborted) error.value = userError(e)
   } finally {
     if (!signal.aborted) {
       loading.value = false
@@ -73,7 +76,7 @@ async function pollActivity() {
     if (changed) await load()
     else if (previousActive.length) timer = setTimeout(pollActivity, 5000)
   } catch (e) {
-    if (!signal.aborted) error.value = `运行状态更新失败：${String(e)}。请点击刷新重试。`
+    if (!signal.aborted) error.value = `运行状态更新失败：${userError(e)}。请点击刷新重试。`
   }
 }
 function filter(event: Event) {
@@ -113,16 +116,15 @@ onUnmounted(() => {
     ><button class="ag-button" @click="searchRows">查询</button
     ><button class="ag-button" :disabled="loading" @click="load">刷新</button>
   </div>
-  <div v-if="error" role="alert" class="notice error">
-    列表刷新失败，已保留上次记录。{{ error }}
-  </div>
+  <StatusNotice type="error" v-if="error"> 列表刷新失败，已保留上次记录。{{ error }} </StatusNotice>
   <div v-if="loading && !rows.length" class="skeleton">正在加载任务…</div>
   <section v-else class="panel table-panel">
-    <div v-if="!visible.length" class="empty-state">
-      <h2>{{ route.query.q || status ? '没有匹配的任务' : '还没有测评任务' }}</h2>
-      <p>调整筛选，或选择对象开始一次测评。</p>
-      <RouterLink class="ag-button" to="/runs">清除筛选</RouterLink>
-    </div>
+    <EmptyState
+      v-if="!visible.length"
+      title="没有匹配的测评任务"
+      description="清除筛选查看全部任务，或创建一次测评。"
+      ><RouterLink class="ag-button" to="/runs">清除筛选</RouterLink></EmptyState
+    >
     <div v-else class="table-scroll">
       <table class="data-table">
         <thead>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EmptyState from '../../components/EmptyState.vue'
 import { computed } from 'vue'
 import { usePreview } from '../workspace'
 import type { Comparison } from '../types'
@@ -80,7 +81,7 @@ const audit = computed(() =>
       </li>
     </ul>
     <h3>操作记录</h3>
-    <p v-if="!audit.length" class="muted">此对比暂无操作记录；种子数据仅为 Mock 示例。</p>
+    <EmptyState v-if="!audit.length" title="还没有操作记录" description="可先核对上方报告来源；后续保存对比设置或确认样本配对时，会在这里留下记录。" />
     <ul>
       <li v-for="entry in audit" :key="entry.id">
         {{ new Date(entry.time).toLocaleString() }} · {{ entry.actor }} · {{ entry.action }}

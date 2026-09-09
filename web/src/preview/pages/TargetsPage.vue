@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EmptyState from '../../components/EmptyState.vue'
+import StatusNotice from '../../components/StatusNotice.vue'
 import ValueView from '../../components/ValueView.vue'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -68,12 +70,10 @@ const canAnalyze = computed(
     </div>
     <RouterLink v-if="id" to="/preview/targets">返回对象列表</RouterLink>
   </div>
-  <el-alert
+  <StatusNotice
     v-if="id && (!target || !version)"
     type="error"
     title="404：对象或指定版本不存在，无法使用该快照。"
-    :closable="false"
-    show-icon
   />
   <template v-else-if="target && version">
     <section class="panel">
@@ -93,11 +93,10 @@ const canAnalyze = computed(
         ></label>
       </div>
       <p>{{ version.note }}</p>
-      <el-alert
+      <StatusNotice
         v-if="!version.executable"
         title="此版本已由源平台停用，只能查看快照，无法创建测评任务。"
         type="warning"
-        :closable="false"
       />
       <div class="action-row prep-actions">
         <RouterLink
@@ -167,9 +166,8 @@ const canAnalyze = computed(
                 <ValueView :value="tool.inputSchema" />
                 <p>输出 Schema</p>
                 <ValueView :value="tool.outputSchema" />
-              </div>
-            </details></template
-          >
+              </div></details
+          ></template>
         </article>
         <p v-if="skills.some((skill) => !skill.definition)" class="muted">
           部分 Skill 缺少固定定义，不使用目录最新版本替代历史快照。
@@ -178,9 +176,12 @@ const canAnalyze = computed(
     </div>
     <section class="panel">
       <h2>相关测评集</h2>
-      <p v-if="!datasets.length" class="preview-empty">
-        还没有关联测评集，请手工创建或从测评集页面导入文件。
-      </p>
+      <EmptyState
+        v-if="!datasets.length"
+        title="还没有关联测评集"
+        description="可手工创建用例，或从测评集页面导入文件。"
+        ><RouterLink class="ag-button" to="/preview/datasets">查看测评集</RouterLink></EmptyState
+      >
       <p v-for="dataset in datasets" :key="dataset.id">
         <RouterLink :to="`/preview/datasets/${dataset.id}`">{{ dataset.name }}</RouterLink> ·
         {{ dataset.versions.length }} 个发布版本
@@ -205,7 +206,11 @@ const canAnalyze = computed(
         /></el-select>
       </div>
     </div>
-    <div v-if="!rows.length" class="panel preview-empty">没有匹配的对象，请调整搜索条件。</div>
+    <EmptyState
+      v-if="!rows.length"
+      title="没有匹配的对象"
+      description="请调整搜索词，或清除对象类型筛选，查看其他可用对象。"
+    ></EmptyState>
     <div class="preview-grid">
       <article v-for="item in rows" :key="item.id" class="panel">
         <p class="muted">{{ item.type }} · {{ item.form }}</p>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EmptyState from '../../components/EmptyState.vue'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePreview } from '../workspace'
@@ -165,12 +166,13 @@ watch(() => route.fullPath, readQuery, { immediate: true })
       }}</span>
     </div>
   </section>
-  <section v-if="!rows.length" class="panel preview-empty">
-    <h2>没有符合条件的任务</h2>
-    <p class="muted">调整筛选，或创建第一条本地体验运行。</p>
-    <el-button @click="clearFilters">清除筛选</el-button
-    ><RouterLink to="/preview/runs/new">创建测评 →</RouterLink>
-  </section>
+  <EmptyState
+    v-if="!rows.length"
+    title="没有符合条件的任务"
+    description="清除筛选查看其他任务，或创建首次测评。"
+    ><el-button @click="clearFilters">清除筛选</el-button>
+    <RouterLink to="/preview/runs/new">创建测评 →</RouterLink></EmptyState
+  >
   <section v-else class="panel">
     <p class="muted small">
       共 {{ filtered.length }} 次运行 · 质量统计均来自该次运行的机器原判，NA／error 不计入分数。

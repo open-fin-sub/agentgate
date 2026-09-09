@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EmptyState from '../../components/EmptyState.vue'
+import StatusNotice from '../../components/StatusNotice.vue'
 import { computed, ref, watch } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -231,24 +233,21 @@ function useEvaluator() {
     </div>
     <RouterLink v-if="id || creating" to="/preview/evaluators">返回评估器列表</RouterLink>
   </div>
-  <el-alert
+  <StatusNotice
     v-if="state.role === 'viewer'"
     title="只读角色：可以查看与本地试评，不能新建、发布、复制或归档。"
     type="warning"
-    :closable="false"
   />
-  <el-alert
+  <StatusNotice
     v-if="!creating && id && (!evaluator || !version)"
     title="404：评估器或指定发布版本不存在。"
     type="error"
-    :closable="false"
   />
   <template v-else-if="creating || evaluator">
-    <el-alert
+    <StatusNotice
       v-if="evaluator?.archived"
       title="此评估器已归档；历史版本保留，恢复后可用于新任务。"
       type="warning"
-      :closable="false"
     />
     <section class="panel">
       <template v-if="evaluator && version"
@@ -306,7 +305,7 @@ function useEvaluator() {
         :owner-id="evaluator?.id"
         @update:model-value="update"
       />
-      <el-alert v-if="error" :title="error" type="error" :closable="false" show-icon /><el-button
+      <StatusNotice v-if="error" :title="error" type="error" /><el-button
         v-if="creating || editing"
         type="primary"
         :disabled="readonly"
@@ -354,9 +353,11 @@ function useEvaluator() {
         /></el-select>
       </div>
     </section>
-    <section v-if="!visible.length" class="panel preview-empty">
-      没有匹配的评估器，请调整筛选或新建。
-    </section>
+    <EmptyState
+      v-if="!visible.length"
+      title="没有匹配的评估器"
+      description="调整筛选，或新建评估器，定义本次测评的评分标准。"
+    ></EmptyState>
     <article v-for="item in visible" :key="item.id" class="panel">
       <h2>
         <RouterLink :to="`/preview/evaluators/${item.id}`">{{ item.name }}</RouterLink>

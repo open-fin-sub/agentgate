@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EmptyState from '../../components/EmptyState.vue'
+import StatusNotice from '../../components/StatusNotice.vue'
 import { computed, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { usePreview, uid, downloadJson } from '../workspace'
@@ -119,9 +121,7 @@ function exportAudit() {
           value="viewer" /><el-option label="资源管理员" value="admin"
       /></el-select>
     </div>
-    <p class="muted">
-      仅模拟浏览器中的操作权限，不代表服务端认证与数据隔离已实现。只读角色在工作区操作层拒绝写入；真实上线需要接口鉴权。
-    </p>
+    <p class="muted">选择体验角色，查看不同角色可进行的操作。此选择仅用于模拟体验。</p>
   </section>
   <section class="panel">
     <div class="panel-title">
@@ -217,7 +217,12 @@ function exportAudit() {
           }}</small
         >
       </div>
-      <el-empty v-if="!pending.length" description="当前没有等待任务" :image-size="60" />
+      <EmptyState
+        v-if="!pending.length"
+        title="当前没有等待任务"
+        description="可继续查看资源状态，或到任务列表查看执行结果。"
+        ><RouterLink class="ag-button" to="/preview/runs">查看测评任务</RouterLink></EmptyState
+      >
     </section>
   </div>
   <section class="panel">
@@ -247,11 +252,9 @@ function exportAudit() {
     </div>
   </section>
   <el-dialog v-model="dialog" title="添加体验凭据" width="min(520px, calc(100vw - 32px))"
-    ><el-alert
-      title="只填写虚构别名，不输入真实密钥。真实凭据保管服务尚未接入。"
-      type="info"
-      :closable="false"
-    /><el-form label-position="top" class="preview-form"
+    ><StatusNotice title="请填写虚构别名体验添加过程，不要输入真实密钥。" type="info" /><el-form
+      label-position="top"
+      class="preview-form"
       ><el-form-item label="凭据名称" required
         ><el-input
           v-model="name"

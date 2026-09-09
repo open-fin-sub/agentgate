@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EmptyState from '../components/EmptyState.vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -108,11 +109,26 @@ onUnmounted(() => {
       </div>
 
       <div class="run-stat-grid" aria-label="运行状态统计">
-        <article><strong>{{ activity.status_counts.pending }}</strong><span>排队中</span></article>
-        <article><strong>{{ activity.status_counts.running }}</strong><span>运行中</span></article>
-        <article><strong>{{ activity.status_counts.completed }}</strong><span>已完成</span></article>
-        <article><strong>{{ activity.status_counts.failed }}</strong><span>失败</span></article>
-        <article><strong>{{ activity.status_counts.cancelled }}</strong><span>已取消</span></article>
+        <article>
+          <strong>{{ activity.status_counts.pending }}</strong
+          ><span>排队中</span>
+        </article>
+        <article>
+          <strong>{{ activity.status_counts.running }}</strong
+          ><span>运行中</span>
+        </article>
+        <article>
+          <strong>{{ activity.status_counts.completed }}</strong
+          ><span>已完成</span>
+        </article>
+        <article>
+          <strong>{{ activity.status_counts.failed }}</strong
+          ><span>失败</span>
+        </article>
+        <article>
+          <strong>{{ activity.status_counts.cancelled }}</strong
+          ><span>已取消</span>
+        </article>
       </div>
 
       <div class="run-filter" role="tablist" aria-label="运行筛选">
@@ -122,27 +138,35 @@ onUnmounted(() => {
           role="tab"
           data-testid="runs-queued"
           @click="activeView = 'queued'"
-        >排队中 · {{ activity.queued.length }}</button>
+        >
+          排队中 · {{ activity.queued.length }}
+        </button>
         <button
           type="button"
           :class="{ active: activeView === 'running' }"
           role="tab"
           data-testid="runs-running"
           @click="activeView = 'running'"
-        >运行中 · {{ activity.running.length }}</button>
+        >
+          运行中 · {{ activity.running.length }}
+        </button>
         <button
           type="button"
           :class="{ active: activeView === 'history' }"
           role="tab"
           data-testid="runs-history"
           @click="activeView = 'history'"
-        >最近历史 · {{ activity.recent.length }}</button>
+        >
+          最近历史 · {{ activity.recent.length }}
+        </button>
       </div>
 
       <div class="run-list" :aria-busy="loading">
         <article v-for="run in rows" :key="run.run_id" class="run-row">
           <div class="run-identity">
-            <span class="run-status" :class="`status-${run.status}`">{{ statusLabels[run.status] }}</span>
+            <span class="run-status" :class="`status-${run.status}`">{{
+              statusLabels[run.status]
+            }}</span>
             <b>{{ run.target_name }} · {{ run.target_version }}</b>
             <small>{{ run.dataset_name }} v{{ run.dataset_version }}</small>
           </div>
@@ -159,9 +183,18 @@ onUnmounted(() => {
             />
           </div>
           <dl>
-            <div><dt>提交</dt><dd>{{ formatTime(run.created_at) }}</dd></div>
-            <div><dt>开始</dt><dd>{{ formatTime(run.started_at) }}</dd></div>
-            <div><dt>耗时</dt><dd>{{ formatDuration(run.duration_seconds) }}</dd></div>
+            <div>
+              <dt>提交</dt>
+              <dd>{{ formatTime(run.created_at) }}</dd>
+            </div>
+            <div>
+              <dt>开始</dt>
+              <dd>{{ formatTime(run.started_at) }}</dd>
+            </div>
+            <div>
+              <dt>耗时</dt>
+              <dd>{{ formatDuration(run.duration_seconds) }}</dd>
+            </div>
           </dl>
           <div class="run-action">
             <span v-if="run.queue_position !== null">队列第 {{ run.queue_position }} 位</span>
@@ -171,10 +204,15 @@ onUnmounted(() => {
               link
               type="primary"
               @click="openReport(run)"
-            >查看结果</el-button>
+              >查看结果</el-button
+            >
           </div>
         </article>
-        <el-empty v-if="!loading && rows.length === 0" description="当前筛选下暂无运行" />
+        <EmptyState
+          v-if="!loading && rows.length === 0"
+          title="没有匹配的测评任务"
+          description="调整上方筛选条件，或创建一次测评。"
+        ></EmptyState>
       </div>
     </section>
   </main>

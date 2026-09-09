@@ -4,7 +4,7 @@ Last updated: 2026-09-09
 
 ## Active Web usability Goal — WEB-UX-GOAL-001
 
-最新：A 类结构化输入与已定范围变更完成本批验证，详见 [实施记录](web/productization/usability-implementation.md)。含六类预期完整保存、Token 替换、自动生成延后。人工补查后459条：75已验证、19非缺陷、2后续范围、363待整改；G/C/B/D/E/H/I及全站最终验收继续执行。此前“正在执行A”段保留为开始阶段记录。最新独立验证环境 Web15473/API18473，旧环境保留。
+最新：A 类已在本地提交 `05efa54`。G 类统一状态/空态、校验文案与能力事实，本批 typecheck/build、真实20/20、体验72/72通过。补查后台账488条：181已验证、19非缺陷、3后续范围、285待整改。接下来执行C类下钻保上下文；B/D/E/H/I及全站最终验收继续。详见 [实施记录](web/productization/usability-implementation.md)。独立验证环境 Web15473/API18473，旧环境保留。
 
 用户显式授权按 A–I 模式类自主整改，完成条件以 `docs/web/productization/ux-design-rules.md` 与 Goal 请求为准。仅 Web 可用性与现有 API 映射；禁止 push、PR、合并。保留原有未提交工作，不与原评审任务协调。
 

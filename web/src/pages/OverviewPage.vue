@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import EmptyState from '../components/EmptyState.vue'
+import StatusNotice from '../components/StatusNotice.vue'
+import { userError } from '../apiErrors'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { api, type Overview } from '../api/client'
 import { runsApi } from '../api/runs'
@@ -23,7 +26,7 @@ async function load() {
     data.value = summary
     runs.value = rows
   } catch (e) {
-    if (!signal.aborted) error.value = String(e)
+    if (!signal.aborted) error.value = userError(e)
   } finally {
     if (!signal.aborted) loading.value = false
   }
@@ -46,9 +49,9 @@ const labels = {
     </div>
     <RouterLink class="ag-button primary" to="/runs/new">创建测评</RouterLink>
   </div>
-  <div v-if="error" class="notice error" role="alert">
+  <StatusNotice type="error" v-if="error">
     概况加载失败：{{ error }} <button class="text-button" @click="load">重新加载</button>
-  </div>
+  </StatusNotice>
   <div v-if="loading && !data" class="skeleton" role="status">正在读取运行概况…</div>
   <template v-if="data"
     ><div class="stats-grid">
@@ -97,11 +100,12 @@ const labels = {
         <h2>最近任务</h2>
         <RouterLink to="/runs">查看全部 →</RouterLink>
       </div>
-      <div v-if="!runs.length" class="empty-state">
-        <h2>还没有测评记录</h2>
-        <p>选择可用对象、已发布测评集和评分标准，开始首次测评。</p>
-        <RouterLink class="ag-button primary" to="/runs/new">创建首次测评</RouterLink>
-      </div>
+      <EmptyState
+        v-if="!runs.length"
+        title="还没有测评记录"
+        description="选择测评对象、已发布测评集和评分标准，开始首次测评。"
+        ><RouterLink class="ag-button primary" to="/runs/new">创建首次测评</RouterLink></EmptyState
+      >
       <div v-else class="table-scroll">
         <table class="data-table">
           <thead>

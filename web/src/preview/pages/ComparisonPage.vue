@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EmptyState from '../../components/EmptyState.vue'
+import StatusNotice from '../../components/StatusNotice.vue'
 import JsonFallback from '../../components/JsonFallback.vue'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -238,18 +240,18 @@ function recover() {
 
 <template>
   <RouterLink to="/preview/comparisons" class="back-link">← 版本对比列表</RouterLink>
-  <section v-if="!comparison" class="panel preview-empty">
-    <h1>404 · 对比不存在</h1>
-    <p>该记录可能已重置，或链接 ID 不正确。</p>
-  </section>
+  <EmptyState
+    v-if="!comparison"
+    title="找不到对比报告"
+    description="请从对比列表重新选择记录；重置体验数据可能移除了原报告。"
+    ><RouterLink class="ag-button" to="/preview/comparisons">查看对比列表</RouterLink></EmptyState
+  >
   <template v-else>
     <div class="page-intro">
       <div>
         <h1>{{ comparison.name }}</h1>
         <p>
-          {{
-            comparison.mode === 'controlled' ? '共同配置新实验' : '已有运行比较 · 事后评审规则'
-          }}
+          {{ comparison.mode === 'controlled' ? '共同配置新实验' : '已有运行比较 · 事后评审规则' }}
           · Mock · {{ comparison.id }}
         </p>
       </div>
@@ -260,10 +262,10 @@ function recover() {
         >
       </div>
     </div>
-    <p v-if="state.role === 'viewer'" class="notice warning">
+    <StatusNotice type="warning" v-if="state.role === 'viewer'">
       当前为只读角色，无权复现或恢复实验；可查看与导出证据。
-    </p>
-    <p v-if="error" role="alert" class="notice error">{{ error }}</p>
+    </StatusNotice>
+    <StatusNotice type="error" v-if="error">{{ error }}</StatusNotice>
     <section class="panel">
       <label
         >候选版本（每个候选独立对基线）<el-select v-model="candidateId"
@@ -274,14 +276,16 @@ function recover() {
             :label="`${state.runs.find((item) => item.id === id)?.name ?? '记录缺失'} · ${state.runs.find((item) => item.id === id)?.config.targetVersion ?? id}`" /></el-select
       ></label>
     </section>
-    <section v-if="!baseline || !candidate" class="panel preview-empty">
-      <h2>404 · 关联运行不存在</h2>
-      <p>基线或所选候选缺失，请选择有效候选或返回列表。</p>
-    </section>
-    <section v-else-if="!sameAsset" class="panel notice error">
+    <EmptyState
+      v-if="!baseline || !candidate"
+      title="缺少关联任务"
+      description="请选择其他候选任务，或返回对比列表重新选择报告。"
+      ><RouterLink class="ag-button" to="/preview/comparisons">查看对比列表</RouterLink></EmptyState
+    >
+    <StatusNotice type="error" v-else-if="!sameAsset" class="panel">
       <h2>不能跨资产比较</h2>
       <p>基线与候选必须是同一逻辑 Agent 或 Skill。请返回列表重新选择。</p>
-    </section>
+    </StatusNotice>
     <template v-else>
       <section class="panel">
         <h2>{{ comparisonConclusion(baseline, candidate, comparison.rules, statistics) }}</h2>
@@ -293,7 +297,7 @@ function recover() {
               {{ runStatusLabels[baseline.status] }} · 返回 {{ baseline.results.length }} /
               {{ baseline.cases.length }} 条
             </p>
-            <p v-if="baseline.error" class="notice error">{{ baseline.error }}</p>
+            <StatusNotice type="error" v-if="baseline.error">{{ baseline.error }}</StatusNotice>
           </div>
           <div>
             <h3>候选 B · {{ candidate.config.targetVersion }}</h3>
@@ -302,7 +306,7 @@ function recover() {
               {{ runStatusLabels[candidate.status] }} · 返回 {{ candidate.results.length }} /
               {{ candidate.cases.length }} 条
             </p>
-            <p v-if="candidate.error" class="notice error">{{ candidate.error }}</p>
+            <StatusNotice type="error" v-if="candidate.error">{{ candidate.error }}</StatusNotice>
           </div>
         </div>
         <p>
@@ -329,9 +333,9 @@ function recover() {
           review)，排除 NA 和
           error，与运行报告一致。错误率以已返回用例为分母；缺失覆盖单列，分数不补零。
         </p>
-        <p v-if="!controlled" class="notice warning">
+        <StatusNotice type="warning" v-if="!controlled">
           以下均值差仅描述各自运行的变化；输入 / 评分 / 资源差异可能影响指标，不能归因于目标版本。
-        </p>
+        </StatusNotice>
         <div class="preview-grid metric-grid">
           <article v-for="metric in metrics" :key="metric.metric" class="preview-kpi metric-card">
             <p>
@@ -412,8 +416,10 @@ function recover() {
             </tbody>
           </table>
         </div>
-        <p v-if="!gates.length" class="notice warning">未配置规则，不能形成门禁通过结论。</p>
-        <div class="notice warning">
+        <StatusNotice type="warning" v-if="!gates.length"
+          >未配置规则，不能形成门禁通过结论。</StatusNotice
+        >
+        <StatusNotice type="warning">
           <label
             >统计响应体验场景（仅 Mock）<el-select v-model="statistics"
               ><el-option value="insufficient" label="证据不足示例" /><el-option
@@ -435,13 +441,13 @@ function recover() {
             }}。p/CI
             按实际差值方向选取固定示例，未由样本计算。切换场景不会修复不可比配置、缺失指标或未通过阈值，也不会形成生产发布许可。
           </p>
-        </div>
+        </StatusNotice>
         <details>
           <summary>查看 Mock 统计响应与实际样本数</summary>
           <p>
             输入样本 A {{ baseline.cases.length }} 条、B
             {{ candidate.cases.length }} 条；有效评分配对
-            {{ statisticalExample?.actualPairedCount }} 对。生产统计方法及最低样本合同尚未接入。
+            {{ statisticalExample?.actualPairedCount }} 对。此处为模拟统计结果，仅用于体验判读流程。
           </p>
           <JsonFallback :model-value="statisticalExample" readonly />
         </details>
@@ -470,7 +476,11 @@ function recover() {
           仅 A / 仅 B 是输入范围增删；同 ID
           输入或期望变化、结果缺失均列为未配对。共同失败单列，不与执行错误混算。
         </p>
-        <p v-if="!filtered.length" class="preview-empty">没有匹配的样本，调整筛选查看其他分组。</p>
+        <EmptyState
+          v-if="!filtered.length"
+          title="没有匹配的样本"
+          description="调整样本分组或搜索词，查看其他变化。"
+        ></EmptyState>
         <div class="sample-list">
           <button
             v-for="pair in filtered"
