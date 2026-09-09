@@ -127,7 +127,7 @@ onUnmounted(() => {
         }}</RouterLink>
       </header>
       <main id="workspace-main" class="product-main" tabindex="-1"><RouterView /></main>
-      <footer class="product-footer">AgentGate · 测评配置、版本与结果可追溯</footer>
+      <footer class="product-footer">AgentGate</footer>
     </div>
   </div>
 </template>

@@ -495,6 +495,24 @@ h3 {
 .checkbox-card b {
   font-weight: 500;
 }
+.entity-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 32px;
+  margin-block: 12px;
+}
+.entity-group > * {
+  min-width: 0;
+  flex: 1 1 240px;
+}
+.el-select-dropdown__item:has(.ux-entity),
+.el-select-dropdown__item:has(.ux-metadata) {
+  height: auto;
+  min-height: 40px;
+  padding-block: 8px;
+  white-space: normal;
+  line-height: 1.5;
+}
 .detail-row {
   display: flex;
   justify-content: space-between;

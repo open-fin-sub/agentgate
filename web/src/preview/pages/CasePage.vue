@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../../components/EntityRef.vue'
+import MetadataGroup from '../../components/MetadataGroup.vue'
 import EntityLink from '../components/EntityLink.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
@@ -29,9 +31,12 @@ const router = useRouter()
 const currentRunId = computed(() => props.runId ?? String(route.params.id ?? ''))
 const currentCaseId = computed(() => props.caseId ?? String(route.params.caseId ?? ''))
 const run = computed(() => state.runs.find((item) => item.id === currentRunId.value))
-const testCase = computed(() =>
-  run.value?.cases.find((item) => item.id === currentCaseId.value),
+const datasetName = computed(
+  () => state.datasets.find((item) => item.id === run.value?.config.datasetId)?.name ?? '',
 )
+const evaluatorName = (id: string) =>
+  run.value?.evaluators.find((item) => item.id === id)?.name ?? ''
+const testCase = computed(() => run.value?.cases.find((item) => item.id === currentCaseId.value))
 const result = computed(() =>
   run.value?.results.find((item) => item.caseId === currentCaseId.value),
 )
@@ -69,10 +74,14 @@ const regressionDestinations = computed(() =>
       item.targetId === run.value?.config.targetId,
   ),
 )
-const reportLink = computed(() => route.query.returnTo ? previewReturn(route.query.returnTo, `/preview/runs/${currentRunId.value}`) : ({
-  path: `/preview/runs/${run.value?.id ?? String(route.params.id)}`,
-  query: { ...route.query },
-}))
+const reportLink = computed(() =>
+  route.query.returnTo
+    ? previewReturn(route.query.returnTo, `/preview/runs/${currentRunId.value}`)
+    : {
+        path: `/preview/runs/${run.value?.id ?? String(route.params.id)}`,
+        query: { ...route.query },
+      },
+)
 const revisionLink = computed(() => ({
   path: `/preview/datasets/${run.value?.config.datasetId}`,
   query: {
@@ -316,7 +325,9 @@ watch([currentRunId, currentCaseId], initializeReview, {
 })
 </script>
 <template>
-  <RouterLink v-if="!embedded" class="back-link" :to="reportLink">{{ route.query.returnTo ? '← 返回来源页面（保留筛选）' : '← 返回报告（保留筛选）' }}</RouterLink>
+  <RouterLink v-if="!embedded" class="back-link" :to="reportLink">{{
+    route.query.returnTo ? '← 返回来源页面（保留筛选）' : '← 返回报告（保留筛选）'
+  }}</RouterLink>
   <EmptyState
     v-if="!run || !testCase"
     title="找不到用例"
@@ -326,18 +337,48 @@ watch([currentRunId, currentCaseId], initializeReview, {
   <template v-else>
     <div class="page-intro">
       <div>
-        <h1>{{ testCase.id }} · 用例证据</h1>
-        <p>
-          {{ run.target.name }} / {{ run.config.targetVersion }} · {{ run.config.datasetId }} v{{
-            run.config.datasetVersion
-          }}
-          · {{ testCase.category }} / {{ testCase.difficulty }} / {{ testCase.priority }}
-        </p>
+        <h1>用例证据</h1>
+        <p>{{ testCase.question }}</p>
+        <div class="entity-group">
+          <EntityRef
+            :name="run.target.name"
+            :type="run.target.type"
+            :version="run.config.targetVersion"
+            compact
+          />
+          <EntityRef
+            :name="datasetName"
+            type="测评集"
+            :version="run.config.datasetVersion"
+            :id="run.config.datasetId"
+            compact
+          />
+        </div>
+        <MetadataGroup
+          :items="[
+            { label: '分类', value: testCase.category },
+            { label: '难度', value: testCase.difficulty },
+            { label: '优先级', value: testCase.priority },
+          ]"
+        />
+        <details>
+          <summary>查看用例编号</summary>
+          <code>{{ testCase.id }}</code>
+        </details>
       </div>
       <el-button @click="exportEvidence">导出本条证据</el-button>
     </div>
     <div v-if="!embedded" class="case-navigation panel">
-      <DetailNavigation :items="filteredIds.map(id => ({ key: id, label: run?.cases.find(item => item.id === id)?.question ?? '用例证据' }))" :current-key="currentCaseId" @select="navigate" />
+      <DetailNavigation
+        :items="
+          filteredIds.map((id) => ({
+            key: id,
+            label: run?.cases.find((item) => item.id === id)?.question ?? '用例证据',
+          }))
+        "
+        :current-key="currentCaseId"
+        @select="navigate"
+      />
       <span class="muted small">按原报告筛选顺序查看用例。</span>
     </div>
     <StatusNotice type="warning" v-if="readonly">
@@ -372,19 +413,23 @@ watch([currentRunId, currentCaseId], initializeReview, {
       </StatusNotice>
       <div v-if="latestReview" class="review-summary">
         <strong>最新人工复核（独立记录）</strong>
-        <p>
-          {{
-            latestReview.decision === 'confirmed'
-              ? '确认 Badcase'
-              : latestReview.decision === 'dismissed'
-                ? '非 Badcase / 机器误判'
-                : '待复核'
-          }}
-          · 人工分数 {{ scoreText(latestReview.score) }} · {{ latestReview.reason }}
-        </p>
-        <span class="muted small"
-          >{{ latestReview.actor }} · {{ formatTime(latestReview.time) }}</span
-        >
+        <MetadataGroup
+          :items="[
+            {
+              label: '复核结论',
+              value:
+                latestReview.decision === 'confirmed'
+                  ? '确认 Badcase'
+                  : latestReview.decision === 'dismissed'
+                    ? '非 Badcase'
+                    : '待复核',
+            },
+            { label: '人工分数', value: scoreText(latestReview.score) },
+            { label: '复核人', value: latestReview.actor },
+            { label: '复核时间', value: formatTime(latestReview.time) },
+          ]"
+        />
+        <p>复核理由：{{ latestReview.reason }}</p>
       </div>
     </section>
     <div class="preview-columns evidence-grid">
@@ -446,19 +491,45 @@ watch([currentRunId, currentCaseId], initializeReview, {
           ><strong>{{ scoreText(check.score) }}</strong>
         </div>
         <p>{{ check.reason || '未返回原因，证据不足' }}</p>
-        <EntityLink context-key="src/preview/pages/CasePage.vue:132"
-          :related="result?.checks.map(item => ({ label: item.evaluatorId, to: { path: `/preview/evaluators/${item.evaluatorId}`, query: { version: String(item.evaluatorVersion) } } }))"
+        <EntityRef
+          :name="evaluatorName(check.evaluatorId)"
+          type="评估器"
+          :version="check.evaluatorVersion"
+          :id="check.evaluatorId"
+          compact
+        />
+        <MetadataGroup :items="[{ label: '质量维度', value: check.dimension }]" />
+        <EntityLink
+          context-key="src/preview/pages/CasePage.vue:132"
+          :related="
+            result?.checks.map((item) => ({
+              label: evaluatorName(item.evaluatorId) || '评分标准',
+              to: {
+                path: `/preview/evaluators/${item.evaluatorId}`,
+                query: { version: String(item.evaluatorVersion) },
+              },
+            }))
+          "
           :to="{
             path: `/preview/evaluators/${check.evaluatorId}`,
             query: { version: String(check.evaluatorVersion) },
           }"
-          >{{ check.evaluatorId }} v{{ check.evaluatorVersion }}</EntityLink
-        ><span class="muted small"> · 维度 {{ check.dimension || '未提供' }}</span>
+          >查看评估器版本</EntityLink
+        >
       </article>
       <StatusNotice type="warning" v-if="absentChecks.length">
-        检查缺失：{{
-          absentChecks.map((item) => `${item.id} v${item.version}`).join('、')
-        }}。可能尚未执行、因前置失败短路或证据未返回；缺少原因时无法确定，不补成通过或零分。
+        以下评分标准缺少检查记录。请结合任务进度和已有证据核对，缺失结果不计为通过或零分。
+        <div class="entity-group">
+          <EntityRef
+            v-for="item in absentChecks"
+            :key="item.id"
+            :name="evaluatorName(item.id)"
+            type="评估器"
+            :version="item.version"
+            :id="item.id"
+            compact
+          />
+        </div>
       </StatusNotice>
       <p v-if="!result?.checks.length" class="muted">尚无评估器检查证据。</p>
     </section>
@@ -475,15 +546,24 @@ watch([currentRunId, currentCaseId], initializeReview, {
         :open="!!step.error"
       >
         <summary>
-          {{ step.title }} · {{ step.duration == null ? '耗时缺失' : `${step.duration} ms`
-          }}{{ step.error ? ' · 有错误' : '' }}
+          <strong>{{ step.title }}</strong>
+          <MetadataGroup
+            :items="[
+              { label: '耗时', value: step.duration == null ? null : `${step.duration} ms` },
+              { label: '存在错误', value: !!step.error },
+            ]"
+          />
         </summary>
         <StatusNotice type="error" v-if="step.error">{{ step.error }}</StatusNotice>
         <p><strong>输入</strong></p>
         <ValueView :value="step.input || '输入缺失'" />
         <p class="case-space"><strong>输出</strong></p>
         <ValueView :value="step.output || '输出缺失'" />
-        <p class="muted small">Token：{{ step.tokens ?? '缺失' }} · 节点 {{ step.id }}</p>
+        <MetadataGroup :items="[{ label: 'Token 用量', value: step.tokens }]" />
+        <details>
+          <summary>查看步骤编号</summary>
+          <code>{{ step.id }}</code>
+        </details>
       </details>
     </section>
     <section ref="reviewForm" class="panel" tabindex="-1" aria-label="人工复核表单">
@@ -560,10 +640,15 @@ watch([currentRunId, currentCaseId], initializeReview, {
                   ? '非 Badcase'
                   : '待复核'
             }}
-            · {{ scoreText(entry.score) }}</strong
-          >
+          </strong>
           <p>{{ entry.reason }}</p>
-          <p class="muted small">{{ entry.actor }} · {{ formatTime(entry.time) }}</p>
+          <MetadataGroup
+            :items="[
+              { label: '人工分数', value: scoreText(entry.score) },
+              { label: '复核人', value: entry.actor },
+              { label: '复核时间', value: formatTime(entry.time) },
+            ]"
+          />
         </article>
       </details>
     </section>

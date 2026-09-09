@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EntityRef from '../components/EntityRef.vue'
 import { useDetailState } from '../components/detailState'
 import LineageLink from '../components/LineageLink.vue'
 import DetailDrawer from '../components/DetailDrawer.vue'
@@ -75,9 +76,32 @@ const statusLabels = {
   cancelled: '已取消',
 }
 const evidenceKey = useDetailState('report-evidence', '')
-const evidenceItems = computed(() => results.value.map(item => ({ key: JSON.stringify([item.case_id, item.evaluator_id]), label: cases.value.get(item.case_id)?.name ?? '用例证据' })))
-const evidenceResult = computed(() => results.value.find(item => JSON.stringify([item.case_id, item.evaluator_id]) === evidenceKey.value))
-const evidencePath = computed(() => evidenceResult.value && report.value ? router.resolve({ path: `/runs/${encodeURIComponent(report.value.run.id)}/cases/${encodeURIComponent(evidenceResult.value.case_id)}`, query: { evaluator: evidenceResult.value.evaluator_id, outcome: filter.value || undefined, dimension: dimension.value || undefined, q: query.value || undefined, fromStatus: route.query.fromStatus, fromQuery: route.query.fromQuery } }).fullPath : undefined)
+const evidenceItems = computed(() =>
+  results.value.map((item) => ({
+    key: JSON.stringify([item.case_id, item.evaluator_id]),
+    label: cases.value.get(item.case_id)?.name ?? '用例证据',
+  })),
+)
+const evidenceResult = computed(() =>
+  results.value.find(
+    (item) => JSON.stringify([item.case_id, item.evaluator_id]) === evidenceKey.value,
+  ),
+)
+const evidencePath = computed(() =>
+  evidenceResult.value && report.value
+    ? router.resolve({
+        path: `/runs/${encodeURIComponent(report.value.run.id)}/cases/${encodeURIComponent(evidenceResult.value.case_id)}`,
+        query: {
+          evaluator: evidenceResult.value.evaluator_id,
+          outcome: filter.value || undefined,
+          dimension: dimension.value || undefined,
+          q: query.value || undefined,
+          fromStatus: route.query.fromStatus,
+          fromQuery: route.query.fromQuery,
+        },
+      }).fullPath
+    : undefined,
+)
 async function load() {
   clearTimeout(timer)
   controller?.abort()
@@ -148,12 +172,35 @@ function showDimension(key: string) {
   >
   <div class="page-intro">
     <div>
-      <h1>{{ progress?.target_name ?? '任务详情' }}</h1>
-      <p>
-        {{ progress?.target_version }}
-        <span v-if="progress">· {{ progress.dataset_name }} v{{ progress.dataset_version }}</span>
-      </p>
-      <p class="small">任务编号 {{ route.params.runId }}</p>
+      <h1>{{ report ? '测评报告' : '任务详情' }}</h1>
+      <StatusNotice
+        v-if="report"
+        :type="report.release_gate.outcome === 'fail' ? 'warning' : 'info'"
+      >
+        <h2>{{ gateLabels[report.release_gate.reason_code] }}</h2>
+        <div>依据本次测评保存的判定规则；此结论不会自动发布测评对象。</div>
+      </StatusNotice>
+      <details v-if="progress">
+        <summary>测评对象与固定输入</summary>
+        <div class="entity-group">
+          <EntityRef
+            :name="progress.target_name"
+            type="测评对象"
+            :version="progress.target_version"
+            compact
+          />
+          <EntityRef
+            :name="progress.dataset_name"
+            type="测评集"
+            :version="progress.dataset_version"
+            compact
+          />
+        </div>
+      </details>
+      <details>
+        <summary>查看任务编号</summary>
+        <code>{{ route.params.runId }}</code>
+      </details>
     </div>
     <div v-if="report" class="action-row">
       <RouterLink
@@ -226,8 +273,17 @@ function showDimension(key: string) {
         progress.started_at ? new Date(progress.started_at).toLocaleString('zh-CN') : '尚未开始'
       }}</span>
     </div>
-    <StatusNotice type="error" v-if="progress.error" message="任务执行中断。请核对对象与评分标准后重新创建测评；仍失败时请联系管理员。" />
-    <JsonFallback v-if="progress.error" :model-value="progress.error" readonly label="执行错误详情" />
+    <StatusNotice
+      type="error"
+      v-if="progress.error"
+      message="任务执行中断。请核对对象与评分标准后重新创建测评；仍失败时请联系管理员。"
+    />
+    <JsonFallback
+      v-if="progress.error"
+      :model-value="progress.error"
+      readonly
+      label="执行错误详情"
+    />
     <p class="muted">
       {{
         progress.status === 'pending' || progress.status === 'running'
@@ -235,14 +291,12 @@ function showDimension(key: string) {
           : '本次任务已结束，但没有形成完整报告。可核对当前状态，再重新创建测评。'
       }}
     </p>
-    <p v-if="progress.status === 'pending' || progress.status === 'running'" class="muted small">任务状态会自动更新。你可以返回任务列表，完成后再查看报告。</p>
+    <p v-if="progress.status === 'pending' || progress.status === 'running'" class="muted small">
+      任务状态会自动更新。你可以返回任务列表，完成后再查看报告。
+    </p>
     <RouterLink v-else class="ag-button" to="/runs/new">重新创建测评</RouterLink>
   </section>
-  <template v-if="report"
-    ><StatusNotice :type="report.release_gate.outcome === 'fail' ? 'warning' : 'info'">
-      <strong>{{ gateLabels[report.release_gate.reason_code] }}</strong>
-      <div>执行已完成。判定依据为本次运行保存的规则，未自动发布任何 Agent。</div>
-    </StatusNotice>
+  <template v-if="report">
     <nav class="local-tabs" aria-label="报告内容">
       <button :class="{ active: tab === 'summary' }" @click="tab = 'summary'">总体结果</button
       ><button :class="{ active: tab === 'cases' }" @click="tab = 'cases'">评估结果与用例</button
@@ -251,9 +305,9 @@ function showDimension(key: string) {
     <template v-if="tab === 'summary'"
       ><div class="stats-grid">
         <div class="stat-box">
-          <div class="stat-label">总体分数 · 0～1</div>
+          <div class="stat-label">总体分数</div>
           <div class="stat-number">{{ scoreText(overall?.score) }}</div>
-          <div class="stat-note">按评分方案汇总，不是通过率</div>
+          <div class="stat-note">范围 0～1，按评分方案汇总，不是通过率</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">测评用例</div>
@@ -280,7 +334,7 @@ function showDimension(key: string) {
             class="ag-button"
             @click="showOutcome(key)"
           >
-            {{ label }} ·
+            {{ label }}：
             {{
               key === 'pass'
                 ? overall?.passed
@@ -309,10 +363,10 @@ function showDimension(key: string) {
               <tr>
                 <th>维度</th>
                 <th>总分</th>
-                <th>通过 / 不通过</th>
-                <th>需复核 / 错误</th>
+                <th>通过情况</th>
+                <th>待处理结果</th>
                 <th>不适用</th>
-                <th>适用 / 总数</th>
+                <th>统计范围</th>
                 <th>操作</th>
               </tr>
             </thead>
@@ -320,10 +374,31 @@ function showDimension(key: string) {
               <tr v-for="m in report.metrics.filter((m) => m.level === 'dimension')" :key="m.key">
                 <td>{{ metricLabel(m.key) }}</td>
                 <td>{{ scoreText(m.score) }}</td>
-                <td>{{ m.passed }} / {{ m.failed }}</td>
-                <td>{{ m.reviewed }} / {{ m.errors }}</td>
+                <td>
+                  <MetadataGroup
+                    :items="[
+                      { label: '通过', value: m.passed },
+                      { label: '不通过', value: m.failed },
+                    ]"
+                  />
+                </td>
+                <td>
+                  <MetadataGroup
+                    :items="[
+                      { label: '需复核', value: m.reviewed },
+                      { label: '错误', value: m.errors },
+                    ]"
+                  />
+                </td>
                 <td>{{ m.not_applicable }}</td>
-                <td>{{ m.applicable }} / {{ m.total }}</td>
+                <td>
+                  <MetadataGroup
+                    :items="[
+                      { label: '适用', value: m.applicable },
+                      { label: '总数', value: m.total },
+                    ]"
+                  />
+                </td>
                 <td>
                   <button class="text-button" @click="showDimension(m.key)">查看对应结果</button>
                 </td>
@@ -335,9 +410,7 @@ function showDimension(key: string) {
       <StatusNotice type="error" v-if="report.release_gate.missing_results.length">
         <p>
           有
-          {{
-            report.release_gate.missing_results.length
-          }}
+          {{ report.release_gate.missing_results.length }}
           项检查缺少结果，请核对以下用例与评分标准后重新测评。
         </p>
         <MetadataGroup
@@ -362,7 +435,8 @@ function showDimension(key: string) {
     ></template>
     <section v-else-if="tab === 'cases'" class="panel table-panel">
       <div class="panel-title">
-        <h2>逐项结果 · {{ results.length }} 条</h2>
+        <h2>逐项结果</h2>
+        <MetadataGroup :items="[{ label: '结果数', value: results.length }]" />
         <button v-if="dimension" class="text-button" @click="dimension = ''">
           清除维度：{{ metricLabel(dimension) }}
         </button>
@@ -383,8 +457,8 @@ function showDimension(key: string) {
         <table class="data-table">
           <thead>
             <tr>
-              <th>用例 / 评分标准</th>
-              <th>结论 / 分数</th>
+              <th>测评内容</th>
+              <th>测评结果</th>
               <th>原因</th>
               <th>操作</th>
             </tr>
@@ -392,18 +466,27 @@ function showDimension(key: string) {
           <tbody>
             <tr v-for="item in results" :key="`${item.case_id}:${item.evaluator_id}`">
               <td>
-                {{ cases.get(item.case_id)?.name ?? item.case_id
-                }}<small>{{ catalogLabel(item.evaluator_name) }}</small>
+                <EntityRef :name="cases.get(item.case_id)?.name ?? ''" type="用例" compact />
+                <MetadataGroup
+                  :items="[
+                    { label: '评分标准', value: catalogLabel(item.evaluator_name) },
+                    { label: '评分版本', value: item.evaluator_version },
+                  ]"
+                />
               </td>
               <td>
                 <span class="badge" :class="item.outcome">{{ outcomeLabels[item.outcome] }}</span
-                ><small>{{ scoreText(item.score) }}</small>
+                ><MetadataGroup :items="[{ label: '分数', value: scoreText(item.score) }]" />
               </td>
               <td>{{ item.reason }}</td>
               <td>
-                <button class="text-button" :data-detail-key="JSON.stringify([item.case_id, item.evaluator_id])" @click="evidenceKey = JSON.stringify([item.case_id, item.evaluator_id])"
-                  >查看证据</button
+                <button
+                  class="text-button"
+                  :data-detail-key="JSON.stringify([item.case_id, item.evaluator_id])"
+                  @click="evidenceKey = JSON.stringify([item.case_id, item.evaluator_id])"
                 >
+                  查看证据
+                </button>
               </td>
             </tr>
           </tbody>
@@ -417,35 +500,42 @@ function showDimension(key: string) {
     </section>
     <section v-else class="panel">
       <h2>固定版本与执行配置</h2>
-      <div class="detail-row">
-        <span>测评集</span
-        ><RouterLink
-          :to="{
-            path: '/datasets',
-            query: {
-              dataset: report.run.manifest.dataset.dataset_id,
-              version: report.run.manifest.dataset.version,
-            },
-          }"
-          >{{ report.run.manifest.dataset.dataset_name }} v{{
-            report.run.manifest.dataset.version
-          }}</RouterLink
+      <div class="entity-group">
+        <EntityRef
+          :name="report.run.manifest.dataset.dataset_name"
+          type="测评集"
+          :version="report.run.manifest.dataset.version"
+          :id="report.run.manifest.dataset.dataset_id"
         >
+          <RouterLink
+            :to="{
+              path: '/datasets',
+              query: {
+                dataset: report.run.manifest.dataset.dataset_id,
+                version: report.run.manifest.dataset.version,
+              },
+            }"
+            >打开测评集</RouterLink
+          >
+        </EntityRef>
+        <EntityRef
+          v-for="item in report.run.manifest.evaluator_specs"
+          :key="item.id"
+          :name="catalogLabel(item.name)"
+          type="评估器"
+          :version="item.version"
+          :id="item.id"
+        />
       </div>
-      <div class="detail-row">
-        <span>评分规则</span
-        ><span>{{
-          report.run.manifest.evaluator_specs.map((e) => `${e.name} v${e.version}`).join('、')
-        }}</span>
-      </div>
-      <div class="detail-row">
-        <span>聚合方案</span
-        ><span
-          >{{ report.run.manifest.metric_plan.id }} @{{
-            report.run.manifest.metric_plan.version
-          }}</span
-        >
-      </div>
+      <details>
+        <summary>高级：评分汇总方案</summary>
+        <MetadataGroup
+          :items="[
+            { label: '方案编号', value: report.run.manifest.metric_plan.id },
+            { label: '版本', value: report.run.manifest.metric_plan.version },
+          ]"
+        />
+      </details>
       <div class="detail-row">
         <span>运行超时</span><span>{{ report.run.manifest.timeout_seconds }} 秒</span>
       </div>
@@ -455,7 +545,26 @@ function showDimension(key: string) {
         <JsonFallback :model-value="report.run.manifest" readonly />
       </details></section
   ></template>
-  <DetailDrawer :model-value="!!evidenceResult" title="用例证据" :items="evidenceItems" :current-key="evidenceKey" :full-path="evidencePath" @update:model-value="value => { if (!value) evidenceKey = '' }" @select="evidenceKey = $event">
-    <CaseResultPage v-if="evidenceResult && report" :run-id="report.run.id" :case-id="evidenceResult.case_id" :evaluator-id="evidenceResult.evaluator_id" :source-report="report" embedded />
+  <DetailDrawer
+    :model-value="!!evidenceResult"
+    title="用例证据"
+    :items="evidenceItems"
+    :current-key="evidenceKey"
+    :full-path="evidencePath"
+    @update:model-value="
+      (value) => {
+        if (!value) evidenceKey = ''
+      }
+    "
+    @select="evidenceKey = $event"
+  >
+    <CaseResultPage
+      v-if="evidenceResult && report"
+      :run-id="report.run.id"
+      :case-id="evidenceResult.case_id"
+      :evaluator-id="evidenceResult.evaluator_id"
+      :source-report="report"
+      embedded
+    />
   </DetailDrawer>
 </template>

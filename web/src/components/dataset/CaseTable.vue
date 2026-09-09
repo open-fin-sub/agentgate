@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MetadataGroup from '../MetadataGroup.vue'
 import EmptyState from '../EmptyState.vue'
 import type { EvaluationCase } from '../../types/dataset'
 
@@ -64,13 +65,19 @@ function move(index: number, offset: number) {
           :aria-current="item.id === selectedId ? 'true' : undefined"
         >
           <b>{{ item.name }}</b>
-          <span>
-            <el-tag size="small" effect="plain">{{ labels[item.category] }}</el-tag>
-            <el-tag size="small" effect="plain" type="info">{{ labels[item.difficulty] }}</el-tag>
-            <small>{{ item.turns.length }} 轮</small>
-          </span>
-          <small>{{ item.notes || item.tags.join(' · ') || '暂无备注' }}</small>
         </button>
+        <MetadataGroup
+          :items="[
+            { label: '分类', value: labels[item.category] },
+            { label: '难度', value: labels[item.difficulty] },
+            { label: '轮次', value: item.turns.length },
+          ]"
+        />
+        <p v-if="item.notes" class="muted small">备注：{{ item.notes }}</p>
+        <MetadataGroup
+          v-if="item.tags.length"
+          :items="[{ label: '标签', value: item.tags.join('、') }]"
+        />
         <div v-if="editable" class="case-row-actions" @click.stop>
           <el-button
             link
@@ -92,7 +99,11 @@ function move(index: number, offset: number) {
           <el-button link size="small" type="danger" @click="emit('remove', item)">删除</el-button>
         </div>
       </article>
-      <EmptyState v-if="!items.length" title="还没有用例" description="可新增用例，填写输入与期望结果；也可以返回测评集导入文件。" />
+      <EmptyState
+        v-if="!items.length"
+        title="还没有用例"
+        description="可新增用例，填写输入与期望结果；也可以返回测评集导入文件。"
+      />
     </div>
   </section>
 </template>

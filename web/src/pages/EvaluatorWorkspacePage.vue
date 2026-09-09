@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../components/EntityRef.vue'
+import MetadataGroup from '../components/MetadataGroup.vue'
 import LineageLink from '../components/LineageLink.vue'
 import EmptyState from '../components/EmptyState.vue'
 import StatusNotice from '../components/StatusNotice.vue'
@@ -55,30 +57,57 @@ onMounted(load)
   <div v-if="loading" class="skeleton">正在加载评分标准…</div>
   <div v-for="item in visible" :key="item.id" class="panel">
     <div class="panel-title">
-      <h2>{{ catalogLabel(item.name) }}</h2>
-      <span class="badge">{{ kinds[item.kind] }} · v{{ item.version }}</span>
+      <EntityRef
+        :name="catalogLabel(item.name)"
+        :type="`${kinds[item.kind]}评估器`"
+        :version="item.version"
+        :id="item.id"
+        :heading-level="2"
+      />
     </div>
-    <div class="detail-row">
-      <span>质量维度 / 指标</span
-      ><span>{{ metricLabel(item.dimension) }} / {{ metricLabel(item.metric) }}</span>
-    </div>
-    <div class="detail-row">
-      <span>未通过时的影响</span
-      ><span>{{ item.severity === 'blocking' ? '阻断本次测评判定' : '参与评分与结果统计' }}</span>
-    </div>
+    <MetadataGroup
+      :items="[
+        { label: '质量维度', value: metricLabel(item.dimension) },
+        { label: '指标', value: metricLabel(item.metric) },
+        {
+          label: '未通过时的影响',
+          value: item.severity === 'blocking' ? '阻断本次测评判定' : '参与评分与结果统计',
+        },
+      ]"
+    />
     <details>
       <summary>查看评分配置</summary>
       <ValueView :value="item.config" />
       <JsonFallback :model-value="item.config" readonly label="评分配置" />
-      <p class="muted small">
-        实现 {{ item.implementation_id }} · {{ item.implementation_version }}
-      </p>
+      <details>
+        <summary>高级：评分实现信息</summary>
+        <MetadataGroup
+          :items="[
+            { label: '实现编号', value: item.implementation_id },
+            { label: '实现版本', value: item.implementation_version },
+          ]"
+        />
+      </details>
     </details>
     <StatusNotice v-if="item.kind === 'llm_judge'">
       此标准由模型评分。完成测评后，可在用例报告中查看评分理由与调用记录。
     </StatusNotice>
     <LineageLink
-      :related="visible.map(entry => ({ label: catalogLabel(entry.name), to: { path: '/lineage', query: { kind: 'evaluator', id: entry.id, version: entry.version, hash: entry.content_sha256, returnTo: route.fullPath } } }))"
+      :related="
+        visible.map((entry) => ({
+          label: catalogLabel(entry.name),
+          to: {
+            path: '/lineage',
+            query: {
+              kind: 'evaluator',
+              id: entry.id,
+              version: entry.version,
+              hash: entry.content_sha256,
+              returnTo: route.fullPath,
+            },
+          },
+        }))
+      "
       :to="{
         path: '/lineage',
         query: {

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../../components/EntityRef.vue'
+import MetadataGroup from '../../components/MetadataGroup.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
 import JsonFallback from '../../components/JsonFallback.vue'
@@ -250,10 +252,22 @@ function recover() {
     <div class="page-intro">
       <div>
         <h1>{{ comparison.name }}</h1>
-        <p>
-          {{ comparison.mode === 'controlled' ? '共同配置新实验' : '已有运行比较 · 事后评审规则' }}
-          · Mock · {{ comparison.id }}
-        </p>
+        <MetadataGroup
+          :items="[
+            {
+              label: '对比方式',
+              value: comparison.mode === 'controlled' ? '受控对比' : '已有结果对比',
+            },
+            {
+              label: '评审规则',
+              value: comparison.mode === 'controlled' ? '执行前确定' : '对比时确定',
+            },
+          ]"
+        />
+        <details>
+          <summary>查看对比编号</summary>
+          <code>{{ comparison.id }}</code>
+        </details>
       </div>
       <div class="action-row">
         <el-button @click="exportComparison">导出对比 JSON</el-button
@@ -273,7 +287,17 @@ function recover() {
             v-for="id in comparison.candidateRunIds"
             :key="id"
             :value="id"
-            :label="`${state.runs.find((item) => item.id === id)?.name ?? '记录缺失'} · ${state.runs.find((item) => item.id === id)?.config.targetVersion ?? id}`" /></el-select
+            :label="state.runs.find((item) => item.id === id)?.name ?? '记录缺失'"
+            ><EntityRef
+              :name="state.runs.find((item) => item.id === id)?.name ?? ''"
+              type="候选任务"
+              compact /><MetadataGroup
+              :items="[
+                {
+                  label: '对象版本',
+                  value: state.runs.find((item) => item.id === id)?.config.targetVersion,
+                },
+              ]" /></el-option></el-select
       ></label>
     </section>
     <EmptyState
@@ -291,21 +315,39 @@ function recover() {
         <h2>{{ comparisonConclusion(baseline, candidate, comparison.rules, statistics) }}</h2>
         <div class="preview-columns compare-two">
           <div>
-            <h3>基线 A · {{ baseline.config.targetVersion }}</h3>
+            <h3>基线 A</h3>
             <RouterLink :to="`/preview/runs/${baseline.id}`">{{ baseline.name }}</RouterLink>
-            <p>
-              {{ runStatusLabels[baseline.status] }} · 返回 {{ baseline.results.length }} /
-              {{ baseline.cases.length }} 条
-            </p>
+            <EntityRef
+              :name="baseline.target.name"
+              :type="baseline.target.type"
+              :version="baseline.config.targetVersion"
+              compact
+            />
+            <MetadataGroup
+              :items="[
+                { label: '状态', value: runStatusLabels[baseline.status] },
+                { label: '已返回用例数', value: baseline.results.length },
+                { label: '用例总数', value: baseline.cases.length },
+              ]"
+            />
             <StatusNotice type="error" v-if="baseline.error">{{ baseline.error }}</StatusNotice>
           </div>
           <div>
-            <h3>候选 B · {{ candidate.config.targetVersion }}</h3>
+            <h3>候选 B</h3>
             <RouterLink :to="`/preview/runs/${candidate.id}`">{{ candidate.name }}</RouterLink>
-            <p>
-              {{ runStatusLabels[candidate.status] }} · 返回 {{ candidate.results.length }} /
-              {{ candidate.cases.length }} 条
-            </p>
+            <EntityRef
+              :name="candidate.target.name"
+              :type="candidate.target.type"
+              :version="candidate.config.targetVersion"
+              compact
+            />
+            <MetadataGroup
+              :items="[
+                { label: '状态', value: runStatusLabels[candidate.status] },
+                { label: '已返回用例数', value: candidate.results.length },
+                { label: '用例总数', value: candidate.cases.length },
+              ]"
+            />
             <StatusNotice type="error" v-if="candidate.error">{{ candidate.error }}</StatusNotice>
           </div>
         </div>
@@ -327,7 +369,8 @@ function recover() {
       </section>
       <ComparePreflight :baseline="baseline" :candidate="candidate" />
       <section class="panel">
-        <h2>聚合变化 · 候选 B − 基线 A</h2>
+        <h2>聚合变化</h2>
+        <p>变化值按候选 B 减基线 A 计算。</p>
         <p class="muted">
           机器原判口径；不将人工意见覆盖原结果。适用 Case 通过率 = pass / (pass + fail +
           review)，排除 NA 和
@@ -339,8 +382,16 @@ function recover() {
         <div class="preview-grid metric-grid">
           <article v-for="metric in metrics" :key="metric.metric" class="preview-kpi metric-card">
             <p>
-              {{ metric.label }} · {{ metric.direction === 'higher' ? '越高越好' : '越低越好' }}
+              {{ metric.label }}
             </p>
+            <MetadataGroup
+              :items="[
+                {
+                  label: '改善方向',
+                  value: metric.direction === 'higher' ? '越高越好' : '越低越好',
+                },
+              ]"
+            />
             <strong>{{ formatMetric(metric.metric, metric.delta, true) }}</strong>
             <p>
               {{ metric.label }}{{ metric.label ? '：' : ''
@@ -350,14 +401,14 @@ function recover() {
                   : '证据不足'
               }}
             </p>
-            <p>
-              A {{ formatMetric(metric.metric, metric.a.value) }} → B
-              {{ formatMetric(metric.metric, metric.b.value) }}
-            </p>
-            <small
-              >采集覆盖 A {{ metric.a.observed }}/{{ metric.a.total }} · B
-              {{ metric.b.observed }}/{{ metric.b.total }}</small
-            >
+            <MetadataGroup
+              :items="[
+                { label: '基线 A', value: formatMetric(metric.metric, metric.a.value) },
+                { label: '候选 B', value: formatMetric(metric.metric, metric.b.value) },
+                { label: '基线采集数', value: `${metric.a.observed} / ${metric.a.total}` },
+                { label: '候选采集数', value: `${metric.b.observed} / ${metric.b.total}` },
+              ]"
+            />
           </article>
         </div>
       </section>
@@ -374,7 +425,7 @@ function recover() {
               <tr>
                 <th>指标</th>
                 <th>规则</th>
-                <th>候选实测值 / 覆盖</th>
+                <th>候选实测结果</th>
                 <th>结论</th>
                 <th>依据</th>
               </tr>
@@ -386,8 +437,16 @@ function recover() {
                   {{ gate.rule.operator }} {{ formatMetric(gate.rule.metric, gate.rule.threshold) }}
                 </td>
                 <td>
-                  {{ formatMetric(gate.rule.metric, gate.measurement.value)
-                  }}<small>{{ gate.measurement.observed }} / {{ gate.measurement.total }} 条</small>
+                  <MetadataGroup
+                    :items="[
+                      {
+                        label: '实测值',
+                        value: formatMetric(gate.rule.metric, gate.measurement.value),
+                      },
+                      { label: '已采集用例数', value: gate.measurement.observed },
+                      { label: '用例总数', value: gate.measurement.total },
+                    ]"
+                  />
                 </td>
                 <td>
                   <span
@@ -488,29 +547,43 @@ function recover() {
             :class="{ active: selected?.id === pair.id }"
             @click="selectSample(pair.id)"
           >
-            <span>{{ pair.id }} · {{ pairLabels[pair.kind] }}</span
-            ><strong>{{ pair.aCase?.question ?? pair.bCase?.question ?? '快照缺失' }}</strong>
+            <MetadataGroup inline :items="[{ label: '配对状态', value: pairLabels[pair.kind] }]" />
+            <strong>{{ pair.aCase?.question ?? pair.bCase?.question ?? '快照缺失' }}</strong>
           </button>
         </div>
         <template v-if="selected"
-          ><h3>{{ selected.id }} · {{ pairLabels[selected.kind] }}</h3>
+          ><h3>{{ pairLabels[selected.kind] }}</h3>
+          <details>
+            <summary>查看配对编号</summary>
+            <code>{{ selected.id }}</code>
+          </details>
           <p>{{ selected.reason }}</p>
           <div class="preview-columns compare-two">
             <CompareEvidence
               :run="baseline"
               :sample="selected.aCase"
-              :items="filtered.flatMap(pair => pair.aCase ? [{ key: pair.aCase.id, label: pair.aCase.question }] : [])"
+              :items="
+                filtered.flatMap((pair) =>
+                  pair.aCase ? [{ key: pair.aCase.id, label: pair.aCase.question }] : [],
+                )
+              "
               :result="selected.a"
               label="基线 A"
             /><CompareEvidence
               :run="candidate"
               :sample="selected.bCase"
-              :items="filtered.flatMap(pair => pair.bCase ? [{ key: pair.bCase.id, label: pair.bCase.question }] : [])"
+              :items="
+                filtered.flatMap((pair) =>
+                  pair.bCase ? [{ key: pair.bCase.id, label: pair.bCase.question }] : [],
+                )
+              "
               :result="selected.b"
               label="候选 B"
             /></div
         ></template>
-        <p v-else-if="selectedCase" role="alert">404 · 所选样本不在本次比较范围内。</p>
+        <StatusNotice v-else-if="selectedCase" type="error"
+          >所选用例不在本次对比范围内，请从上方用例列表重新选择。</StatusNotice
+        >
         <details>
           <summary>人工配对查看（仅用于描述性定位）</summary>
           <p>确认只改变当前并排视图；不改变原始配对数、控制变量检查或门禁证据。</p>
@@ -521,14 +594,24 @@ function recover() {
                   v-for="item in baseline.cases"
                   :key="item.id"
                   :value="item.id"
-                  :label="`${item.id} · ${item.question}`" /></el-select></label
+                  :label="item.question"
+                  ><EntityRef :name="item.question" type="用例" compact /><MetadataGroup
+                    :items="[
+                      { label: '分类', value: item.category },
+                      { label: '难度', value: item.difficulty },
+                    ]" /></el-option></el-select></label
             ><label
               >B 侧用例<el-select v-model="manualB"
                 ><el-option
                   v-for="item in candidate.cases"
                   :key="item.id"
                   :value="item.id"
-                  :label="`${item.id} · ${item.question}`" /></el-select
+                  :label="item.question"
+                  ><EntityRef :name="item.question" type="用例" compact /><MetadataGroup
+                    :items="[
+                      { label: '分类', value: item.category },
+                      { label: '难度', value: item.difficulty },
+                    ]" /></el-option></el-select
             ></label>
           </div>
           <el-button :disabled="!manualA || !manualB" @click="confirmManual"

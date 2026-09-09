@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../components/EntityRef.vue'
+import MetadataGroup from '../components/MetadataGroup.vue'
 import LineageLink from '../components/LineageLink.vue'
 import EmptyState from '../components/EmptyState.vue'
 import StatusNotice from '../components/StatusNotice.vue'
@@ -13,12 +15,23 @@ import JsonFallback from '../components/JsonFallback.vue'
 import ExpectationSummary from '../components/dataset/ExpectationSummary.vue'
 import TokenUsage from '../components/TokenUsage.vue'
 
-const props = defineProps<{ runId?: string; caseId?: string; evaluatorId?: string; sourceReport?: Report; embedded?: boolean }>()
-const route = useRoute(), router = useRouter()
+const props = defineProps<{
+  runId?: string
+  caseId?: string
+  evaluatorId?: string
+  sourceReport?: Report
+  embedded?: boolean
+}>()
+const route = useRoute(),
+  router = useRouter()
 const currentRunId = computed(() => props.runId ?? String(route.params.runId ?? ''))
 const currentCaseId = computed(() => props.caseId ?? String(route.params.caseId ?? ''))
 const evaluator = ref('')
-watch(() => props.evaluatorId ?? String(route.query.evaluator ?? ''), value => evaluator.value = value, { immediate: true })
+watch(
+  () => props.evaluatorId ?? String(route.query.evaluator ?? ''),
+  (value) => (evaluator.value = value),
+  { immediate: true },
+)
 function chooseEvaluator(id: string) {
   evaluator.value = id
   if (!props.embedded) void router.replace({ query: { ...route.query, evaluator: id } })
@@ -71,7 +84,10 @@ async function load() {
   error.value = ''
   loading.value = true
   try {
-    const value = props.sourceReport?.run.id === currentRunId.value ? props.sourceReport : await api.report(currentRunId.value, signal)
+    const value =
+      props.sourceReport?.run.id === currentRunId.value
+        ? props.sourceReport
+        : await api.report(currentRunId.value, signal)
     if (signal.aborted) return
     report.value = value
     if (!currentCase.value) error.value = '本次任务中没有这个用例，请返回报告选择。'
@@ -129,11 +145,20 @@ onUnmounted(() => controller?.abort())
   <div class="page-intro">
     <div>
       <h1>{{ currentCase?.name ?? '用例证据' }}</h1>
-      <p v-if="report">
-        {{ report.run.manifest.target.display_name }} ·
-        {{ report.run.manifest.target.ref.external_version_id }} ·
-        {{ report.run.manifest.dataset.dataset_name }} v{{ report.run.manifest.dataset.version }}
-      </p>
+      <div v-if="report" class="entity-group">
+        <EntityRef
+          :name="report.run.manifest.target.display_name"
+          type="测评对象"
+          :version="report.run.manifest.target.ref.external_version_id"
+          compact
+        />
+        <EntityRef
+          :name="report.run.manifest.dataset.dataset_name"
+          type="测评集"
+          :version="report.run.manifest.dataset.version"
+          compact
+        />
+      </div>
     </div>
     <RouterLink
       v-if="currentCase && report"
@@ -196,18 +221,31 @@ onUnmounted(() => controller?.abort())
       <section class="panel">
         <h2>评分标准与检查项</h2>
         <nav class="action-row" aria-label="选择评分标准">
-          <button
-            v-for="item in results"
-            :key="item.evaluator_id"
-            class="ag-button"
-            :class="{ primary: selected?.evaluator_id === item.evaluator_id }"
-            :aria-current="selected?.evaluator_id === item.evaluator_id ? 'true' : undefined"
-            @click="chooseEvaluator(item.evaluator_id)"
-            >{{ catalogLabel(item.evaluator_name) }} · {{ outcomeLabels[item.outcome] }}</button
-          >
+          <div v-for="item in results" :key="item.evaluator_id">
+            <button
+              class="ag-button"
+              :class="{ primary: selected?.evaluator_id === item.evaluator_id }"
+              :aria-current="selected?.evaluator_id === item.evaluator_id ? 'true' : undefined"
+              @click="chooseEvaluator(item.evaluator_id)"
+            >
+              {{ catalogLabel(item.evaluator_name) }}
+            </button>
+            <MetadataGroup
+              :items="[
+                { label: '版本', value: item.evaluator_version },
+                { label: '结果', value: outcomeLabels[item.outcome] },
+              ]"
+            />
+          </div>
         </nav>
         <template v-if="selected"
-          ><h3>{{ catalogLabel(selected.evaluator_name) }}</h3>
+          ><EntityRef
+            :name="catalogLabel(selected.evaluator_name)"
+            type="评估器"
+            :version="selected.evaluator_version"
+            :id="selected.evaluator_id"
+            :heading-level="3"
+          />
           <p>
             <span class="badge" :class="selected.outcome">{{
               outcomeLabels[selected.outcome]
@@ -215,7 +253,6 @@ onUnmounted(() => controller?.abort())
             >　分数 {{ scoreText(selected.score) }}
           </p>
           <p>{{ selected.reason }}</p>
-          <p class="muted">评分标准固定版本：{{ selected.evaluator_version }}</p>
           <LineageLink
             :to="{
               path: '/lineage',
@@ -231,7 +268,7 @@ onUnmounted(() => controller?.abort())
           >
           <StatusNotice type="error" v-if="selected.error_detail">
             <strong
-              >评分执行异常 ·
+              >评分执行异常：
               {{
                 { crash: '执行失败', timeout: '调用超时', invalid_output: '返回格式无效' }[
                   selected.error_detail.category
@@ -249,13 +286,12 @@ onUnmounted(() => controller?.abort())
           </StatusNotice>
           <section v-if="selected.judge_record" class="evidence-card" aria-label="LLM 评分调用信息">
             <h3>LLM 评分调用</h3>
-            <div class="detail-row">
-              <span>请求 / 实际模型</span
-              ><span
-                >{{ selected.judge_record.requested_model }} /
-                {{ selected.judge_record.resolved_model ?? '未返回' }}</span
-              >
-            </div>
+            <MetadataGroup
+              :items="[
+                { label: '请求模型', value: selected.judge_record.requested_model },
+                { label: '实际模型', value: selected.judge_record.resolved_model },
+              ]"
+            />
             <TokenUsage
               :input="selected.judge_record.input_tokens"
               :output="selected.judge_record.output_tokens"
@@ -296,7 +332,11 @@ onUnmounted(() => controller?.abort())
               定位关联执行步骤
             </button>
           </article>
-          <EmptyState v-if="!selected.checks.length" title="没有逐项检查记录" description="请先查看上方评分理由，并结合输入、输出与执行步骤核对结果。" />
+          <EmptyState
+            v-if="!selected.checks.length"
+            title="没有逐项检查记录"
+            description="请先查看上方评分理由，并结合输入、输出与执行步骤核对结果。"
+          />
         </template>
         <EmptyState
           v-else
@@ -308,7 +348,12 @@ onUnmounted(() => controller?.abort())
     <section class="panel">
       <div class="panel-title">
         <h2>执行轨迹</h2>
-        <span class="muted small">按实际采集顺序 · {{ spans.length }} 个步骤</span>
+        <MetadataGroup
+          :items="[
+            { label: '排序', value: '实际采集顺序' },
+            { label: '步骤数', value: spans.length },
+          ]"
+        />
       </div>
       <p class="muted">高亮表示当前评分标准关联的异常步骤；不代表已经确认根因。</p>
       <div v-if="traceLoading" class="skeleton">正在读取执行记录…</div>
@@ -325,9 +370,14 @@ onUnmounted(() => controller?.abort())
         :class="{ flagged: failureSpans.has(span.span_id) }"
       >
         <summary>
-          <span class="badge">{{ span.sequence }}</span> {{ span.name }}
-          <span class="muted">· {{ span.operation_type }}</span>
-          <span v-if="failureSpans.has(span.span_id)">· 关联异常</span>
+          <strong>{{ span.name }}</strong>
+          <MetadataGroup
+            :items="[
+              { label: '步骤序号', value: span.sequence },
+              { label: '操作类型', value: span.operation_type },
+              { label: '关联异常', value: failureSpans.has(span.span_id) },
+            ]"
+          />
         </summary>
         <ValueView :value="span.attributes" />
       </details>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../../components/EntityRef.vue'
+import MetadataGroup from '../../components/MetadataGroup.vue'
 import { useDetailState } from '../../components/detailState'
 import EntityLink from '../components/EntityLink.vue'
 import CaseEvidenceDrawer from '../components/CaseEvidenceDrawer.vue'
@@ -24,6 +26,7 @@ import {
   reportFilters,
   reportQuery,
   reportRows,
+  retryScopeLabels,
   reviewedRun,
   runMetrics,
   scoreText,
@@ -34,6 +37,9 @@ const { state, change } = usePreview()
 const route = useRoute()
 const router = useRouter()
 const run = computed(() => state.runs.find((item) => item.id === String(route.params.id)))
+const datasetName = computed(
+  () => state.datasets.find((item) => item.id === run.value?.config.datasetId)?.name ?? '',
+)
 const filters = reactive(reportFilters(route.query))
 const mode = ref('machine')
 const page = ref(1)
@@ -219,7 +225,9 @@ function selectEvaluator(id: string) {
   void sync(true)
 }
 const evidenceCase = useDetailState('report-evidence', '')
-const evidenceItems = computed(() => rows.value.map(row => ({ key: row.testCase.id, label: row.testCase.question })))
+const evidenceItems = computed(() =>
+  rows.value.map((row) => ({ key: row.testCase.id, label: row.testCase.question })),
+)
 function stop() {
   const current = run.value
   if (!current || !isActive(current)) return
@@ -328,12 +336,25 @@ watch(() => route.fullPath, readQuery, { immediate: true })
     <div class="page-intro">
       <div>
         <h1>{{ run.name }}</h1>
-        <p>
-          {{ run.target.name }} · {{ run.config.targetVersion }} / {{ run.config.datasetId }} v{{
-            run.config.datasetVersion
-          }}
-          · {{ run.cases.length }} 条固定用例
-        </p>
+        <details>
+          <summary>测评对象与固定输入</summary>
+          <div class="entity-group">
+            <EntityRef
+              :name="run.target.name"
+              :type="run.target.type"
+              :version="run.config.targetVersion"
+              compact
+            />
+            <EntityRef
+              :name="datasetName"
+              type="测评集"
+              :version="run.config.datasetVersion"
+              :id="run.config.datasetId"
+              compact
+            />
+          </div>
+          <MetadataGroup :items="[{ label: '固定用例数', value: run.cases.length }]" />
+        </details>
       </div>
       <div class="action-row">
         <el-button @click="exportReport">导出报告</el-button
@@ -385,9 +406,12 @@ watch(() => route.fullPath, readQuery, { immediate: true })
         </button>
         <div class="preview-kpi">
           <span>总 Token 用量</span><strong>{{ tokenText(metrics.tokens) }}</strong
-          ><small
-            >{{ metrics.tokensMissing }} 条用量未采集 · 已返回 {{ metrics.completed }} 条</small
-          >
+          ><MetadataGroup
+            :items="[
+              { label: '用量未采集数', value: metrics.tokensMissing },
+              { label: '已返回结果数', value: metrics.completed },
+            ]"
+          />
         </div>
       </div>
       <div class="action-row result-summary">
@@ -407,20 +431,35 @@ watch(() => route.fullPath, readQuery, { immediate: true })
           每条 Case 计数一次。通过率分母为 pass + fail + review；NA（不适用）和
           error（执行错误）均不计入分数或通过率分母。执行错误率分母为已返回结果数，未返回项另计。机器检查数不能当作用例数；多标签统计不可相加。
         </p>
-        <p>
-          平均延迟 {{ metrics.latency == null ? '缺失' : `${metrics.latency.toFixed(0)} ms` }} · p95
-          {{ metrics.p95 == null ? '缺失' : `${metrics.p95} ms` }}（{{ metrics.latencyCount }}
-          条已知延迟；p95 为排序后最近秩）。
-        </p>
-        <p>
-          {{ run.target.type === 'Agent' ? 'Skill 路由' : 'Skill 触发' }}一致率
-          {{ percent(metrics.routingRate) }} · {{ metrics.routingCount }} 条同时具有预期与实际 Skill
-          的适用样本。不能代替工具调用或业务质量。
-        </p>
-        <p v-for="item in dimensions" :key="item.dimension">
-          {{ item.dimension }}：{{ percent(item.rate) }} · {{ item.count }} 条有适用机器检查的
-          Case，同一维度所有检查通过才计通过。
-        </p>
+        <MetadataGroup
+          :items="[
+            {
+              label: '平均耗时',
+              value: metrics.latency == null ? null : `${metrics.latency.toFixed(0)} ms`,
+            },
+            { label: '95% 用例耗时上限', value: metrics.p95 == null ? null : `${metrics.p95} ms` },
+            { label: '已采集耗时的用例数', value: metrics.latencyCount },
+          ]"
+        />
+        <MetadataGroup
+          :items="[
+            {
+              label: run.target.type === 'Agent' ? 'Skill 路由一致率' : 'Skill 触发一致率',
+              value: percent(metrics.routingRate),
+            },
+            { label: '同时有预期与实际 Skill 的用例数', value: metrics.routingCount },
+          ]"
+        />
+        <p>Skill 一致率不能代替工具调用或业务质量。每个维度的所有检查通过，该用例才计为通过。</p>
+        <MetadataGroup
+          v-for="item in dimensions"
+          :key="item.dimension"
+          :title="item.dimension"
+          :items="[
+            { label: '通过率', value: percent(item.rate) },
+            { label: '适用用例数', value: item.count },
+          ]"
+        />
         <p class="muted">
           没有检查证据的维度不生成指标；未采集用量不填零。全部数值均来自本地
           Mock，不能作为生产质量结论。
@@ -457,13 +496,16 @@ watch(() => route.fullPath, readQuery, { immediate: true })
     <section class="panel">
       <h2>问题分布与评分标准</h2>
       <div class="action-row">
-        <el-button
-          v-for="group in groups"
-          :key="`${group.key}-${group.value}`"
-          @click="selectGroup(group.key, group.value)"
-          >{{ group.value }} · {{ group.total }} 条 / {{ group.failed }} 不通过 /
-          {{ group.errors }} 错误</el-button
-        >
+        <div v-for="group in groups" :key="`${group.key}-${group.value}`">
+          <el-button @click="selectGroup(group.key, group.value)">{{ group.value }}</el-button>
+          <MetadataGroup
+            :items="[
+              { label: '用例数', value: group.total },
+              { label: '不通过', value: group.failed },
+              { label: '执行错误', value: group.errors },
+            ]"
+          />
+        </div>
       </div>
       <div class="table-scroll run-spacing">
         <table class="preview-table data-table">
@@ -472,7 +514,7 @@ watch(() => route.fullPath, readQuery, { immediate: true })
               <th>固定评估器</th>
               <th>机器均分</th>
               <th>返回检查数</th>
-              <th>不通过 / 错误</th>
+              <th>问题结果数</th>
             </tr>
           </thead>
           <tbody>
@@ -484,7 +526,14 @@ watch(() => route.fullPath, readQuery, { immediate: true })
               </td>
               <td>{{ scoreText(item.score) }}</td>
               <td>{{ item.count }}</td>
-              <td>{{ item.fail }} / {{ item.error }}</td>
+              <td>
+                <MetadataGroup
+                  :items="[
+                    { label: '不通过', value: item.fail },
+                    { label: '执行错误', value: item.error },
+                  ]"
+                />
+              </td>
             </tr>
           </tbody>
         </table>
@@ -498,7 +547,13 @@ watch(() => route.fullPath, readQuery, { immediate: true })
       aria-label="用例结果表"
     >
       <div class="panel-title">
-        <h2>用例结果 · {{ rows.length }} / {{ run.cases.length }}</h2>
+        <h2>用例结果</h2>
+        <MetadataGroup
+          :items="[
+            { label: '当前匹配数', value: rows.length },
+            { label: '全部用例数', value: run.cases.length },
+          ]"
+        />
         <el-button @click="clearFilters">清除筛选</el-button>
       </div>
       <form class="preview-form run-filters" @submit.prevent="filterChanged">
@@ -582,7 +637,7 @@ watch(() => route.fullPath, readQuery, { immediate: true })
           <thead>
             <tr>
               <th>用例与输入</th>
-              <th>分类 / 难度 / 标签</th>
+              <th>用例属性</th>
               <th>Case 判定与分数</th>
               <th>原因与证据</th>
               <th>Token 用量</th>
@@ -591,18 +646,31 @@ watch(() => route.fullPath, readQuery, { immediate: true })
           <tbody>
             <tr v-for="row in pageRows" :key="row.testCase.id">
               <td>
-                <button class="text-button" :data-detail-key="row.testCase.id" @click="evidenceCase = row.testCase.id"
-                  >{{ row.testCase.id }} · {{ row.testCase.question }}</button
-                ><small
-                  >{{
-                    row.testCase.turns.length > 1 ? `${row.testCase.turns.length} 轮` : '单轮'
-                  }}
-                  · {{ row.testCase.priority }}</small
+                <button
+                  class="text-button"
+                  :data-detail-key="row.testCase.id"
+                  @click="evidenceCase = row.testCase.id"
                 >
+                  {{ row.testCase.question }}</button
+                ><MetadataGroup
+                  :items="[
+                    { label: '轮次', value: Math.max(1, row.testCase.turns.length) },
+                    { label: '优先级', value: row.testCase.priority },
+                  ]"
+                />
+                <details>
+                  <summary>查看用例编号</summary>
+                  <code>{{ row.testCase.id }}</code>
+                </details>
               </td>
               <td>
-                {{ row.testCase.category }} / {{ row.testCase.difficulty
-                }}<small>{{ row.testCase.tags.join('、') }}</small>
+                <MetadataGroup
+                  :items="[
+                    { label: '分类', value: row.testCase.category },
+                    { label: '难度', value: row.testCase.difficulty },
+                    { label: '标签', value: row.testCase.tags.join('、') || '无' },
+                  ]"
+                />
               </td>
               <td>
                 <span v-if="row.result" class="badge" :class="row.result.outcome">{{
@@ -616,7 +684,9 @@ watch(() => route.fullPath, readQuery, { immediate: true })
                   >所选检查：{{
                     evaluatorCheck(run, row.result, filters.evaluator)?.reason || '检查缺失'
                   }}</small
-                ><button class="text-button" @click="evidenceCase = row.testCase.id">查看证据与复核 →</button>
+                ><button class="text-button" @click="evidenceCase = row.testCase.id">
+                  查看证据与复核 →
+                </button>
               </td>
               <td>{{ tokenText(row.result?.tokens) }}</td>
             </tr>
@@ -657,57 +727,110 @@ watch(() => route.fullPath, readQuery, { immediate: true })
             <tr>
               <td>测评对象</td>
               <td>
-                <EntityLink context-key="src/preview/pages/RunPage.vue:342"
+                <EntityRef
+                  :name="run.target.name"
+                  :type="run.target.type"
+                  :version="run.config.targetVersion"
+                  compact
+                />
+                <EntityLink
+                  context-key="src/preview/pages/RunPage.vue:342"
                   :to="{
                     path: '/preview/targets/' + run.config.targetId,
                     query: { version: run.config.targetVersion },
                   }"
-                  >{{ run.target.name }} / {{ run.config.targetVersion }}</EntityLink
+                  >查看对象版本</EntityLink
                 >
               </td>
             </tr>
             <tr>
               <td>测评集</td>
               <td>
-                <EntityLink context-key="src/preview/pages/RunPage.vue:354"
+                <EntityRef
+                  :name="datasetName"
+                  type="测评集"
+                  :version="run.config.datasetVersion"
+                  :id="run.config.datasetId"
+                  compact
+                />
+                <EntityLink
+                  context-key="src/preview/pages/RunPage.vue:354"
                   :to="{
                     path: '/preview/datasets/' + run.config.datasetId,
                     query: { version: String(run.config.datasetVersion) },
                   }"
-                  >{{ run.config.datasetId }} v{{ run.config.datasetVersion }}</EntityLink
+                  >查看测评集版本</EntityLink
                 >
               </td>
             </tr>
             <tr v-for="ref in run.config.evaluatorRefs" :key="ref.id">
               <td>评估器</td>
               <td>
-                <EntityLink context-key="src/preview/pages/RunPage.vue:366"
-                  :related="run.config.evaluatorRefs.map(item => ({ label: run?.evaluators.find(entry => entry.id === item.id)?.name ?? '评分标准', to: { path: '/preview/evaluators/' + item.id, query: { version: String(item.version) } } }))"
+                <EntityRef
+                  :name="run.evaluators.find((item) => item.id === ref.id)?.name ?? ''"
+                  type="评估器"
+                  :version="ref.version"
+                  :id="ref.id"
+                  compact
+                />
+                <EntityLink
+                  context-key="src/preview/pages/RunPage.vue:366"
+                  :related="
+                    run.config.evaluatorRefs.map((item) => ({
+                      label:
+                        run?.evaluators.find((entry) => entry.id === item.id)?.name ?? '评分标准',
+                      to: {
+                        path: '/preview/evaluators/' + item.id,
+                        query: { version: String(item.version) },
+                      },
+                    }))
+                  "
                   :to="{
                     path: '/preview/evaluators/' + ref.id,
                     query: { version: String(ref.version) },
                   }"
-                  >{{ ref.id }} v{{ ref.version }}</EntityLink
+                  >查看评估器版本</EntityLink
                 >
               </td>
             </tr>
             <tr>
               <td>模型与分阶段资源</td>
               <td>
-                {{ run.config.model }} · 执行
-                {{ run.config.executionResourceId || run.config.resourceId }} / 评分
-                {{ run.config.scoringResourceId || run.config.resourceId }}
+                <MetadataGroup
+                  :items="[
+                    { label: '模型', value: run.config.model },
+                    {
+                      label: '执行资源',
+                      value: state.credentials.find(
+                        (item) =>
+                          item.id === (run?.config.executionResourceId || run?.config.resourceId),
+                      )?.name,
+                    },
+                    {
+                      label: '评分资源',
+                      value: state.credentials.find(
+                        (item) =>
+                          item.id === (run?.config.scoringResourceId || run?.config.resourceId),
+                      )?.name,
+                    },
+                  ]"
+                />
               </td>
             </tr>
             <tr>
-              <td>实验 / 历史对比</td>
+              <td>关联对比</td>
               <td>
                 <span v-if="!comparisons.length">尚未关联</span>
                 <div v-for="item in comparisons" :key="item.id">
-                  <RouterLink :to="`/preview/comparisons/${item.id}`"
-                    >{{ item.name }} ·
-                    {{ item.mode === 'controlled' ? '受控' : '历史' }}</RouterLink
-                  >
+                  <RouterLink :to="`/preview/comparisons/${item.id}`">{{ item.name }}</RouterLink>
+                  <MetadataGroup
+                    :items="[
+                      {
+                        label: '对比方式',
+                        value: item.mode === 'controlled' ? '受控对比' : '历史对比',
+                      },
+                    ]"
+                  />
                 </div>
               </td>
             </tr>
@@ -715,9 +838,14 @@ watch(() => route.fullPath, readQuery, { immediate: true })
               <td>复跑来源</td>
               <td>
                 <RouterLink :to="`/preview/runs/${run.sourceRunId}`">{{
-                  run.sourceRunId
+                  state.runs.find((item) => item.id === run?.sourceRunId)?.name || '查看来源任务'
                 }}</RouterLink>
-                · 范围 {{ run.retryScope || 'all' }} · 第 {{ run.attempt || 1 }} 次
+                <MetadataGroup
+                  :items="[
+                    { label: '复跑范围', value: retryScopeLabels[run.retryScope || 'all'] },
+                    { label: '执行次数', value: run.attempt || 1 },
+                  ]"
+                />
               </td>
             </tr>
           </tbody>
@@ -740,12 +868,22 @@ watch(() => route.fullPath, readQuery, { immediate: true })
       <h2>本地历史</h2>
       <div v-for="item in history" :key="item.id" class="detail-row">
         <RouterLink :to="`/preview/runs/${item.id}`">{{ item.name }}</RouterLink
-        ><span>{{ item.retryScope || 'all' }} · {{ formatTime(item.createdAt) }}</span>
+        ><MetadataGroup
+          :items="[
+            { label: '范围', value: retryScopeLabels[item.retryScope || 'all'] },
+            { label: '创建时间', value: formatTime(item.createdAt) },
+          ]"
+        />
       </div>
       <p v-if="!history.length" class="muted">暂无来源或后续复跑。</p>
       <div v-for="entry in audits" :key="entry.id" class="detail-row">
         <span>{{ entry.action }}</span
-        ><span>{{ entry.actor }} · {{ formatTime(entry.time) }}</span>
+        ><MetadataGroup
+          :items="[
+            { label: '操作人', value: entry.actor },
+            { label: '操作时间', value: formatTime(entry.time) },
+          ]"
+        />
       </div>
       <p v-if="!audits.length" class="muted small">暂无该运行的本地操作留痕。</p>
     </section>

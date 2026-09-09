@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../components/EntityRef.vue'
+import MetadataGroup from '../components/MetadataGroup.vue'
 import { useDetailState } from '../components/detailState'
 import DetailDrawer from '../components/DetailDrawer.vue'
 import CaseResultPage from './CaseResultPage.vue'
@@ -55,10 +57,7 @@ const cases = computed(
 const evaluators = computed(
   () =>
     new Map(
-      baselineReport.value?.run.manifest.evaluator_specs.map((item) => [
-        item.id,
-        `${catalogLabel(item.name)} · v${item.version}`,
-      ]) ?? [],
+      baselineReport.value?.run.manifest.evaluator_specs.map((item) => [item.id, item]) ?? [],
     ),
 )
 const filtered = computed(
@@ -66,7 +65,7 @@ const filtered = computed(
     result.value?.case_deltas.filter(
       (item) =>
         (!selectedChange.value || item.change === selectedChange.value) &&
-        `${item.case_id} ${cases.value.get(item.case_id)} ${evaluators.value.get(item.evaluator_id)}`
+        `${item.case_id} ${cases.value.get(item.case_id)} ${catalogLabel(evaluators.value.get(item.evaluator_id)?.name ?? '')}`
           .toLowerCase()
           .includes(query.value.toLowerCase()),
     ) ?? [],
@@ -122,7 +121,7 @@ const candidateGroups = computed(() => {
 const delta = (value: number | null) =>
   value === null ? '无可比分数' : `${value > 0 ? '+' : ''}${value.toFixed(4)}`
 const optionLabel = (run: EvaluationRun) =>
-  `${run.manifest.target.ref.external_version_id} · ${run.manifest.dataset.dataset_name} v${run.manifest.dataset.version} · ${new Date(run.created_at).toLocaleString()} · ${run.id.slice(0, 8)}`
+  `${run.manifest.target.display_name}（对象版本：${run.manifest.target.ref.external_version_id}；测评集：${run.manifest.dataset.dataset_name}；发布版本：${run.manifest.dataset.version}；创建时间：${new Date(run.created_at).toLocaleString()}）`
 let controller: AbortController | undefined
 const listController = new AbortController()
 async function loadRuns() {
@@ -185,11 +184,35 @@ function setQuery(event: Event) {
     query: { ...route.query, q: (event.target as HTMLInputElement).value || undefined },
   })
 }
-const evidenceSelection = useDetailState<{ runId: string; key: string } | null>('comparison-evidence', null)
-const evidenceItems = computed(() => filtered.value.map(item => ({ key: JSON.stringify([item.case_id, item.evaluator_id]), label: cases.value.get(item.case_id) ?? '用例证据' })))
-const evidenceResult = computed(() => filtered.value.find(item => JSON.stringify([item.case_id, item.evaluator_id]) === evidenceSelection.value?.key))
-const evidenceReport = computed(() => reports.value.find(item => item.run.id === evidenceSelection.value?.runId))
-const evidencePath = computed(() => evidenceSelection.value && evidenceResult.value ? router.resolve(evidence(evidenceSelection.value.runId, evidenceResult.value.case_id, evidenceResult.value.evaluator_id)).fullPath : undefined)
+const evidenceSelection = useDetailState<{ runId: string; key: string } | null>(
+  'comparison-evidence',
+  null,
+)
+const evidenceItems = computed(() =>
+  filtered.value.map((item) => ({
+    key: JSON.stringify([item.case_id, item.evaluator_id]),
+    label: cases.value.get(item.case_id) ?? '用例证据',
+  })),
+)
+const evidenceResult = computed(() =>
+  filtered.value.find(
+    (item) => JSON.stringify([item.case_id, item.evaluator_id]) === evidenceSelection.value?.key,
+  ),
+)
+const evidenceReport = computed(() =>
+  reports.value.find((item) => item.run.id === evidenceSelection.value?.runId),
+)
+const evidencePath = computed(() =>
+  evidenceSelection.value && evidenceResult.value
+    ? router.resolve(
+        evidence(
+          evidenceSelection.value.runId,
+          evidenceResult.value.case_id,
+          evidenceResult.value.evaluator_id,
+        ),
+      ).fullPath
+    : undefined,
+)
 function openEvidence(runId: string, caseId: string, evaluator: string) {
   evidenceSelection.value = { runId, key: JSON.stringify([caseId, evaluator]) }
 }
@@ -307,14 +330,19 @@ onUnmounted(() => {
     </StatusNotice>
     <div class="split-grid">
       <section v-for="(report, index) in reports" :key="report.run.id" class="panel">
-        <h2>
-          {{ index === 0 ? '基线 A' : '候选 B' }} ·
-          {{ report.run.manifest.target.ref.external_version_id }}
-        </h2>
-        <p>
-          {{ report.run.manifest.target.display_name }} ·
-          {{ report.run.manifest.dataset.dataset_name }} v{{ report.run.manifest.dataset.version }}
-        </p>
+        <h2>{{ index === 0 ? '基线 A' : '候选 B' }}</h2>
+        <div class="entity-group">
+          <EntityRef
+            :name="report.run.manifest.target.display_name"
+            type="测评对象"
+            :version="report.run.manifest.target.ref.external_version_id"
+          />
+          <EntityRef
+            :name="report.run.manifest.dataset.dataset_name"
+            type="测评集"
+            :version="report.run.manifest.dataset.version"
+          />
+        </div>
         <p>
           <span class="badge" :class="report.release_gate.outcome">{{
             report.release_gate.outcome === 'pass' ? '本次判定通过' : '本次判定未通过'
@@ -328,10 +356,10 @@ onUnmounted(() => {
     </div>
     <section class="panel">
       <h2>指标变化</h2>
-      <p>
-        总体分数变化：<strong>{{ delta(result.overall_score_delta) }}</strong> ·
-        差值为候选减基线，评分范围 0～1。
-      </p>
+      <MetadataGroup
+        :items="[{ label: '总体分数变化', value: delta(result.overall_score_delta) }]"
+      />
+      <p>差值为候选减基线，评分范围 0～1。</p>
       <StatusNotice
         type="warning"
         v-if="
@@ -348,26 +376,40 @@ onUnmounted(() => {
         <table class="data-table metric-table">
           <thead>
             <tr>
-              <th>层级 / 指标</th>
+              <th>统计指标</th>
               <th>基线 A</th>
               <th>候选 B</th>
               <th>分数变化</th>
-              <th>适用结果 A / B</th>
+              <th>适用结果数</th>
               <th>结果数量</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="metric in result.metric_deltas" :key="`${metric.level}:${metric.key}`">
               <td>
-                {{
-                  { overall: '总体', kind: '方法', dimension: '维度', metric: '指标' }[metric.level]
-                }}
-                / {{ metricLabel(metric.key) }}
+                <MetadataGroup
+                  :items="[
+                    {
+                      label: '层级',
+                      value: { overall: '总体', kind: '方法', dimension: '维度', metric: '指标' }[
+                        metric.level
+                      ],
+                    },
+                    { label: '指标', value: metricLabel(metric.key) },
+                  ]"
+                />
               </td>
               <td>{{ scoreText(metric.baseline.score) }}</td>
               <td>{{ scoreText(metric.candidate.score) }}</td>
               <td>{{ delta(metric.score_delta) }}</td>
-              <td>{{ metric.baseline.applicable }} / {{ metric.candidate.applicable }}</td>
+              <td>
+                <MetadataGroup
+                  :items="[
+                    { label: '基线 A', value: metric.baseline.applicable },
+                    { label: '候选 B', value: metric.candidate.applicable },
+                  ]"
+                />
+              </td>
               <td>
                 <details>
                   <summary>查看数量变化</summary>
@@ -419,15 +461,30 @@ onUnmounted(() => {
           placeholder="用例名称、编号或评分标准"
       /></label>
       <article v-for="group in rows" :key="group.caseId" class="comparison-case">
-        <h3>{{ cases.get(group.caseId) ?? group.caseId }}</h3>
-        <p class="muted small">
-          1 条用例 · 共 {{ group.total }} 项评分结果 · 当前条件匹配 {{ group.items.length }} 项
-        </p>
+        <EntityRef
+          :name="cases.get(group.caseId) ?? ''"
+          type="用例"
+          :id="group.caseId"
+          :heading-level="3"
+        />
+        <MetadataGroup
+          :items="[
+            { label: '评分结果总数', value: group.total },
+            { label: '当前条件匹配数', value: group.items.length },
+          ]"
+        />
         <details :key="`${group.caseId}:${selectedChange}`" :open="!!selectedChange">
           <summary>查看此用例的评分变化</summary>
           <div v-for="item in group.items" :key="item.evaluator_id" class="comparison-evaluation">
             <div class="panel-title">
-              <h4>{{ evaluators.get(item.evaluator_id) ?? item.evaluator_id }}</h4>
+              <EntityRef
+                :name="catalogLabel(evaluators.get(item.evaluator_id)?.name ?? '')"
+                type="评估器"
+                :version="evaluators.get(item.evaluator_id)?.version"
+                :id="item.evaluator_id"
+                :heading-level="4"
+                compact
+              />
               <span
                 class="badge"
                 :class="
@@ -446,26 +503,44 @@ onUnmounted(() => {
             </p>
             <div class="split-grid">
               <div>
-                <p>
-                  基线 A：{{
-                    item.baseline_outcome ? outcomeLabels[item.baseline_outcome] : '缺少结果'
-                  }}
-                  · {{ scoreText(item.baseline_score) }}
-                </p>
-                <button class="text-button" @click="openEvidence(result.baseline_run_id, item.case_id, item.evaluator_id)"
-                  >查看基线证据</button
+                <MetadataGroup
+                  title="基线 A"
+                  :items="[
+                    {
+                      label: '结果',
+                      value: item.baseline_outcome
+                        ? outcomeLabels[item.baseline_outcome]
+                        : '缺少结果',
+                    },
+                    { label: '分数', value: scoreText(item.baseline_score) },
+                  ]"
+                />
+                <button
+                  class="text-button"
+                  @click="openEvidence(result.baseline_run_id, item.case_id, item.evaluator_id)"
                 >
+                  查看基线证据
+                </button>
               </div>
               <div>
-                <p>
-                  候选 B：{{
-                    item.candidate_outcome ? outcomeLabels[item.candidate_outcome] : '缺少结果'
-                  }}
-                  · {{ scoreText(item.candidate_score) }}
-                </p>
-                <button class="text-button" @click="openEvidence(result.candidate_run_id, item.case_id, item.evaluator_id)"
-                  >查看候选证据</button
+                <MetadataGroup
+                  title="候选 B"
+                  :items="[
+                    {
+                      label: '结果',
+                      value: item.candidate_outcome
+                        ? outcomeLabels[item.candidate_outcome]
+                        : '缺少结果',
+                    },
+                    { label: '分数', value: scoreText(item.candidate_score) },
+                  ]"
+                />
+                <button
+                  class="text-button"
+                  @click="openEvidence(result.candidate_run_id, item.case_id, item.evaluator_id)"
                 >
+                  查看候选证据
+                </button>
               </div>
             </div>
           </div>
@@ -478,7 +553,8 @@ onUnmounted(() => {
       ></EmptyState>
       <div v-if="caseGroups.length > 10" class="action-row">
         <button class="ag-button" :disabled="page === 1" @click="page--">上一页</button
-        ><span>第 {{ page }} / {{ Math.ceil(caseGroups.length / 10) }} 页 · 按完整用例分页</span
+        ><span
+          >第 {{ page }} 页，共 {{ Math.ceil(caseGroups.length / 10) }} 页（按完整用例分页）</span
         ><button class="ag-button" :disabled="page * 10 >= caseGroups.length" @click="page++">
           下一页
         </button>
@@ -490,8 +566,31 @@ onUnmounted(() => {
     title="选择两份报告开始对比"
     description="先在上方选择基线和候选任务，再点击对比，核对指标与用例变化。"
   ></EmptyState>
-  <DetailDrawer :model-value="!!evidenceResult" :title="evidenceSelection?.runId === result?.baseline_run_id ? '基线用例证据' : '候选用例证据'" :items="evidenceItems" :current-key="evidenceSelection?.key" :full-path="evidencePath" @update:model-value="value => { if (!value) evidenceSelection = null }" @select="key => { if (evidenceSelection) evidenceSelection.key = key }">
-    <CaseResultPage v-if="evidenceSelection && evidenceResult" :run-id="evidenceSelection.runId" :case-id="evidenceResult.case_id" :evaluator-id="evidenceResult.evaluator_id" :source-report="evidenceReport" embedded />
+  <DetailDrawer
+    :model-value="!!evidenceResult"
+    :title="evidenceSelection?.runId === result?.baseline_run_id ? '基线用例证据' : '候选用例证据'"
+    :items="evidenceItems"
+    :current-key="evidenceSelection?.key"
+    :full-path="evidencePath"
+    @update:model-value="
+      (value) => {
+        if (!value) evidenceSelection = null
+      }
+    "
+    @select="
+      (key) => {
+        if (evidenceSelection) evidenceSelection.key = key
+      }
+    "
+  >
+    <CaseResultPage
+      v-if="evidenceSelection && evidenceResult"
+      :run-id="evidenceSelection.runId"
+      :case-id="evidenceResult.case_id"
+      :evaluator-id="evidenceResult.evaluator_id"
+      :source-report="evidenceReport"
+      embedded
+    />
   </DetailDrawer>
 </template>
 

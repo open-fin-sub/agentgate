@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EntityRef from '../components/EntityRef.vue'
 import EmptyState from '../components/EmptyState.vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
@@ -139,7 +140,7 @@ onUnmounted(() => {
           data-testid="runs-queued"
           @click="activeView = 'queued'"
         >
-          排队中 · {{ activity.queued.length }}
+          排队中（{{ activity.queued.length }}）
         </button>
         <button
           type="button"
@@ -148,7 +149,7 @@ onUnmounted(() => {
           data-testid="runs-running"
           @click="activeView = 'running'"
         >
-          运行中 · {{ activity.running.length }}
+          运行中（{{ activity.running.length }}）
         </button>
         <button
           type="button"
@@ -157,7 +158,7 @@ onUnmounted(() => {
           data-testid="runs-history"
           @click="activeView = 'history'"
         >
-          最近历史 · {{ activity.recent.length }}
+          最近历史（{{ activity.recent.length }}）
         </button>
       </div>
 
@@ -167,8 +168,18 @@ onUnmounted(() => {
             <span class="run-status" :class="`status-${run.status}`">{{
               statusLabels[run.status]
             }}</span>
-            <b>{{ run.target_name }} · {{ run.target_version }}</b>
-            <small>{{ run.dataset_name }} v{{ run.dataset_version }}</small>
+            <EntityRef
+              :name="run.target_name"
+              type="测评对象"
+              :version="run.target_version"
+              compact
+            />
+            <EntityRef
+              :name="run.dataset_name"
+              type="测评集"
+              :version="run.dataset_version"
+              compact
+            />
           </div>
           <div class="run-progress-cell">
             <div>

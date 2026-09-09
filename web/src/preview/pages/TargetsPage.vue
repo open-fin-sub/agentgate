@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import EntityRef from '../../components/EntityRef.vue'
+import MetadataGroup from '../../components/MetadataGroup.vue'
+import { statusLabels } from '../components/RunSupport'
 import { previewReturn } from '../components/PrepCases'
 import EntityLink from '../components/EntityLink.vue'
 import type { LocationQuery, LocationQueryRaw } from 'vue-router'
@@ -16,7 +19,11 @@ const emit = defineEmits<{ 'change-query': [query: LocationQuery] }>()
 const pageQuery = computed(() => props.context?.query ?? route.query)
 const id = computed(() => props.context?.id ?? String(route.params.id ?? ''))
 function applyQuery(query: LocationQueryRaw, replace = false) {
-  if (props.context) emit('change-query', router.resolve({ path: '/preview/targets/' + encodeURIComponent(id.value), query }).query)
+  if (props.context)
+    emit(
+      'change-query',
+      router.resolve({ path: '/preview/targets/' + encodeURIComponent(id.value), query }).query,
+    )
   else void router[replace ? 'replace' : 'push']({ query })
 }
 const target = computed(() => state.targets.find((item) => item.id === id.value))
@@ -55,7 +62,9 @@ const skills = computed(
       definition: version.value?.skillDefinitions?.find((item) => item.id === skill),
     })) ?? [],
 )
-const detailItems = computed(() => rows.value.map(item => ({ label: item.name, to: `/preview/targets/${item.id}` })))
+const detailItems = computed(() =>
+  rows.value.map((item) => ({ label: item.name, to: `/preview/targets/${item.id}` })),
+)
 const datasets = computed(() =>
   state.datasets.filter((item) => item.targetId === id.value && !item.archived),
 )
@@ -77,9 +86,11 @@ const canAnalyze = computed(
   <div class="page-intro">
     <div>
       <h1>{{ target?.name ?? '测评对象' }}</h1>
-      <p>Mock 外部版本快照 · 选择 Agent 或 Skill，固定版本后准备测评。</p>
+      <p>选择 Agent 或 Skill，核对版本后准备测评。</p>
     </div>
-    <RouterLink v-if="id && !context" :to="previewReturn(pageQuery.origin, '/preview/targets')">{{ pageQuery.origin ? '返回来源页面' : '返回对象列表' }}</RouterLink>
+    <RouterLink v-if="id && !context" :to="previewReturn(pageQuery.origin, '/preview/targets')">{{
+      pageQuery.origin ? '返回来源页面' : '返回对象列表'
+    }}</RouterLink>
   </div>
   <StatusNotice
     v-if="id && (!target || !version)"
@@ -90,9 +101,19 @@ const canAnalyze = computed(
     <section class="panel">
       <div class="preview-grid">
         <div>
-          <p class="muted">{{ target.type }} · {{ target.form }} · {{ target.platform }}</p>
+          <MetadataGroup
+            :items="[
+              { label: '类型', value: target.type },
+              { label: '形态', value: target.form },
+              { label: '所属平台', value: target.platform },
+              { label: '固定版本', value: version.id },
+            ]"
+          />
           <p>{{ target.description }}</p>
-          <p class="muted">外部 ID：{{ target.id }}</p>
+          <details>
+            <summary>查看对象编号</summary>
+            <code>{{ target.id }}</code>
+          </details>
         </div>
         <label
           >固定对象版本<el-select v-model="versionId" aria-label="对象版本"
@@ -143,7 +164,7 @@ const canAnalyze = computed(
         <el-tag v-for="tool in version.tools" :key="tool" class="prep-tag">{{ tool }}</el-tag>
         <p v-if="!version.tools.length" class="muted">此版本没有工具定义。</p>
         <details v-for="tool in version.toolDefinitions ?? []" :key="tool.name">
-          <summary>{{ tool.name }} · 输入输出定义</summary>
+          <summary>查看 {{ tool.name }} 的输入输出定义</summary>
           <h4>输入 Schema</h4>
           <ValueView :value="tool.inputSchema" />
           <h4>输出 Schema</h4>
@@ -157,16 +178,35 @@ const canAnalyze = computed(
         <h2>关联 Skill</h2>
         <p v-if="!skills.length" class="muted">独立 Skill，无下级关联。</p>
         <article v-for="skill in skills" :key="skill.id">
-          <EntityLink context-key="src/preview/pages/TargetsPage.vue:85"
+          <EntityRef
             v-if="skill.definition"
-            :related="skills.filter(item => item.definition).map(item => ({ label: item.definition!.name, to: { path: `/preview/targets/${item.id}`, query: { version: item.definition!.version } } }))"
-            :to="{
-              path: `/preview/targets/${skill.id}`,
-              query: { version: skill.definition.version },
-            }"
-            >{{ skill.definition.name }} · {{ skill.definition.version }}</EntityLink
+            :name="skill.definition.name"
+            type="Skill"
+            :version="skill.definition.version"
+            compact
+            ><template #name>
+              <EntityLink
+                context-key="src/preview/pages/TargetsPage.vue:85"
+                :related="
+                  skills
+                    .filter((item) => item.definition)
+                    .map((item) => ({
+                      label: item.definition!.name,
+                      to: {
+                        path: `/preview/targets/${item.id}`,
+                        query: { version: item.definition!.version },
+                      },
+                    }))
+                "
+                :to="{
+                  path: `/preview/targets/${skill.id}`,
+                  query: { version: skill.definition.version },
+                }"
+                >{{ skill.definition.name }}</EntityLink
+              >
+            </template></EntityRef
           >
-          <span v-else>{{ skill.id }}（固定版本定义未提供）</span>
+          <EntityRef v-else name="固定版本定义未提供" type="Skill" :id="skill.id" compact />
           <template v-if="skill.definition"
             ><p>{{ skill.definition.description }}</p>
             <details>
@@ -194,15 +234,32 @@ const canAnalyze = computed(
         description="可手工创建用例，或从测评集页面导入文件。"
         ><RouterLink class="ag-button" to="/preview/datasets">查看测评集</RouterLink></EmptyState
       >
-      <p v-for="dataset in datasets" :key="dataset.id">
-        <EntityLink context-key="src/preview/pages/TargetsPage.vue:122" :related="datasets.map(item => ({ label: item.name, to: `/preview/datasets/${item.id}` }))" :to="`/preview/datasets/${dataset.id}`">{{ dataset.name }}</EntityLink> ·
-        {{ dataset.versions.length }} 个发布版本
-      </p>
+      <div v-for="dataset in datasets" :key="dataset.id">
+        <EntityRef
+          :name="dataset.name"
+          type="测评集"
+          :version="dataset.versions[dataset.versions.length - 1]?.version"
+          compact
+        >
+          <template #name
+            ><EntityLink
+              context-key="src/preview/pages/TargetsPage.vue:122"
+              :related="
+                datasets.map((item) => ({ label: item.name, to: `/preview/datasets/${item.id}` }))
+              "
+              :to="`/preview/datasets/${dataset.id}`"
+              >{{ dataset.name }}</EntityLink
+            ></template
+          >
+        </EntityRef>
+        <MetadataGroup :items="[{ label: '发布版本数', value: dataset.versions.length }]" />
+      </div>
       <h2>此版本的相关任务</h2>
       <p v-if="!runs.length" class="muted">此版本尚无测评任务。</p>
-      <p v-for="run in runs" :key="run.id">
-        <RouterLink :to="`/preview/runs/${run.id}`">{{ run.name }}</RouterLink> · {{ run.status }}
-      </p>
+      <div v-for="run in runs" :key="run.id">
+        <RouterLink :to="`/preview/runs/${run.id}`">{{ run.name }}</RouterLink>
+        <MetadataGroup :items="[{ label: '任务状态', value: statusLabels[run.status] }]" />
+      </div>
     </section>
   </template>
   <template v-else
@@ -225,16 +282,32 @@ const canAnalyze = computed(
     ></EmptyState>
     <div class="preview-grid">
       <article v-for="item in rows" :key="item.id" class="panel">
-        <p class="muted">{{ item.type }} · {{ item.form }}</p>
         <h2>
-          <EntityLink context-key="src/preview/pages/TargetsPage.vue:154" :related="detailItems" :to="`/preview/targets/${item.id}`">{{ item.name }}</EntityLink>
+          <EntityLink
+            context-key="src/preview/pages/TargetsPage.vue:154"
+            :related="detailItems"
+            :to="`/preview/targets/${item.id}`"
+            >{{ item.name }}</EntityLink
+          >
         </h2>
         <p>{{ item.description }}</p>
-        <p class="muted">
-          {{ item.platform }} ·
-          {{ item.versions.filter((entry) => entry.executable).length }} 个可执行版本
-        </p>
-        <EntityLink context-key="src/preview/pages/TargetsPage.vue:161" :related="detailItems" :to="`/preview/targets/${item.id}`">查看版本与定义 →</EntityLink>
+        <MetadataGroup
+          :items="[
+            { label: '类型', value: item.type },
+            { label: '形态', value: item.form },
+            { label: '所属平台', value: item.platform },
+            {
+              label: '可执行版本数',
+              value: item.versions.filter((entry) => entry.executable).length,
+            },
+          ]"
+        />
+        <EntityLink
+          context-key="src/preview/pages/TargetsPage.vue:161"
+          :related="detailItems"
+          :to="`/preview/targets/${item.id}`"
+          >查看版本与定义 →</EntityLink
+        >
       </article>
     </div></template
   >

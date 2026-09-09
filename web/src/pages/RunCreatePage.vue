@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../components/EntityRef.vue'
+import MetadataGroup from '../components/MetadataGroup.vue'
 import TaskBackLink from '../components/TaskBackLink.vue'
 import StatusNotice from '../components/StatusNotice.vue'
 import { userError } from '../apiErrors'
@@ -100,7 +102,12 @@ async function initialize() {
     } catch {
       /* Ignore an invalid browser draft. */
     }
-    target.value = String((route.query.resume === '1' ? saved.target : route.query.target) ?? saved.target ?? ts[0]?.id ?? '')
+    target.value = String(
+      (route.query.resume === '1' ? saved.target : route.query.target) ??
+        saved.target ??
+        ts[0]?.id ??
+        '',
+    )
     datasetId.value = String(
       route.query.dataset ?? saved.datasetId ?? ds.find((d) => d.version !== null)?.id ?? '',
     )
@@ -185,7 +192,12 @@ onUnmounted(() => {
 })
 </script>
 <template>
-  <TaskBackLink :fallback="route.query.source ? `/runs/${encodeURIComponent(String(route.query.source))}` : '/runs'" :label="route.query.source ? '返回来源报告' : '返回任务列表'" />
+  <TaskBackLink
+    :fallback="
+      route.query.source ? `/runs/${encodeURIComponent(String(route.query.source))}` : '/runs'
+    "
+    :label="route.query.source ? '返回来源报告' : '返回任务列表'"
+  />
   <div class="page-intro">
     <div>
       <h1>创建测评</h1>
@@ -212,7 +224,7 @@ onUnmounted(() => {
           >对象版本<select v-model="target" aria-label="对象版本" required>
             <option value="" disabled>请选择对象版本</option>
             <option v-for="item in targets" :key="item.id" :value="item.id">
-              {{ catalogLabel(item.label) }} · {{ item.id }}
+              {{ catalogLabel(item.label) }}（版本：{{ item.id }}）
             </option>
           </select></label
         ><label class="field"
@@ -233,7 +245,7 @@ onUnmounted(() => {
               {{ versionLoading ? '正在读取版本…' : '请选择已发布版本' }}
             </option>
             <option v-for="item in versions" :key="item.id" :value="item.version">
-              v{{ item.version }} · {{ item.cases.length }} 条用例
+              版本 {{ item.version }}（用例数：{{ item.cases.length }}）
             </option></select
           ><span class="hint">草稿不能执行，任务不会随“最新版本”变化。</span></label
         >
@@ -243,7 +255,13 @@ onUnmounted(() => {
             <RouterLink
               :to="{
                 path: '/datasets',
-                query: { dataset: datasetId, version: datasetVersion, returnTo: 'create', source: route.query.source, creationOrigin: route.query.origin },
+                query: {
+                  dataset: datasetId,
+                  version: datasetVersion,
+                  returnTo: 'create',
+                  source: route.query.source,
+                  creationOrigin: route.query.origin,
+                },
               }"
               >编辑测评集并返回 →</RouterLink
             >
@@ -287,16 +305,37 @@ onUnmounted(() => {
         ><span class="muted small">按用例中的预期执行；缺少适用预期的标准可能返回“不适用”。</span>
       </div>
       <div class="form-grid">
-        <label v-for="item in evaluators" :key="item.id" class="checkbox-card"
-          ><input v-model="selected" type="checkbox" :value="item.id" /><span
-            ><b>{{ catalogLabel(item.name) }}</b
-            ><span class="muted small" style="display: block"
-              >v{{ item.version }} · {{ metricLabel(item.dimension) }} ·
-              {{ { rule: '规则', llm_judge: 'LLM 评分', hybrid: '复合' }[item.kind] }} ·
-              {{ item.severity === 'blocking' ? '阻断项' : '标准项' }}</span
-            ></span
-          ></label
-        >
+        <div v-for="item in evaluators" :key="item.id" class="checkbox-card">
+          <input
+            :id="`select-evaluator-${item.id}`"
+            v-model="selected"
+            type="checkbox"
+            :value="item.id"
+          />
+          <div>
+            <EntityRef
+              :name="catalogLabel(item.name)"
+              :type="`${{ rule: '规则', llm_judge: 'LLM 评分', hybrid: '复合' }[item.kind]}评估器`"
+              :version="item.version"
+              compact
+            >
+              <template #name
+                ><label :for="`select-evaluator-${item.id}`">{{
+                  catalogLabel(item.name)
+                }}</label></template
+              >
+            </EntityRef>
+            <MetadataGroup
+              :items="[
+                { label: '质量维度', value: metricLabel(item.dimension) },
+                {
+                  label: '未通过时的影响',
+                  value: item.severity === 'blocking' ? '阻断项' : '标准项',
+                },
+              ]"
+            />
+          </div>
+        </div>
       </div>
       <p v-if="!selected.length" class="muted small">至少选择一个适用于本次输入的评估器。</p>
       <StatusNotice
@@ -315,13 +354,14 @@ onUnmounted(() => {
           未提交配置会暂存在当前浏览器会话。关闭浏览器前请完成提交，或记录需要保留的选择。
         </p>
       </details>
-      <div class="detail-row">
-        <span>本次执行范围</span
-        ><strong
-          >{{ chosen?.cases.length ?? '—' }} 条用例 × 1 个对象版本 ·
-          {{ selected.length }} 个评估器</strong
-        >
-      </div>
+      <MetadataGroup
+        title="本次执行范围"
+        :items="[
+          { label: '用例数', value: chosen?.cases.length },
+          { label: '对象版本数', value: target ? 1 : 0 },
+          { label: '评估器数', value: selected.length },
+        ]"
+      />
       <div class="action-row">
         <button class="ag-button primary" type="submit" :disabled="!canSubmit">
           {{ submitting ? '正在提交…' : '提交测评' }}</button

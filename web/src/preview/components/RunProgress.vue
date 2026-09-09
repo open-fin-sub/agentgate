@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MetadataGroup from '../../components/MetadataGroup.vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type { PreviewState, Run } from '../types'
 import { formatTime, runQueue, statusLabels } from './RunSupport'
@@ -64,10 +65,14 @@ const estimate = computed(() => {
           Intl.DateTimeFormat().resolvedOptions().timeZone
         }}）
       </p>
-      <p v-if="run.status === 'queued'">
-        {{ queue.kind }} · 位置 {{ queue.position || '待分配' }} · 等待约
-        {{ queue.wait }} 秒（示例）
-      </p>
+      <MetadataGroup
+        v-if="run.status === 'queued'"
+        :items="[
+          { label: '队列', value: queue.kind },
+          { label: '位置', value: queue.position || '待分配' },
+          { label: '预计等待', value: `${queue.wait} 秒` },
+        ]"
+      />
       <p v-if="estimate.finish === null" class="muted small">
         公共评分资源暂无空位，正在等待评分资源；预计完成时间暂时无法估算。
       </p>
@@ -75,14 +80,20 @@ const estimate = computed(() => {
         {{ run.status === 'running' ? '预计完成' : '预计开始' }}：{{
           formatTime(run.status === 'running' ? estimate.finish : estimate.start)
         }}
-        · Mock 动态估算
+        （模拟估算）
       </p>
-      <p v-if="!compact" class="muted small">
-        待返回 {{ run.cases.length - run.results.length }} 条 · 执行错误
-        {{ run.results.filter((item) => item.outcome === 'error').length }}
-        条。公共并发只约束使用公共资源的阶段；实际重试次数无独立证据，配置上限
-        {{ run.config.retries }} 次。估算更新：{{ formatTime(new Date(now).toISOString()) }}。
-      </p>
+      <MetadataGroup
+        v-if="!compact"
+        :items="[
+          { label: '待返回用例数', value: run.cases.length - run.results.length },
+          {
+            label: '执行错误数',
+            value: run.results.filter((item) => item.outcome === 'error').length,
+          },
+          { label: '重试次数上限', value: run.config.retries },
+          { label: '估算更新时间', value: formatTime(new Date(now).toISOString()) },
+        ]"
+      />
     </template>
   </div>
 </template>

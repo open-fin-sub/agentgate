@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MetadataGroup from '../../components/MetadataGroup.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
 import { computed, ref } from 'vue'
@@ -133,7 +134,7 @@ function exportAudit() {
         <thead>
           <tr>
             <th>名称</th>
-            <th>类型 / 模型</th>
+            <th>资源属性</th>
             <th>状态</th>
             <th>凭据</th>
             <th>操作</th>
@@ -143,7 +144,12 @@ function exportAudit() {
           <tr v-for="item in state.credentials" :key="item.id">
             <td>{{ item.name }}<small>Mock 体验凭据</small></td>
             <td>
-              {{ item.kind === 'public' ? '团队公共' : '本人专用' }}<small>{{ item.model }}</small>
+              <MetadataGroup
+                :items="[
+                  { label: '使用范围', value: item.kind === 'public' ? '团队公共' : '本人专用' },
+                  { label: '模型', value: item.model },
+                ]"
+              />
             </td>
             <td>
               <span class="badge" :class="item.enabled && item.healthy ? 'pass' : 'fail'">{{
@@ -200,22 +206,26 @@ function exportAudit() {
         只展示当前体验用户的任务。预计时间为本地模拟进度；真实 ETA 需要调度器反馈。
       </p>
       <div v-for="run in pending" :key="run.id" class="resource-queue">
-        <RouterLink :to="`/preview/runs/${run.id}`">{{ run.name }}</RouterLink
-        ><small
-          >{{
-            run.status === 'scheduled'
-              ? '等待预约时间'
-              : run.status === 'queued'
-                ? '等待可用执行位置'
-                : '正在处理用例'
-          }}
-          ·
-          {{
-            run.config.scheduledAt
-              ? new Date(run.config.scheduledAt).toLocaleString()
-              : '预计数秒内更新（Mock）'
-          }}</small
-        >
+        <RouterLink :to="`/preview/runs/${run.id}`">{{ run.name }}</RouterLink>
+        <MetadataGroup
+          :items="[
+            {
+              label: '状态',
+              value:
+                run.status === 'scheduled'
+                  ? '等待预约时间'
+                  : run.status === 'queued'
+                    ? '等待可用执行位置'
+                    : '正在处理用例',
+            },
+            {
+              label: '预约时间',
+              value: run.config.scheduledAt
+                ? new Date(run.config.scheduledAt).toLocaleString()
+                : '未预约',
+            },
+          ]"
+        />
       </div>
       <EmptyState
         v-if="!pending.length"

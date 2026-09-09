@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../../components/EntityRef.vue'
+import MetadataGroup from '../../components/MetadataGroup.vue'
 import EntityLink from './EntityLink.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
 import { computed } from 'vue'
@@ -17,7 +19,9 @@ const options = computed(() =>
     .flatMap((item) =>
       item.versions.map((entry) => ({
         value: `${item.id}@${entry.version}`,
-        label: `${item.name} · v${entry.version}`,
+        label: `${item.name}（版本：${entry.version}）`,
+        name: item.name,
+        version: entry.version,
       })),
     ),
 )
@@ -100,8 +104,15 @@ function resource(id: string) {
           ><el-option
             v-for="entry in state.credentials"
             :key="entry.id"
-            :label="`${entry.name} · ${entry.kind === 'public' ? '公共' : '私有'}${!entry.enabled || !entry.healthy ? ' · 不可用' : ''}`"
-            :value="entry.id" /></el-select></el-form-item
+            :label="entry.name"
+            :value="entry.id"
+            ><EntityRef
+              :name="entry.name"
+              :type="entry.kind === 'public' ? '公共资源' : '私有资源'"
+              compact /><MetadataGroup
+              :items="[
+                { label: '可用', value: entry.enabled && entry.healthy },
+              ]" /></el-option></el-select></el-form-item
       ><el-form-item label="评分模型"
         ><el-input :model-value="value.model" @update:model-value="set('model', $event)"
       /></el-form-item>
@@ -122,7 +133,12 @@ function resource(id: string) {
               v-for="option in options"
               :key="option.value"
               :label="option.label"
-              :value="option.value" /></el-select></el-form-item
+              :value="option.value"
+              ><EntityRef
+                :name="option.name"
+                type="评估器"
+                :version="option.version"
+                compact /></el-option></el-select></el-form-item
         ><el-form-item :label="`子评估器 ${index + 1} 权重`"
           ><el-input-number
             :model-value="child.weight"
@@ -131,9 +147,17 @@ function resource(id: string) {
             :step="0.1"
             :precision="2"
             @update:model-value="setWeight(index, $event)" /></el-form-item
-        ><EntityLink context-key="src/preview/components/PrepEvaluatorEditor.vue:75"
+        ><EntityLink
+          context-key="src/preview/components/PrepEvaluatorEditor.vue:75"
           v-if="child.id"
-          :related="value.children.filter(item => item.id).map(item => ({ label: state.evaluators.find(entry => entry.id === item.id)?.name ?? '子评估器', to: `/preview/evaluators/${item.id}?version=${item.version}` }))"
+          :related="
+            value.children
+              .filter((item) => item.id)
+              .map((item) => ({
+                label: state.evaluators.find((entry) => entry.id === item.id)?.name ?? '子评估器',
+                to: `/preview/evaluators/${item.id}?version=${item.version}`,
+              }))
+          "
           :to="`/preview/evaluators/${child.id}?version=${child.version}`"
           >查看子项版本</EntityLink
         ><el-button v-if="!readonly" @click="removeChild(index)">移除子项</el-button>

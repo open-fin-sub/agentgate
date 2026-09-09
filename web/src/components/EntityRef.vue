@@ -6,15 +6,18 @@ defineProps<{
   version?: string | number | null
   id?: string
   compact?: boolean
+  headingLevel?: 2 | 3 | 4
 }>()
 </script>
 <template>
   <div class="ux-entity" :class="{ compact }">
-    <strong>{{ name || '未命名' }}</strong
-    ><MetadataGroup
+    <component :is="headingLevel ? `h${headingLevel}` : 'strong'" class="entity-name"
+      ><slot name="name">{{ name || '名称未提供' }}</slot></component
+    >
+    <MetadataGroup
       :items="[
         { label: '类型', value: type },
-        ...(version !== undefined ? [{ label: '版本', value: version ?? '草稿' }] : []),
+        ...(version !== undefined ? [{ label: '版本', value: version }] : []),
       ]"
     />
     <details v-if="id">
@@ -29,12 +32,13 @@ defineProps<{
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.ux-entity > strong {
+.entity-name {
+  margin: 0;
   font-size: 16px;
   line-height: 24px;
   color: var(--ag-text);
 }
-.ux-entity.compact > strong {
+.ux-entity.compact > .entity-name {
   font-size: 14px;
 }
 .ux-entity :deep(.ux-metadata) {

@@ -27,6 +27,12 @@ export const statusLabels: Record<RunStatus, string> = {
 }
 export const outcomes = Object.keys(outcomeLabels) as Outcome[]
 export const statuses = Object.keys(statusLabels) as RunStatus[]
+export const retryScopeLabels: Record<NonNullable<Run['retryScope']>, string> = {
+  all: '全部用例',
+  unfinished: '未完成用例',
+  failed: '失败用例',
+  single: '单条用例',
+}
 export const isActive = (run: Run) => ['scheduled', 'queued', 'running'].includes(run.status)
 export const formatTime = (value: string | null) =>
   value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '—'
@@ -233,9 +239,17 @@ export function runMetrics(run: Run) {
     errorRate: results.length ? counts.error / results.length : null,
     tokensMissing,
     tokens:
-      !results.length || tokensMissing ? null : results.reduce((sum, item) => sum + item.tokens!, 0),
-    inputTokens: !results.length || results.some(item => item.inputTokens == null) ? null : results.reduce((sum, item) => sum + item.inputTokens!, 0),
-    outputTokens: !results.length || results.some(item => item.outputTokens == null) ? null : results.reduce((sum, item) => sum + item.outputTokens!, 0),
+      !results.length || tokensMissing
+        ? null
+        : results.reduce((sum, item) => sum + item.tokens!, 0),
+    inputTokens:
+      !results.length || results.some((item) => item.inputTokens == null)
+        ? null
+        : results.reduce((sum, item) => sum + item.inputTokens!, 0),
+    outputTokens:
+      !results.length || results.some((item) => item.outputTokens == null)
+        ? null
+        : results.reduce((sum, item) => sum + item.outputTokens!, 0),
     latency: latencies.length
       ? latencies.reduce((sum, item) => sum + item, 0) / latencies.length
       : null,

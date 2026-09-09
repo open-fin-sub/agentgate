@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../../components/EntityRef.vue'
+import MetadataGroup from '../../components/MetadataGroup.vue'
 import EntityLink from './EntityLink.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
@@ -90,11 +92,13 @@ function retry() {
   <section class="panel">
     <h2>执行前检查定义风险</h2>
     <StatusNotice v-if="preparedDataset">
-      <p>
-        已补充验证用例：{{ preparedDataset.name }} · v{{
-          route.query.datasetVersion
-        }}。静态风险需要通过实际运行验证。
-      </p>
+      <p>已补充验证用例。请执行测评，核对这些风险是否发生。</p>
+      <EntityRef
+        :name="preparedDataset.name"
+        type="测评集"
+        :version="String(route.query.datasetVersion ?? '')"
+        compact
+      />
       <RouterLink
         class="ag-button primary"
         :to="{
@@ -164,7 +168,8 @@ function retry() {
       ></label>
       <el-button type="primary" :disabled="state.role === 'viewer'" @click="analyze"
         >检查此版本定义（Mock）</el-button
-      ><EntityLink context-key="src/preview/components/AnalysisStatic.vue:79"
+      ><EntityLink
+        context-key="src/preview/components/AnalysisStatic.vue:79"
         :to="{ path: `/preview/targets/${target.id}`, query: { version: version.id } }"
         class="definition-link"
         >查看源快照</EntityLink
@@ -186,13 +191,29 @@ function retry() {
             v-for="item in history"
             :key="item.id"
             :value="item.id"
-            :label="`${new Date(item.createdAt).toLocaleString()} · ${item.status === 'completed' ? '已完成' : item.status === 'running' ? '检查中' : '失败'}`" /></el-select
+            :label="new Date(item.createdAt).toLocaleString()"
+            ><MetadataGroup
+              :items="[
+                { label: '检查时间', value: new Date(item.createdAt).toLocaleString() },
+                {
+                  label: '检查状态',
+                  value:
+                    item.status === 'completed'
+                      ? '已完成'
+                      : item.status === 'running'
+                        ? '检查中'
+                        : '失败',
+                },
+              ]" /></el-option></el-select
       ></label>
-      <p v-if="!analysis" role="alert">404 · 静态分析记录不存在或不属于所选对象版本。</p>
+      <StatusNotice v-if="!analysis" type="error"
+        >找不到此版本的检查记录。请在上方选择其他记录，或重新检查当前版本。</StatusNotice
+      >
       <template v-else
-        ><p v-if="analysis.status === 'completed'">
-          {{ analysis.risks.length }} 项定义风险 / 证据缺口 · 独立于运行 Badcase
-        </p>
+        ><MetadataGroup
+          v-if="analysis.status === 'completed'"
+          :items="[{ label: '发现的风险与证据缺口数', value: analysis.risks.length }]"
+        />
         <StatusNotice type="warning" v-if="analysis.status !== 'completed'">
           {{
             analysis.status === 'running'

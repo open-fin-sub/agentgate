@@ -8,8 +8,9 @@
       "line": 81,
       "evidence": "{{ preview ? 'Mock 体验 · 本地浏览器数据' : '真实接入 · 当前后端能力' }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0001"
+      "status": "已验证",
+      "id": "UX-0001",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-COPY",
@@ -145,8 +146,9 @@
       "line": 71,
       "evidence": "<small>{{ item.notes || item.tags.join(' · ') || '暂无备注' }}</small>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0013"
+      "status": "已验证",
+      "id": "UX-0013",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "D-CONTROL",
@@ -413,8 +415,9 @@
       "line": 128,
       "evidence": "<footer class=\"product-footer\">AgentGate · 测评配置、版本与结果可追溯</footer>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0037"
+      "status": "已验证",
+      "id": "UX-0037",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -424,8 +427,9 @@
       "line": 117,
       "evidence": "{{ report.run.manifest.target.display_name }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0038"
+      "status": "已验证",
+      "id": "UX-0038",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -435,8 +439,9 @@
       "line": 118,
       "evidence": "{{ report.run.manifest.target.ref.external_version_id }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0039"
+      "status": "已验证",
+      "id": "UX-0039",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -457,8 +462,9 @@
       "line": 172,
       "evidence": "<summary>本轮预期 · {{ turn.expectations.length }} 项</summary>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0041"
+      "status": "已验证",
+      "id": "UX-0041",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -468,8 +474,9 @@
       "line": 195,
       "evidence": ">{{ catalogLabel(item.evaluator_name) }} · {{ outcomeLabels[item.outcome] }}</RouterLink",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0042"
+      "status": "已验证",
+      "id": "UX-0042",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -479,8 +486,9 @@
       "line": 223,
       "evidence": ">评分执行异常 ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0043"
+      "status": "已验证",
+      "id": "UX-0043",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-COPY",
@@ -502,8 +510,9 @@
       "line": 249,
       "evidence": "<span>输入 / 输出 Token</span",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0045"
+      "status": "已验证",
+      "id": "UX-0045",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-COPY",
@@ -525,8 +534,9 @@
       "line": 267,
       "evidence": "{{ selected.judge_record.provider_id }} · 请求",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0047"
+      "status": "已验证",
+      "id": "UX-0047",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -560,8 +570,9 @@
       "line": 309,
       "evidence": "<span class=\"muted small\">按实际采集顺序 · {{ spans.length }} 个步骤</span>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0050"
+      "status": "已验证",
+      "id": "UX-0050",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -571,8 +582,9 @@
       "line": 327,
       "evidence": "<span class=\"muted\">· {{ span.operation_type }}</span>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0051"
+      "status": "已验证",
+      "id": "UX-0051",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -582,8 +594,9 @@
       "line": 328,
       "evidence": "<span v-if=\"failureSpans.has(span.span_id)\">· 关联异常</span>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0052"
+      "status": "已验证",
+      "id": "UX-0052",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -617,8 +630,9 @@
       "line": 542,
       "evidence": "· {{ activeVersion?.cases.length ?? 0 }} 条用例</small",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0055"
+      "status": "已验证",
+      "id": "UX-0055",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -628,8 +642,9 @@
       "line": 576,
       "evidence": "{{ issue.sheet ?? '工作表' }} · 第 {{ issue.row ?? '—' }} 行 ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0056"
+      "status": "已验证",
+      "id": "UX-0056",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -639,8 +654,9 @@
       "line": 612,
       "evidence": "用例列表 · {{ activeVersion?.cases.length ?? 0 }}</button",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0057"
+      "status": "已验证",
+      "id": "UX-0057",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -650,8 +666,9 @@
       "line": 618,
       "evidence": "{{ editable ? '编辑用例' : '用例详情' }}{{ dirty ? ' · 未保存' : '' }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0058"
+      "status": "已验证",
+      "id": "UX-0058",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -661,8 +678,9 @@
       "line": 646,
       "evidence": ">v{{ activeVersion.version }} · {{ activeVersion.cases.length }} 个用例 · 内容",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0059"
+      "status": "已验证",
+      "id": "UX-0059",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "D-CONTROL",
@@ -740,8 +758,9 @@
       "line": 57,
       "evidence": "<span class=\"badge\">{{ kinds[item.kind] }} · v{{ item.version }}</span>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0066"
+      "status": "已验证",
+      "id": "UX-0066",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -751,8 +770,9 @@
       "line": 60,
       "evidence": "<span>质量维度 / 指标</span",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0067"
+      "status": "已验证",
+      "id": "UX-0067",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "A-INPUT",
@@ -774,8 +794,9 @@
       "line": 71,
       "evidence": "实现 {{ item.implementation_id }} · {{ item.implementation_version }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0069"
+      "status": "已验证",
+      "id": "UX-0069",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-COPY",
@@ -832,8 +853,9 @@
       "line": 207,
       "evidence": "{{ kinds[root.kind] }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0074"
+      "status": "已验证",
+      "id": "UX-0074",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-COPY",
@@ -890,8 +912,9 @@
       "line": 270,
       "evidence": "<summary>{{ kinds[group.kind] }} · {{ group.nodes.length }} 个固定版本</summary>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0079"
+      "status": "已验证",
+      "id": "UX-0079",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-COPY",
@@ -971,8 +994,9 @@
       "line": 124,
       "evidence": ">v{{ run.manifest.dataset.version }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0086"
+      "status": "已验证",
+      "id": "UX-0086",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -982,8 +1006,9 @@
       "line": 141,
       "evidence": "最近 10 条运行记录 · <RouterLink to=\"/capabilities\">当前接入范围</RouterLink>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0087"
+      "status": "已验证",
+      "id": "UX-0087",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "H-TERMS",
@@ -1037,8 +1062,9 @@
       "line": 297,
       "evidence": "{{ index === 0 ? '基线 A' : '候选 B' }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0092"
+      "status": "已验证",
+      "id": "UX-0092",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -1048,8 +1074,9 @@
       "line": 301,
       "evidence": "{{ report.run.manifest.target.display_name }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0093"
+      "status": "已验证",
+      "id": "UX-0093",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -1059,8 +1086,9 @@
       "line": 318,
       "evidence": "总体分数变化：<strong>{{ delta(result.overall_score_delta) }}</strong> ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0094"
+      "status": "已验证",
+      "id": "UX-0094",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-COPY",
@@ -1093,8 +1121,9 @@
       "line": 410,
       "evidence": "1 条用例 · 共 {{ group.total }} 项评分结果 · 当前条件匹配 {{ group.items.length }} 项",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0097"
+      "status": "已验证",
+      "id": "UX-0097",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -1104,8 +1133,9 @@
       "line": 439,
       "evidence": "· {{ scoreText(item.baseline_score) }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0098"
+      "status": "已验证",
+      "id": "UX-0098",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -1115,8 +1145,9 @@
       "line": 450,
       "evidence": "· {{ scoreText(item.candidate_score) }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0099"
+      "status": "已验证",
+      "id": "UX-0099",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -1138,8 +1169,9 @@
       "line": 463,
       "evidence": "><span>第 {{ page }} / {{ Math.ceil(caseGroups.length / 10) }} 页 · 按完整用例分页</span",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0101"
+      "status": "已验证",
+      "id": "UX-0101",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -1195,8 +1227,9 @@
       "line": 216,
       "evidence": "{{ catalogLabel(item.label) }} · {{ item.id }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0106"
+      "status": "已验证",
+      "id": "UX-0106",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "D-CONTROL",
@@ -1228,8 +1261,9 @@
       "line": 237,
       "evidence": "v{{ item.version }} · {{ item.cases.length }} 条用例",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0109"
+      "status": "已验证",
+      "id": "UX-0109",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -1261,8 +1295,9 @@
       "line": 295,
       "evidence": ">v{{ item.version }} · {{ metricLabel(item.dimension) }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0112"
+      "status": "已验证",
+      "id": "UX-0112",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -1272,8 +1307,9 @@
       "line": 296,
       "evidence": "{{ { rule: '规则', llm_judge: 'LLM 评分', hybrid: '复合' }[item.kind] }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0113"
+      "status": "已验证",
+      "id": "UX-0113",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-COPY",
@@ -1307,8 +1343,9 @@
       "line": 325,
       "evidence": ">{{ chosen?.cases.length ?? '—' }} 条用例 × 1 个对象版本 ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0116"
+      "status": "已验证",
+      "id": "UX-0116",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "RC-TOKEN",
@@ -1330,8 +1367,9 @@
       "line": 141,
       "evidence": "<span v-if=\"progress\">· {{ progress.dataset_name }} v{{ progress.dataset_version }}</span>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0118"
+      "status": "已验证",
+      "id": "UX-0118",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -1376,8 +1414,9 @@
       "line": 239,
       "evidence": "<div class=\"stat-label\">总体分数 · 0～1</div>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0122"
+      "status": "已验证",
+      "id": "UX-0122",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -1387,8 +1426,9 @@
       "line": 268,
       "evidence": "{{ label }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0123"
+      "status": "已验证",
+      "id": "UX-0123",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "A-INPUT",
@@ -1410,8 +1450,9 @@
       "line": 329,
       "evidence": "<h2>逐项结果 · {{ results.length }} 条</h2>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0125"
+      "status": "已验证",
+      "id": "UX-0125",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "D-CONTROL",
@@ -1548,8 +1589,9 @@
       "line": 130,
       "evidence": "<th>对象 / 版本</th>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0137"
+      "status": "已验证",
+      "id": "UX-0137",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -1559,8 +1601,9 @@
       "line": 147,
       "evidence": ">v{{ run.manifest.dataset.version }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0138"
+      "status": "已验证",
+      "id": "UX-0138",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -1570,8 +1613,9 @@
       "line": 125,
       "evidence": ">排队中 · {{ activity.queued.length }}</button>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0139"
+      "status": "已验证",
+      "id": "UX-0139",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -1581,8 +1625,9 @@
       "line": 132,
       "evidence": ">运行中 · {{ activity.running.length }}</button>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0140"
+      "status": "已验证",
+      "id": "UX-0140",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -1592,8 +1637,9 @@
       "line": 139,
       "evidence": ">最近历史 · {{ activity.recent.length }}</button>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0141"
+      "status": "已验证",
+      "id": "UX-0141",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -1603,8 +1649,9 @@
       "line": 146,
       "evidence": "<b>{{ run.target_name }} · {{ run.target_version }}</b>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0142"
+      "status": "已验证",
+      "id": "UX-0142",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -1637,8 +1684,9 @@
       "line": 40,
       "evidence": "<h2>Loan Agent <span class=\"badge\">Agent · 演示接入</span></h2>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0145"
+      "status": "已验证",
+      "id": "UX-0145",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "RC-TOKEN",
@@ -1756,8 +1804,9 @@
       "line": 89,
       "evidence": "已补充验证用例：{{ preparedDataset.name }} · v{{",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0155"
+      "status": "已验证",
+      "id": "UX-0155",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -1779,8 +1828,9 @@
       "line": 129,
       "evidence": "<h3>404 · 对象或定义版本不存在</h3>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0157"
+      "status": "已验证",
+      "id": "UX-0157",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "A-INPUT",
@@ -1814,8 +1864,9 @@
       "line": 177,
       "evidence": ":label=\"`${new Date(item.createdAt).toLocaleString()} · ${item.status === 'completed' ? '已完成' : item.status === 'running' ? '检查中' : '失败'}`\" /></el-select",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0160"
+      "status": "已验证",
+      "id": "UX-0160",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -1825,8 +1876,9 @@
       "line": 179,
       "evidence": "<p v-if=\"!analysis\" role=\"alert\">404 · 静态分析记录不存在或不属于所选对象版本。</p>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0161"
+      "status": "已验证",
+      "id": "UX-0161",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -1836,8 +1888,9 @@
       "line": 182,
       "evidence": "{{ analysis.risks.length }} 项定义风险 / 证据缺口 · 独立于运行 Badcase",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0162"
+      "status": "已验证",
+      "id": "UX-0162",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "H-TERMS",
@@ -1858,8 +1911,9 @@
       "line": 296,
       "evidence": "{{ kindLabels[suggestion.kind] }} · {{ suggestion.priority }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0164"
+      "status": "已验证",
+      "id": "UX-0164",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -1869,8 +1923,9 @@
       "line": 305,
       "evidence": "404 · 来源运行不存在，无法关联证据或创建回归。",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0165"
+      "status": "已验证",
+      "id": "UX-0165",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -1880,8 +1935,9 @@
       "line": 310,
       "evidence": "· {{ suggestion.targetVersion }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0166"
+      "status": "已验证",
+      "id": "UX-0166",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "C-CONTEXT",
@@ -1903,8 +1959,9 @@
       "line": 320,
       "evidence": ">{{ id }} · 输出 / Trace →</RouterLink",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0168"
+      "status": "已验证",
+      "id": "UX-0168",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -1914,8 +1971,9 @@
       "line": 372,
       "evidence": ">{{ item.id }} · 修订期望<el-input v-model=\"item.expected\" type=\"textarea\" :rows=\"3\"",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0169"
+      "status": "已验证",
+      "id": "UX-0169",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -1925,8 +1983,9 @@
       "line": 385,
       "evidence": ":label=\"`v${version.version} · ${version.note}`\"",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0170"
+      "status": "已验证",
+      "id": "UX-0170",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-COPY",
@@ -1959,8 +2018,9 @@
       "line": 415,
       "evidence": "<RouterLink :to=\"`/preview/comparisons/${attempt.id}`\">{{ attempt.name }}</RouterLink> ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0173"
+      "status": "已验证",
+      "id": "UX-0173",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -1970,8 +2030,9 @@
       "line": 421,
       "evidence": "{{ new Date(entry.time).toLocaleString() }} · {{ entry.action }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0174"
+      "status": "已验证",
+      "id": "UX-0174",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "RC-TOKEN",
@@ -2005,8 +2066,9 @@
       "line": 265,
       "evidence": ":label=\"`${item.type} · ${item.name}`\" /></el-select",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0177"
+      "status": "已验证",
+      "id": "UX-0177",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2016,8 +2078,9 @@
       "line": 276,
       "evidence": ":label=\"`${run.name} · ${run.config.targetVersion} · ${runStatusLabels[run.status]}`\" /></el-select",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0178"
+      "status": "已验证",
+      "id": "UX-0178",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2027,8 +2090,9 @@
       "line": 284,
       "evidence": ":label=\"`${run.name} · ${run.config.targetVersion} · ${runStatusLabels[run.status]}`\" /></el-select",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0179"
+      "status": "已验证",
+      "id": "UX-0179",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2038,8 +2102,9 @@
       "line": 328,
       "evidence": ":label=\"`v${version.version} · ${version.cases.length} 条`\" /></el-select",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0180"
+      "status": "已验证",
+      "id": "UX-0180",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "D-CONTROL",
@@ -2060,8 +2125,9 @@
       "line": 415,
       "evidence": ":label=\"`${item.id} · ${item.question}`\" /></el-select",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0182"
+      "status": "已验证",
+      "id": "UX-0182",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2071,8 +2137,9 @@
       "line": 436,
       "evidence": ">{{ metricDefinitions[rule.metric].label }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0183"
+      "status": "已验证",
+      "id": "UX-0183",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -2165,8 +2232,9 @@
       "line": 12,
       "evidence": "<h3>{{ label }} · {{ run.config.targetVersion }}</h3>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0191"
+      "status": "已验证",
+      "id": "UX-0191",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2176,8 +2244,9 @@
       "line": 15,
       "evidence": "<p class=\"muted\">{{ sample.id }} · {{ sample.category }} · {{ sample.tags.join(' / ') }}</p>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0192"
+      "status": "已验证",
+      "id": "UX-0192",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -2199,8 +2268,9 @@
       "line": 24,
       "evidence": "<span :class=\"['badge', result.outcome]\">{{ labels[result.outcome] }}</span> ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0194"
+      "status": "已验证",
+      "id": "UX-0194",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2210,8 +2280,9 @@
       "line": 31,
       "evidence": "路由 {{ result.actualSkill || '未采集' }} · {{ formatMetric('latency', result.latency) }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0195"
+      "status": "已验证",
+      "id": "UX-0195",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2221,8 +2292,9 @@
       "line": 32,
       "evidence": "Token {{ result.tokens ?? '未采集' }} · {{ formatMetric('cost', result.cost) }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0196"
+      "status": "已验证",
+      "id": "UX-0196",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "C-CONTEXT",
@@ -2268,8 +2340,9 @@
       "line": 54,
       "evidence": "·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0200"
+      "status": "已验证",
+      "id": "UX-0200",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "H-TERMS",
@@ -2302,8 +2375,9 @@
       "line": 86,
       "evidence": "{{ new Date(entry.time).toLocaleString() }} · {{ entry.actor }} · {{ entry.action }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0203"
+      "status": "已验证",
+      "id": "UX-0203",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "A-INPUT",
@@ -2361,8 +2435,9 @@
       "line": 157,
       "evidence": "{{ row.id }} · {{ row.category }} · {{ row.difficulty }} · {{ row.priority }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0208"
+      "status": "已验证",
+      "id": "UX-0208",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2372,8 +2447,9 @@
       "line": 162,
       "evidence": "}}<span v-if=\"row.expectedSkill\"> · 路由 {{ row.expectedSkill }}</span>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0209"
+      "status": "已验证",
+      "id": "UX-0209",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2383,8 +2459,9 @@
       "line": 164,
       "evidence": "<p v-if=\"row.tags.length\" class=\"muted\">{{ row.tags.join(' · ') }}</p>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0210"
+      "status": "已验证",
+      "id": "UX-0210",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -2416,8 +2493,9 @@
       "line": 186,
       "evidence": "<el-form-item v-if=\"!item.turns.length\" label=\"问题 / 场景入口（必填）\"",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0213"
+      "status": "已验证",
+      "id": "UX-0213",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2427,8 +2505,9 @@
       "line": 192,
       "evidence": "<el-form-item label=\"期望输出 / 工具及业务要求\"",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0214"
+      "status": "已验证",
+      "id": "UX-0214",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -2473,8 +2552,9 @@
       "line": 529,
       "evidence": ":label=\"`${item.name} · ${item.type}`\"",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0218"
+      "status": "已验证",
+      "id": "UX-0218",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-COPY",
@@ -2520,8 +2600,9 @@
       "line": 614,
       "evidence": "去重 {{ duplicateCount }} 条 · {{ conflicts.length }} 组差异冲突 ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0222"
+      "status": "已验证",
+      "id": "UX-0222",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2531,8 +2612,9 @@
       "line": 621,
       "evidence": "选项 {{ variantIndex + 1 }} · 期望 {{ variant.expected }} · 路由",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0223"
+      "status": "已验证",
+      "id": "UX-0223",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2542,8 +2624,9 @@
       "line": 622,
       "evidence": "{{ variant.expectedSkill }} · {{ variant.priority }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0224"
+      "status": "已验证",
+      "id": "UX-0224",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -2576,8 +2659,9 @@
       "line": 107,
       "evidence": ":label=\"`${entry.name} · ${entry.kind === 'public' ? '公共' : '私有'}${!entry.enabled || !entry.healthy ? ' · 不可用' : ''}`\"",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0227"
+      "status": "已验证",
+      "id": "UX-0227",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -2668,8 +2752,9 @@
       "line": 80,
       "evidence": "{{ result.outcome }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0235"
+      "status": "已验证",
+      "id": "UX-0235",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2679,8 +2764,9 @@
       "line": 86,
       "evidence": "<strong>{{ child.name }}：{{ child.outcome }} · {{ child.score ?? '无分数' }}</strong>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0236"
+      "status": "已验证",
+      "id": "UX-0236",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2690,8 +2776,9 @@
       "line": 90,
       "evidence": "{{ nested.name }} · {{ nested.outcome }} · {{ nested.reason }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0237"
+      "status": "已验证",
+      "id": "UX-0237",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2701,8 +2788,9 @@
       "line": 68,
       "evidence": "{{ queue.kind }} · 位置 {{ queue.position || '待分配' }} · 等待约",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0238"
+      "status": "已验证",
+      "id": "UX-0238",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2712,8 +2800,9 @@
       "line": 78,
       "evidence": "· Mock 动态估算",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0239"
+      "status": "已验证",
+      "id": "UX-0239",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2723,8 +2812,9 @@
       "line": 81,
       "evidence": "待返回 {{ run.cases.length - run.results.length }} 条 · 执行错误",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0240"
+      "status": "已验证",
+      "id": "UX-0240",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "RC-TOKEN",
@@ -2842,8 +2932,9 @@
       "line": 253,
       "evidence": ":label=\"`${item.name} · ${item.config.targetVersion} · ${runStatusLabels[item.status]}`\" /></el-select",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0250"
+      "status": "已验证",
+      "id": "UX-0250",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -2865,8 +2956,9 @@
       "line": 257,
       "evidence": "<h2>404 · 运行不存在</h2>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0252"
+      "status": "已验证",
+      "id": "UX-0252",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2876,8 +2968,9 @@
       "line": 263,
       "evidence": "<h2>{{ run.name }} · {{ run.config.targetVersion }}</h2>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0253"
+      "status": "已验证",
+      "id": "UX-0253",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2887,8 +2980,9 @@
       "line": 267,
       "evidence": "{{ runStatusLabels[run.status] }} · 已返回 {{ records.length }} /",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0254"
+      "status": "已验证",
+      "id": "UX-0254",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -2898,8 +2992,9 @@
       "line": 291,
       "evidence": "? `代表样本 ${cluster.records[0].sample.id} · 点击看证据`",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0255"
+      "status": "已验证",
+      "id": "UX-0255",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -2921,8 +3016,9 @@
       "line": 300,
       "evidence": ">{{ item.tag }} · {{ item.count }} 条</el-button",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0257"
+      "status": "已验证",
+      "id": "UX-0257",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -2944,8 +3040,9 @@
       "line": 341,
       "evidence": "}}<template v-if=\"expected\"> · 预期 {{ expected }} → 实际 {{ actual }}</template>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0259"
+      "status": "已验证",
+      "id": "UX-0259",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -3015,8 +3112,9 @@
       "line": 406,
       "evidence": ">{{ suggestion.priority }} · {{ suggestion.targetVersion }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0265"
+      "status": "已验证",
+      "id": "UX-0265",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3026,8 +3124,9 @@
       "line": 425,
       "evidence": "404 · 建议不存在，请选择有效建议。",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0266"
+      "status": "已验证",
+      "id": "UX-0266",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -3049,8 +3148,9 @@
       "line": 435,
       "evidence": "<h2>404 · 分析视图不存在</h2>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0268"
+      "status": "已验证",
+      "id": "UX-0268",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "RC-TOKEN",
@@ -3096,8 +3196,9 @@
       "line": 356,
       "evidence": "<h1>{{ testCase.id }} · 用例证据</h1>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0272"
+      "status": "已验证",
+      "id": "UX-0272",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3107,8 +3208,9 @@
       "line": 358,
       "evidence": "{{ run.target.name }} / {{ run.config.targetVersion }} · {{ run.config.datasetId }} v{{",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0273"
+      "status": "已验证",
+      "id": "UX-0273",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3118,8 +3220,9 @@
       "line": 361,
       "evidence": "· {{ testCase.category }} / {{ testCase.difficulty }} / {{ testCase.priority }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0274"
+      "status": "已验证",
+      "id": "UX-0274",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3129,8 +3232,9 @@
       "line": 374,
       "evidence": "<span class=\"muted small\">沿用报告筛选 · ← / → 切换，R 定位复核，Ctrl / ⌘ + Enter 保存</span>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0275"
+      "status": "已验证",
+      "id": "UX-0275",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3140,8 +3244,9 @@
       "line": 389,
       "evidence": "耗时：{{ result.latency == null ? '缺失' : `${result.latency} ms` }} · Token：{{",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0276"
+      "status": "已验证",
+      "id": "UX-0276",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3151,8 +3256,9 @@
       "line": 392,
       "evidence": "· Mock 成本：{{ costText(result.cost) }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0277"
+      "status": "已验证",
+      "id": "UX-0277",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -3196,8 +3302,9 @@
       "line": 415,
       "evidence": "· 人工分数 {{ scoreText(latestReview.score) }} · {{ latestReview.reason }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0281"
+      "status": "已验证",
+      "id": "UX-0281",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3207,8 +3314,9 @@
       "line": 418,
       "evidence": ">{{ latestReview.actor }} · {{ formatTime(latestReview.time) }}</span",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0282"
+      "status": "已验证",
+      "id": "UX-0282",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3218,8 +3326,9 @@
       "line": 487,
       "evidence": "><span class=\"muted small\"> · 维度 {{ check.dimension || '未提供' }}</span>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0283"
+      "status": "已验证",
+      "id": "UX-0283",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3229,8 +3338,9 @@
       "line": 509,
       "evidence": "{{ step.title }} · {{ step.duration == null ? '耗时缺失' : `${step.duration} ms`",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0284"
+      "status": "已验证",
+      "id": "UX-0284",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3240,8 +3350,9 @@
       "line": 510,
       "evidence": "}}{{ step.error ? ' · 有错误' : '' }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0285"
+      "status": "已验证",
+      "id": "UX-0285",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3251,8 +3362,9 @@
       "line": 517,
       "evidence": "<p class=\"muted small\">Token：{{ step.tokens ?? '缺失' }} · 节点 {{ step.id }}</p>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0286"
+      "status": "已验证",
+      "id": "UX-0286",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "H-TERMS",
@@ -3317,8 +3429,9 @@
       "line": 594,
       "evidence": "· {{ scoreText(entry.score) }}</strong",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0292"
+      "status": "已验证",
+      "id": "UX-0292",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3328,8 +3441,9 @@
       "line": 597,
       "evidence": "<p class=\"muted small\">{{ entry.actor }} · {{ formatTime(entry.time) }}</p>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0293"
+      "status": "已验证",
+      "id": "UX-0293",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "RC-TOKEN",
@@ -3363,8 +3477,9 @@
       "line": 241,
       "evidence": "<h1>404 · 对比不存在</h1>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0296"
+      "status": "已验证",
+      "id": "UX-0296",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3374,8 +3489,9 @@
       "line": 250,
       "evidence": "comparison.mode === 'controlled' ? '共同配置新实验' : '已有运行比较 · 事后评审规则'",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0297"
+      "status": "已验证",
+      "id": "UX-0297",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3385,8 +3501,9 @@
       "line": 252,
       "evidence": "· Mock · {{ comparison.id }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0298"
+      "status": "已验证",
+      "id": "UX-0298",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -3407,8 +3524,9 @@
       "line": 273,
       "evidence": ":label=\"`${state.runs.find((item) => item.id === id)?.name ?? '记录缺失'} · ${state.runs.find((item) => item.id === id)?.config.targetVersion ?? id}`\" /></el-select",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0300"
+      "status": "已验证",
+      "id": "UX-0300",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -3430,8 +3548,9 @@
       "line": 277,
       "evidence": "<h2>404 · 关联运行不存在</h2>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0302"
+      "status": "已验证",
+      "id": "UX-0302",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3441,8 +3560,9 @@
       "line": 289,
       "evidence": "<h3>基线 A · {{ baseline.config.targetVersion }}</h3>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0303"
+      "status": "已验证",
+      "id": "UX-0303",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3452,8 +3572,9 @@
       "line": 292,
       "evidence": "{{ runStatusLabels[baseline.status] }} · 返回 {{ baseline.results.length }} /",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0304"
+      "status": "已验证",
+      "id": "UX-0304",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3463,8 +3584,9 @@
       "line": 298,
       "evidence": "<h3>候选 B · {{ candidate.config.targetVersion }}</h3>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0305"
+      "status": "已验证",
+      "id": "UX-0305",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3474,8 +3596,9 @@
       "line": 301,
       "evidence": "{{ runStatusLabels[candidate.status] }} · 返回 {{ candidate.results.length }} /",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0306"
+      "status": "已验证",
+      "id": "UX-0306",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3485,8 +3608,9 @@
       "line": 325,
       "evidence": "<h2>聚合变化 · 候选 B − 基线 A</h2>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0307"
+      "status": "已验证",
+      "id": "UX-0307",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3496,8 +3620,9 @@
       "line": 332,
       "evidence": "以下均值差仅描述各自运行的变化；输入 / 评分 / 资源差异可能影响指标，不能归因于目标版本。",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0308"
+      "status": "非缺陷",
+      "id": "UX-0308",
+      "resolution": "人工核对为解释比较限制的叙述句，列举输入、评分、资源差异，不是异质元数据值的拼接；中文术语优化随H执行。"
     },
     {
       "pattern": "B-META",
@@ -3507,8 +3632,9 @@
       "line": 337,
       "evidence": "{{ metric.label }} · {{ metric.direction === 'higher' ? '越高越好' : '越低越好' }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0309"
+      "status": "已验证",
+      "id": "UX-0309",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3518,8 +3644,9 @@
       "line": 353,
       "evidence": ">采集覆盖 A {{ metric.a.observed }}/{{ metric.a.total }} · B",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0310"
+      "status": "已验证",
+      "id": "UX-0310",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "A-INPUT",
@@ -3565,8 +3692,9 @@
       "line": 480,
       "evidence": "<span>{{ pair.id }} · {{ pairLabels[pair.kind] }}</span",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0314"
+      "status": "已验证",
+      "id": "UX-0314",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3576,8 +3704,9 @@
       "line": 485,
       "evidence": "><h3>{{ selected.id }} · {{ pairLabels[selected.kind] }}</h3>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0315"
+      "status": "已验证",
+      "id": "UX-0315",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3587,8 +3716,9 @@
       "line": 500,
       "evidence": "<p v-else-if=\"selectedCase\" role=\"alert\">404 · 所选样本不在本次比较范围内。</p>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0316"
+      "status": "已验证",
+      "id": "UX-0316",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3598,8 +3728,9 @@
       "line": 511,
       "evidence": ":label=\"`${item.id} · ${item.question}`\" /></el-select></label",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0317"
+      "status": "已验证",
+      "id": "UX-0317",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3609,8 +3740,9 @@
       "line": 518,
       "evidence": ":label=\"`${item.id} · ${item.question}`\" /></el-select",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0318"
+      "status": "已验证",
+      "id": "UX-0318",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -3632,8 +3764,9 @@
       "line": 94,
       "evidence": "{{ row.baseline?.target.name ?? '基线记录不存在' }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0320"
+      "status": "已验证",
+      "id": "UX-0320",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3643,8 +3776,9 @@
       "line": 98,
       "evidence": "· {{ new Date(row.comparison.createdAt).toLocaleString() }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0321"
+      "status": "已验证",
+      "id": "UX-0321",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3654,8 +3788,9 @@
       "line": 102,
       "evidence": "基线：{{ row.baseline?.name ?? row.comparison.baselineRunId }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0322"
+      "status": "已验证",
+      "id": "UX-0322",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3665,8 +3800,9 @@
       "line": 110,
       "evidence": "{{ candidate?.name ?? '候选记录不存在' }} · {{ candidate?.config.targetVersion }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0323"
+      "status": "已验证",
+      "id": "UX-0323",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3676,8 +3812,9 @@
       "line": 320,
       "evidence": "? `草稿 · 基于 ${dataset.draftBase ? `v${dataset.draftBase}` : '新建'}`",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0324"
+      "status": "已验证",
+      "id": "UX-0324",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3687,8 +3824,9 @@
       "line": 332,
       "evidence": ":label=\"`v${entry.version} · ${entry.cases.length} 条 · ${entry.note}`\"",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0325"
+      "status": "已验证",
+      "id": "UX-0325",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3698,8 +3836,9 @@
       "line": 337,
       "evidence": "已发布版本只读。{{ version?.note }} · {{ version?.createdAt }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0326"
+      "status": "已验证",
+      "id": "UX-0326",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "C-CONTEXT",
@@ -3721,8 +3860,9 @@
       "line": 386,
       "evidence": "· 原任务仍引用 v{{ sourceRun.config.datasetVersion }}，发布不会改变原报告。",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0328"
+      "status": "已验证",
+      "id": "UX-0328",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3732,8 +3872,9 @@
       "line": 404,
       "evidence": "相对 {{ base ? `v${base.version}` : '空测评集' }}：新增 {{ diff.added.length }} · 修改",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0329"
+      "status": "已验证",
+      "id": "UX-0329",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3743,8 +3884,9 @@
       "line": 405,
       "evidence": "{{ diff.changed.length }} · 删除 {{ diff.removed.length }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0330"
+      "status": "已验证",
+      "id": "UX-0330",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3754,8 +3896,9 @@
       "line": 410,
       "evidence": "新增 · {{ entry.id }} · {{ entry.question }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0331"
+      "status": "已验证",
+      "id": "UX-0331",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3765,8 +3908,9 @@
       "line": 413,
       "evidence": "修改 · {{ entry.id }} · {{ entry.question }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0332"
+      "status": "已验证",
+      "id": "UX-0332",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3776,8 +3920,9 @@
       "line": 416,
       "evidence": "删除 · {{ entry.id }} · {{ entry.question }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0333"
+      "status": "已验证",
+      "id": "UX-0333",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -3821,8 +3966,9 @@
       "line": 445,
       "evidence": "<RouterLink :to=\"`/preview/runs/${run.id}`\">{{ run.name }}</RouterLink> · {{ run.status }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0337"
+      "status": "已验证",
+      "id": "UX-0337",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -3844,8 +3990,9 @@
       "line": 506,
       "evidence": "{{ state.targets.find((target) => target.id === item.targetId)?.name ?? '对象不可用' }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0339"
+      "status": "已验证",
+      "id": "UX-0339",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3855,8 +4002,9 @@
       "line": 507,
       "evidence": "{{ item.versions.length }} 个发布版本 ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0340"
+      "status": "已验证",
+      "id": "UX-0340",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3866,8 +4014,9 @@
       "line": 257,
       "evidence": "editing ? '正在修订 · 尚未发布' : `发布版本 v${version.version} · 只读`",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0341"
+      "status": "已验证",
+      "id": "UX-0341",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3877,8 +4026,9 @@
       "line": 266,
       "evidence": ":label=\"`v${entry.version} · ${entry.note}`\"",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0342"
+      "status": "已验证",
+      "id": "UX-0342",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -3934,8 +4084,9 @@
       "line": 366,
       "evidence": "{{ kinds[item.versions.slice(-1)[0]?.kind ?? 'rule'] }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0347"
+      "status": "已验证",
+      "id": "UX-0347",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3945,8 +4096,9 @@
       "line": 367,
       "evidence": "{{ item.versions.length }} 个发布版本 · {{ item.archived ? '已归档' : '使用中' }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0348"
+      "status": "已验证",
+      "id": "UX-0348",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3956,8 +4108,9 @@
       "line": 54,
       "evidence": "><div class=\"stat-label\">接入对象 · 体验目录</div>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0349"
+      "status": "已验证",
+      "id": "UX-0349",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3967,8 +4120,9 @@
       "line": 91,
       "evidence": "固定输入：端到端回归 v1 · 标准 v1 · 公共体验模型 · 全量 12",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0350"
+      "status": "已验证",
+      "id": "UX-0350",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -3978,8 +4132,9 @@
       "line": 96,
       "evidence": ">{{ run.name }} · {{ run.config.targetVersion }}</RouterLink",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0351"
+      "status": "已验证",
+      "id": "UX-0351",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -4001,8 +4156,9 @@
       "line": 164,
       "evidence": "{{ run.target.name }} · {{ run.config.targetVersion }}<br />输入 v{{",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0353"
+      "status": "已验证",
+      "id": "UX-0353",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4012,8 +4168,9 @@
       "line": 167,
       "evidence": "· {{ run.results.length }} / {{ run.cases.length }} 条已返回",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0354"
+      "status": "已验证",
+      "id": "UX-0354",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -4059,8 +4216,9 @@
       "line": 212,
       "evidence": "·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0358"
+      "status": "已验证",
+      "id": "UX-0358",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -4117,8 +4275,9 @@
       "line": 346,
       "evidence": ":label=\"`${item.type} · ${item.name}`\" /></el-select",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0363"
+      "status": "已验证",
+      "id": "UX-0363",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4128,8 +4287,9 @@
       "line": 354,
       "evidence": ":label=\"`${item.id} · ${item.label}${item.executable ? '' : '（不可执行）'}`\" /></el-select",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0364"
+      "status": "已验证",
+      "id": "UX-0364",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4139,8 +4299,9 @@
       "line": 358,
       "evidence": "{{ target?.description }} · 来源：{{ target?.platform }} /",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0365"
+      "status": "已验证",
+      "id": "UX-0365",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4150,8 +4311,9 @@
       "line": 392,
       "evidence": ":label=\"`v${item.version} · ${item.cases.length} 条用例`\" /></el-select",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0366"
+      "status": "已验证",
+      "id": "UX-0366",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4161,8 +4323,9 @@
       "line": 416,
       "evidence": ":label=\"`${item.id} · ${item.question}`\" /></el-select",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0367"
+      "status": "已验证",
+      "id": "UX-0367",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4172,8 +4335,9 @@
       "line": 423,
       "evidence": "发布说明：{{ input?.note || '无' }} · 来源：{{",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0368"
+      "status": "已验证",
+      "id": "UX-0368",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4183,8 +4347,9 @@
       "line": 454,
       "evidence": ":label=\"`${item.name} · ${item.kind === 'public' ? '公共' : '私有'}${!item.enabled || !item.healthy ? '（失效）' : ''}`\" /></el-select",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0369"
+      "status": "已验证",
+      "id": "UX-0369",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4194,8 +4359,9 @@
       "line": 463,
       "evidence": ":label=\"`${item.name} · ${item.kind === 'public' ? '公共' : '私有'}${!item.enabled || !item.healthy ? '（失效）' : ''}`\" /></el-select",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0370"
+      "status": "已验证",
+      "id": "UX-0370",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4205,8 +4371,9 @@
       "line": 489,
       "evidence": "执行参数与预约 · 并发 {{ config.concurrency }} / 超时 {{ config.timeout }} 秒 / 重试",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0371"
+      "status": "已验证",
+      "id": "UX-0371",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "D-CONTROL",
@@ -4227,8 +4394,9 @@
       "line": 542,
       "evidence": "{{ dataset?.name || config.datasetId }} v{{ config.datasetVersion }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0373"
+      "status": "已验证",
+      "id": "UX-0373",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4238,8 +4406,9 @@
       "line": 543,
       "evidence": "{{ config.caseIds.length }} 条固定样本 · {{ config.evaluatorRefs.length }} 个评估器",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0374"
+      "status": "已验证",
+      "id": "UX-0374",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4249,8 +4418,9 @@
       "line": 546,
       "evidence": "执行：{{ resource?.name || '未选择' }} · 评分：{{ scoringResource?.name || '未选择' }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0375"
+      "status": "已验证",
+      "id": "UX-0375",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "A-FORM",
@@ -4368,8 +4538,9 @@
       "line": 324,
       "evidence": "{{ run.target.name }} · {{ run.config.targetVersion }} / {{ run.config.datasetId }} v{{",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0385"
+      "status": "已验证",
+      "id": "UX-0385",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4379,8 +4550,9 @@
       "line": 327,
       "evidence": "· {{ run.cases.length }} 条固定用例",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0386"
+      "status": "已验证",
+      "id": "UX-0386",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "H-TERMS",
@@ -4401,8 +4573,9 @@
       "line": 380,
       "evidence": "><small>{{ metrics.costMissing }} 条成本缺失 · 已返回 {{ metrics.completed }} 条</small>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0388"
+      "status": "已验证",
+      "id": "UX-0388",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4412,8 +4585,9 @@
       "line": 395,
       "evidence": "平均延迟 {{ metrics.latency == null ? '缺失' : `${metrics.latency.toFixed(0)} ms` }} · p95",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0389"
+      "status": "已验证",
+      "id": "UX-0389",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4423,8 +4597,9 @@
       "line": 403,
       "evidence": "{{ percent(metrics.routingRate) }} · {{ metrics.routingCount }} 条同时具有预期与实际 Skill",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0390"
+      "status": "已验证",
+      "id": "UX-0390",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4434,8 +4609,9 @@
       "line": 407,
       "evidence": "{{ item.dimension }}：{{ percent(item.rate) }} · {{ item.count }} 条有适用机器检查的",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0391"
+      "status": "已验证",
+      "id": "UX-0391",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-COPY",
@@ -4457,8 +4633,9 @@
       "line": 450,
       "evidence": ">{{ group.value }} · {{ group.total }} 条 / {{ group.failed }} 不通过 /",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0393"
+      "status": "已验证",
+      "id": "UX-0393",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4468,8 +4645,9 @@
       "line": 487,
       "evidence": "<h2>用例结果 · {{ rows.length }} / {{ run.cases.length }}</h2>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0394"
+      "status": "已验证",
+      "id": "UX-0394",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -4503,8 +4681,9 @@
       "line": 579,
       "evidence": ">{{ row.testCase.id }} · {{ row.testCase.question }}</RouterLink",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0397"
+      "status": "已验证",
+      "id": "UX-0397",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4514,8 +4693,9 @@
       "line": 584,
       "evidence": "· {{ row.testCase.priority }}</small",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0398"
+      "status": "已验证",
+      "id": "UX-0398",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4525,8 +4705,9 @@
       "line": 680,
       "evidence": "{{ run.config.model }} · 执行",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0399"
+      "status": "已验证",
+      "id": "UX-0399",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4536,8 +4717,9 @@
       "line": 691,
       "evidence": ">{{ item.name }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0400"
+      "status": "已验证",
+      "id": "UX-0400",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4547,8 +4729,9 @@
       "line": 703,
       "evidence": "· 范围 {{ run.retryScope || 'all' }} · 第 {{ run.attempt || 1 }} 次",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0401"
+      "status": "已验证",
+      "id": "UX-0401",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "A-INPUT",
@@ -4570,8 +4753,9 @@
       "line": 729,
       "evidence": "><span>{{ item.retryScope || 'all' }} · {{ formatTime(item.createdAt) }}</span>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0403"
+      "status": "已验证",
+      "id": "UX-0403",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4581,8 +4765,9 @@
       "line": 734,
       "evidence": "><span>{{ entry.actor }} · {{ formatTime(entry.time) }}</span>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0404"
+      "status": "已验证",
+      "id": "UX-0404",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "A-FORM",
@@ -4700,8 +4885,9 @@
       "line": 176,
       "evidence": "共 {{ filtered.length }} 次运行 · 质量统计均来自该次运行的机器原判，NA／error 不计入分数。",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0414"
+      "status": "已验证",
+      "id": "UX-0414",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4711,8 +4897,9 @@
       "line": 204,
       "evidence": "><small>{{ run.target.name }} · {{ run.config.targetVersion }}</small",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0415"
+      "status": "已验证",
+      "id": "UX-0415",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4722,8 +4909,9 @@
       "line": 210,
       "evidence": "v{{ run.config.datasetVersion }} · {{ run.cases.length }} 条</small",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0416"
+      "status": "已验证",
+      "id": "UX-0416",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4733,8 +4921,9 @@
       "line": 212,
       "evidence": ">复跑来源：{{ run.sourceRunId }} · {{ run.retryScope || 'all' }}</small",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0417"
+      "status": "已验证",
+      "id": "UX-0417",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4744,8 +4933,9 @@
       "line": 219,
       "evidence": "><small>Case 通过率 · 适用 {{ runMetrics(run).applicable }} 条</small",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0418"
+      "status": "已验证",
+      "id": "UX-0418",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4755,8 +4945,9 @@
       "line": 66,
       "evidence": "<p>Mock 外部版本快照 · 选择 Agent 或 Skill，固定版本后准备测评。</p>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0419"
+      "status": "已验证",
+      "id": "UX-0419",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4766,8 +4957,9 @@
       "line": 81,
       "evidence": "<p class=\"muted\">{{ target.type }} · {{ target.form }} · {{ target.platform }}</p>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0420"
+      "status": "已验证",
+      "id": "UX-0420",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4777,8 +4969,9 @@
       "line": 135,
       "evidence": "<summary>{{ tool.name }} · 输入输出定义</summary>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0421"
+      "status": "已验证",
+      "id": "UX-0421",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4788,8 +4981,9 @@
       "line": 155,
       "evidence": ">{{ skill.definition.name }} · {{ skill.definition.version }}</RouterLink",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0422"
+      "status": "已验证",
+      "id": "UX-0422",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -4811,8 +5005,9 @@
       "line": 184,
       "evidence": "<RouterLink :to=\"`/preview/datasets/${dataset.id}`\">{{ dataset.name }}</RouterLink> ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0424"
+      "status": "已验证",
+      "id": "UX-0424",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4822,8 +5017,9 @@
       "line": 190,
       "evidence": "<RouterLink :to=\"`/preview/runs/${run.id}`\">{{ run.name }}</RouterLink> · {{ run.status }}",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0425"
+      "status": "已验证",
+      "id": "UX-0425",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-EMPTY",
@@ -4845,8 +5041,9 @@
       "line": 210,
       "evidence": "<p class=\"muted\">{{ item.type }} · {{ item.form }}</p>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0427"
+      "status": "已验证",
+      "id": "UX-0427",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4856,8 +5053,9 @@
       "line": 216,
       "evidence": "{{ item.platform }} ·",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0428"
+      "status": "已验证",
+      "id": "UX-0428",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
     },
     {
       "pattern": "B-META",
@@ -4867,8 +5065,9 @@
       "line": 25,
       "evidence": "><span>虚构业务数据 · 修改保存在当前浏览器 · 不调用外部平台</span>",
       "issue": "实体或异质元数据需带维度标签并统一实体引用",
-      "status": "待整改",
-      "id": "UX-0429"
+      "status": "已验证",
+      "id": "UX-0429",
+      "resolution": "复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。"
     },
     {
       "pattern": "G-COPY",
@@ -6010,6 +6209,214 @@
       "line": 59,
       "issue": "补查：测评集工作区进入创建任务时未携带当前用例位置；创建页编辑往返的用户配置保留仍需补齐。",
       "evidence": "createLink 只带 dataset/version/source；编辑返回创建页重新初始化本地配置。"
+    },
+    {
+      "id": "UX-0524",
+      "reviewKey": "preflight-target",
+      "pattern": "B-META",
+      "rule": "A2/B1/B2",
+      "severity": "P2",
+      "file": "web/src/preview/components/ComparePreflight.vue",
+      "line": 19,
+      "evidence": "目标与类型拼接摘要",
+      "issue": "B类残留复查新增：实体与异质信息需共享组件和维度标签",
+      "status": "已验证",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
+    },
+    {
+      "id": "UX-0525",
+      "reviewKey": "preflight-dataset",
+      "pattern": "B-META",
+      "rule": "A2/B1/B2",
+      "severity": "P2",
+      "file": "web/src/preview/components/ComparePreflight.vue",
+      "line": 21,
+      "evidence": "测评集名称与内部编号拼接",
+      "issue": "B类残留复查新增：实体与异质信息需共享组件和维度标签",
+      "status": "已验证",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
+    },
+    {
+      "id": "UX-0526",
+      "reviewKey": "preflight-evaluators",
+      "pattern": "B-META",
+      "rule": "A2/B1/B2",
+      "severity": "P2",
+      "file": "web/src/preview/components/ComparePreflight.vue",
+      "line": 24,
+      "evidence": "有序评估器名称/版本拼成一行",
+      "issue": "B类残留复查新增：实体与异质信息需共享组件和维度标签",
+      "status": "已验证",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
+    },
+    {
+      "id": "UX-0527",
+      "reviewKey": "preflight-execution",
+      "pattern": "B-META",
+      "rule": "A2/B1/B2",
+      "severity": "P2",
+      "file": "web/src/preview/components/ComparePreflight.vue",
+      "line": 33,
+      "evidence": "并发、超时、重试、采样未复用元数据组件",
+      "issue": "B类残留复查新增：实体与异质信息需共享组件和维度标签",
+      "status": "已验证",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
+    },
+    {
+      "id": "UX-0528",
+      "reviewKey": "preflight-gate",
+      "pattern": "B-META",
+      "rule": "A2/B1/B2",
+      "severity": "P2",
+      "file": "web/src/preview/components/ComparePreflight.vue",
+      "line": 39,
+      "evidence": "通过阈值和故障场景拼接",
+      "issue": "B类残留复查新增：实体与异质信息需共享组件和维度标签",
+      "status": "已验证",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
+    },
+    {
+      "id": "UX-0529",
+      "reviewKey": "preflight-cases",
+      "pattern": "B-META",
+      "rule": "A2/B1/B2",
+      "severity": "P2",
+      "file": "web/src/preview/components/ComparePreflight.vue",
+      "line": 44,
+      "evidence": "用例数量与裸编号摘要",
+      "issue": "B类残留复查新增：实体与异质信息需共享组件和维度标签",
+      "status": "已验证",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
+    },
+    {
+      "id": "UX-0530",
+      "reviewKey": "source-dataset",
+      "pattern": "B-META",
+      "rule": "A2/B1/B2",
+      "severity": "P2",
+      "file": "web/src/preview/components/PrepLineage.vue",
+      "line": 17,
+      "evidence": "测评集名称、版本与来源字符串拼接",
+      "issue": "B类残留复查新增：实体与异质信息需共享组件和维度标签",
+      "status": "已验证",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
+    },
+    {
+      "id": "UX-0531",
+      "reviewKey": "source-run",
+      "pattern": "B-META",
+      "rule": "A2/B1/B2",
+      "severity": "P2",
+      "file": "web/src/preview/components/PrepLineage.vue",
+      "line": 22,
+      "evidence": "任务名称与来源编号拼接",
+      "issue": "B类残留复查新增：实体与异质信息需共享组件和维度标签",
+      "status": "已验证",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
+    },
+    {
+      "id": "UX-0532",
+      "reviewKey": "source-target",
+      "pattern": "B-META",
+      "rule": "A2/B1/B2",
+      "severity": "P2",
+      "file": "web/src/preview/components/PrepLineage.vue",
+      "line": 26,
+      "evidence": "对象名称与来源编号拼接且未显示固定版本",
+      "issue": "B类残留复查新增：实体与异质信息需共享组件和维度标签",
+      "status": "已验证",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
+    },
+    {
+      "id": "UX-0533",
+      "reviewKey": "merge-source-option",
+      "pattern": "B-META",
+      "rule": "A2/B1/B2",
+      "severity": "P2",
+      "file": "web/src/preview/components/PrepDatasetPrepare.vue",
+      "line": 79,
+      "evidence": "来源选项名称、版本、数量和覆盖记录拼接",
+      "issue": "B类残留复查新增：实体与异质信息需共享组件和维度标签",
+      "status": "已验证",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
+    },
+    {
+      "id": "UX-0534",
+      "reviewKey": "child-evaluator-option",
+      "pattern": "B-META",
+      "rule": "A2/B1/B2",
+      "severity": "P2",
+      "file": "web/src/preview/components/PrepEvaluatorEditor.vue",
+      "line": 22,
+      "evidence": "子评估器名称与版本拼接",
+      "issue": "B类残留复查新增：实体与异质信息需共享组件和维度标签",
+      "status": "已验证",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
+    },
+    {
+      "id": "UX-0535",
+      "reviewKey": "resource-attributes",
+      "pattern": "B-META",
+      "rule": "A2/B1/B2",
+      "severity": "P2",
+      "file": "web/src/preview/pages/ResourcesPage.vue",
+      "line": 137,
+      "evidence": "类型/模型复合表头与未标注属性",
+      "issue": "B类残留复查新增：实体与异质信息需共享组件和维度标签",
+      "status": "已验证",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
+    },
+    {
+      "id": "UX-0536",
+      "reviewKey": "gate-coverage",
+      "pattern": "B-META",
+      "rule": "A2/B1/B2",
+      "severity": "P2",
+      "file": "web/src/preview/pages/ComparisonPage.vue",
+      "line": 368,
+      "evidence": "候选实测值/覆盖复合表头与未标注覆盖数据",
+      "issue": "B类残留复查新增：实体与异质信息需共享组件和维度标签",
+      "status": "已验证",
+      "resolution": "实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。"
+    },
+    {
+      "id": "UX-0537",
+      "reviewKey": "source-asset-context",
+      "pattern": "C-CONTEXT",
+      "rule": "C1/C2/C3",
+      "severity": "P2",
+      "file": "web/src/preview/components/PrepLineage.vue",
+      "line": 34,
+      "evidence": "来源资产使用RouterLink整页跳转",
+      "issue": "来源测评集与对象应保留父页面并显示固定版本",
+      "status": "已验证",
+      "resolution": "PrepLineage复用EntityLink/DetailDrawer保留固定来源版本、父页和同类切换；新增桌面/手机2项通过并纳入110/110完整回归。"
+    },
+    {
+      "id": "UX-0538",
+      "pattern": "B-META",
+      "rule": "B4",
+      "severity": "P1",
+      "file": "web/src/pages/RunDetailPage.vue",
+      "line": 169,
+      "evidence": "报告对象元数据占据顶部，结论位于其后",
+      "issue": "结论优先、固定输入按需展开，减少首屏重复信息",
+      "status": "已验证",
+      "reviewKey": "report-verdict-hierarchy",
+      "resolution": "报告结论优先，对象与固定输入按需展开；真实报告桌面/手机截图已查看，补改46/46通过。"
+    },
+    {
+      "id": "UX-0539",
+      "pattern": "B-META",
+      "rule": "B4",
+      "severity": "P1",
+      "file": "web/src/preview/pages/RunPage.vue",
+      "line": 335,
+      "evidence": "报告对象元数据占据顶部，结论位于其后",
+      "issue": "结论优先、固定输入按需展开，减少首屏重复信息",
+      "status": "已验证",
+      "reviewKey": "preview-report-verdict-hierarchy",
+      "resolution": "报告结论优先，对象与固定输入按需展开；真实报告桌面/手机截图已查看，补改46/46通过。"
     }
   ],
   "pages": [

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../components/EntityRef.vue'
+import MetadataGroup from '../components/MetadataGroup.vue'
 import EmptyState from '../components/EmptyState.vue'
 import StatusNotice from '../components/StatusNotice.vue'
 import { userError } from '../apiErrors'
@@ -129,7 +131,7 @@ onUnmounted(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th>对象 / 版本</th>
+            <th>测评对象</th>
             <th>测评集</th>
             <th>执行状态</th>
             <th>创建时间</th>
@@ -139,16 +141,27 @@ onUnmounted(() => {
         <tbody>
           <tr v-for="run in visible" :key="run.id">
             <td>
-              {{ run.manifest.target.display_name
-              }}<small>{{ run.manifest.target.ref.external_version_id }}</small
-              ><small>{{ run.id.slice(0, 8) }}</small>
+              <EntityRef
+                :name="run.manifest.target.display_name"
+                type="测评对象"
+                :version="run.manifest.target.ref.external_version_id"
+                compact
+              />
+              <details>
+                <summary>查看任务编号</summary>
+                <code>{{ run.id }}</code>
+              </details>
             </td>
             <td>
-              {{ run.manifest.dataset.dataset_name
-              }}<small
-                >v{{ run.manifest.dataset.version }} ·
-                {{ run.manifest.dataset.cases.length }} 条用例</small
-              >
+              <EntityRef
+                :name="run.manifest.dataset.dataset_name"
+                type="测评集"
+                :version="run.manifest.dataset.version"
+                compact
+              />
+              <MetadataGroup
+                :items="[{ label: '用例数', value: run.manifest.dataset.cases.length }]"
+              />
             </td>
             <td>
               <span class="badge" :class="run.status">{{ labels[run.status] }}</span>

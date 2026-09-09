@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../components/EntityRef.vue'
+import MetadataGroup from '../components/MetadataGroup.vue'
 import DetailNavigation from '../components/DetailNavigation.vue'
 import LineageLink from '../components/LineageLink.vue'
 import { userError } from '../apiErrors'
@@ -64,7 +66,19 @@ const createLink = computed(() => ({
     version: activeVersion.value?.version ?? undefined,
     source: typeof route.query.source === 'string' ? route.query.source : undefined,
     resume: route.query.returnTo === 'create' ? '1' : undefined,
-    origin: route.query.returnTo === 'create' ? route.query.creationOrigin : router.resolve({ path: '/datasets', query: { ...route.query, dataset: activeDatasetId.value, version: activeVersion.value?.version ?? undefined, case: activeCaseId.value || undefined, view: caseView.value } }).fullPath,
+    origin:
+      route.query.returnTo === 'create'
+        ? route.query.creationOrigin
+        : router.resolve({
+            path: '/datasets',
+            query: {
+              ...route.query,
+              dataset: activeDatasetId.value,
+              version: activeVersion.value?.version ?? undefined,
+              case: activeCaseId.value || undefined,
+              view: caseView.value,
+            },
+          }).fullPath,
   },
 }))
 const evidenceLink = computed(() => ({
@@ -80,7 +94,10 @@ const evidenceLink = computed(() => ({
 }))
 const returnCreateLink = computed(() =>
   activeVersion.value?.status === 'published'
-    ? { ...createLink.value, query: { ...createLink.value.query, resume: '1', origin: route.query.creationOrigin } }
+    ? {
+        ...createLink.value,
+        query: { ...createLink.value.query, resume: '1', origin: route.query.creationOrigin },
+      }
     : {
         path: '/runs/new',
         query: { source: route.query.source, resume: '1', origin: route.query.creationOrigin },
@@ -442,9 +459,11 @@ async function importDataset(event: Event) {
     ) {
       importIssues.value = error.detail.issues
       importError.value = '文件校验未通过，请按工作表、行和列修正后重新导入。'
-    } else importError.value = error instanceof SyntaxError
-      ? '文件格式无法识别，请使用导出模板整理内容后重新导入。'
-      : datasetError(error, '导入未完成，请重新选择文件后重试。')
+    } else
+      importError.value =
+        error instanceof SyntaxError
+          ? '文件格式无法识别，请使用导出模板整理内容后重新导入。'
+          : datasetError(error, '导入未完成，请重新选择文件后重试。')
   } finally {
     input.value = ''
   }
@@ -548,15 +567,12 @@ onMounted(() => {
 
     <div class="dataset-context-bar">
       <div>
-        <strong>{{ activeDataset?.name ?? '请选择测评集' }}</strong
-        ><small
-          >{{
-            activeVersion?.status === 'draft'
-              ? '当前草稿'
-              : `发布版本 v${activeVersion?.version ?? '—'}`
-          }}
-          · {{ activeVersion?.cases.length ?? 0 }} 条用例</small
-        >
+        <EntityRef
+          :name="activeDataset?.name ?? '请选择测评集'"
+          type="测评集"
+          :version="activeVersion?.status === 'draft' ? '草稿' : activeVersion?.version"
+        />
+        <MetadataGroup :items="[{ label: '用例数', value: activeVersion?.cases.length }]" />
       </div>
       <div class="action-row">
         <button
@@ -589,8 +605,14 @@ onMounted(() => {
       {{ importError }}
       <ul v-if="importIssues.length">
         <li v-for="(issue, index) in importIssues" :key="index">
-          {{ issue.sheet ?? '工作表' }} · 第 {{ issue.row ?? '—' }} 行 ·
-          {{ issue.column ?? '—' }} 列：{{ issue.message }}
+          <p>{{ issue.message }}</p>
+          <MetadataGroup
+            :items="[
+              { label: '工作表', value: issue.sheet },
+              { label: '行号', value: issue.row },
+              { label: '列名', value: issue.column },
+            ]"
+          />
         </li>
       </ul>
     </StatusNotice>
@@ -623,13 +645,13 @@ onMounted(() => {
 
     <div class="dataset-view-switch local-tabs" aria-label="用例工作区">
       <button :class="{ active: caseView === 'list' }" @click="caseView = 'list'">
-        用例列表 · {{ activeVersion?.cases.length ?? 0 }}</button
+        用例列表（{{ activeVersion?.cases.length ?? 0 }}）</button
       ><button
         :class="{ active: caseView === 'editor' }"
         :disabled="!editedCase"
         @click="caseView = 'editor'"
       >
-        {{ editable ? '编辑用例' : '用例详情' }}{{ dirty ? ' · 未保存' : '' }}
+        {{ editable ? '编辑用例' : '用例详情' }}{{ dirty ? '（未保存）' : '' }}
       </button>
     </div>
     <div class="dataset-layout" :data-view="caseView" v-loading="loading">
@@ -644,25 +666,38 @@ onMounted(() => {
         @reorder="performAction(() => reorderCases($event))"
       />
       <section class="dataset-column case-detail-panel">
-      <DetailNavigation :items="(activeVersion?.cases ?? []).map(item => ({ key: item.id, label: item.name }))" :current-key="activeCaseId" :busy="busy" @select="id => { const item = activeVersion?.cases.find(entry => entry.id === id); if (item) selectCase(item) }" />
-      <CaseEditor
-        :item="editedCase"
-        :editable="editable"
-        :saving="busy"
-        :validation-issues="activeCaseIssues"
-        @save="saveCase"
-        @dirty="dirty = $event"
-      />
+        <DetailNavigation
+          :items="(activeVersion?.cases ?? []).map((item) => ({ key: item.id, label: item.name }))"
+          :current-key="activeCaseId"
+          :busy="busy"
+          @select="
+            (id) => {
+              const item = activeVersion?.cases.find((entry) => entry.id === id)
+              if (item) selectCase(item)
+            }
+          "
+        />
+        <CaseEditor
+          :item="editedCase"
+          :editable="editable"
+          :saving="busy"
+          :validation-issues="activeCaseIssues"
+          @save="saveCase"
+          @dirty="dirty = $event"
+        />
       </section>
     </div>
 
     <div v-if="activeDatasetId" class="dataset-run-bar">
       <div>
         <b>将此测评集用于测评</b>
-        <span v-if="activeVersion?.status === 'published'"
-          >v{{ activeVersion.version }} · {{ activeVersion.cases.length }} 个用例 · 内容
-          {{ activeVersion.content_sha256.slice(0, 10) }}</span
-        >
+        <MetadataGroup
+          v-if="activeVersion?.status === 'published'"
+          :items="[
+            { label: '发布版本', value: activeVersion.version },
+            { label: '用例数', value: activeVersion.cases.length },
+          ]"
+        />
         <span v-else>草稿不能运行，请先验证并发布。</span>
       </div>
       <RouterLink
@@ -682,7 +717,16 @@ onMounted(() => {
             kind: 'dataset',
             id: activeDatasetId,
             version: activeVersion.version,
-            returnTo: router.resolve({ path: '/datasets', query: { ...route.query, dataset: activeDatasetId, version: activeVersion.version, case: activeCaseId || undefined, view: caseView } }).fullPath,
+            returnTo: router.resolve({
+              path: '/datasets',
+              query: {
+                ...route.query,
+                dataset: activeDatasetId,
+                version: activeVersion.version,
+                case: activeCaseId || undefined,
+                view: caseView,
+              },
+            }).fullPath,
           },
         }"
         >此发布版本的关联任务</LineageLink

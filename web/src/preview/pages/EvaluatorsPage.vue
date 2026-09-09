@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../../components/EntityRef.vue'
+import MetadataGroup from '../../components/MetadataGroup.vue'
 import EntityLink from '../components/EntityLink.vue'
 import type { LocationQuery, LocationQueryRaw } from 'vue-router'
 import EmptyState from '../../components/EmptyState.vue'
@@ -20,7 +22,11 @@ const emit = defineEmits<{ 'change-query': [query: LocationQuery] }>()
 const pageQuery = computed(() => props.context?.query ?? route.query)
 const id = computed(() => props.context?.id ?? String(route.params.id ?? ''))
 function applyQuery(query: LocationQueryRaw, replace = false) {
-  if (props.context) emit('change-query', router.resolve({ path: '/preview/evaluators/' + encodeURIComponent(id.value), query }).query)
+  if (props.context)
+    emit(
+      'change-query',
+      router.resolve({ path: '/preview/evaluators/' + encodeURIComponent(id.value), query }).query,
+    )
   else void router[replace ? 'replace' : 'push']({ query })
 }
 const evaluator = computed(() => state.evaluators.find((item) => item.id === id.value))
@@ -110,7 +116,9 @@ const parents = computed(() =>
       .map((entry) => ({ id: item.id, name: item.name, version: entry.version })),
   ),
 )
-const detailItems = computed(() => rows.value.map(item => ({ label: item.name, to: `/preview/evaluators/${item.id}` })))
+const detailItems = computed(() =>
+  rows.value.map((item) => ({ label: item.name, to: `/preview/evaluators/${item.id}` })),
+)
 watch(
   () => [id.value, pageQuery.value.mode, pageQuery.value.version],
   () => {
@@ -243,7 +251,11 @@ function useEvaluator() {
       <h1>{{ creating ? '新建评估器' : (evaluator?.name ?? '评估器') }}</h1>
       <p>固定评分标准、验证单个样本，再发布独立版本用于测评。</p>
     </div>
-    <RouterLink v-if="!context && (id || creating)" :to="previewReturn(pageQuery.origin, '/preview/evaluators')">{{ pageQuery.origin ? '返回来源页面' : '返回评估器列表' }}</RouterLink>
+    <RouterLink
+      v-if="!context && (id || creating)"
+      :to="previewReturn(pageQuery.origin, '/preview/evaluators')"
+      >{{ pageQuery.origin ? '返回来源页面' : '返回评估器列表' }}</RouterLink
+    >
   </div>
   <StatusNotice
     v-if="state.role === 'viewer'"
@@ -264,9 +276,7 @@ function useEvaluator() {
     <section class="panel">
       <template v-if="evaluator && version"
         ><div class="action-row">
-          <el-tag>{{
-            editing ? '正在修订 · 尚未发布' : `发布版本 v${version.version} · 只读`
-          }}</el-tag
+          <el-tag>{{ editing ? '未发布修订' : '已发布（只读）' }}</el-tag
           ><el-select
             :model-value="String(selectedVersion)"
             aria-label="评估器版本"
@@ -274,9 +284,15 @@ function useEvaluator() {
             ><el-option
               v-for="entry in evaluator.versions"
               :key="entry.version"
-              :label="`v${entry.version} · ${entry.note}`"
+              :label="`版本 ${entry.version}`"
               :value="String(entry.version)"
-          /></el-select>
+              ><EntityRef
+                :name="evaluator.name"
+                type="评估器"
+                :version="entry.version"
+                compact /><MetadataGroup
+                :items="[{ label: '发布备注', value: entry.note }]" /></el-option
+          ></el-select>
         </div>
         <p>{{ evaluator.description }}</p>
         <div class="action-row">
@@ -330,8 +346,14 @@ function useEvaluator() {
       <h2>版本关系与相关任务</h2>
       <p v-if="!parents.length && !related.length" class="muted">当前版本暂无引用。</p>
       <p v-for="parent in parents" :key="`${parent.id}@${parent.version}`">
-        被复合标准引用：<EntityLink context-key="src/preview/pages/EvaluatorsPage.vue:94"
-          :related="parents.map(item => ({ label: item.name, to: `/preview/evaluators/${item.id}?version=${item.version}` }))"
+        被复合标准引用：<EntityLink
+          context-key="src/preview/pages/EvaluatorsPage.vue:94"
+          :related="
+            parents.map((item) => ({
+              label: item.name,
+              to: `/preview/evaluators/${item.id}?version=${item.version}`,
+            }))
+          "
           :to="`/preview/evaluators/${parent.id}?version=${parent.version}`"
           >{{ parent.name }} v{{ parent.version }}</EntityLink
         >
@@ -373,15 +395,28 @@ function useEvaluator() {
     ></EmptyState>
     <article v-for="item in visible" :key="item.id" class="panel">
       <h2>
-        <EntityLink context-key="src/preview/pages/EvaluatorsPage.vue:136" :related="detailItems" :to="`/preview/evaluators/${item.id}`">{{ item.name }}</EntityLink>
+        <EntityLink
+          context-key="src/preview/pages/EvaluatorsPage.vue:136"
+          :related="detailItems"
+          :to="`/preview/evaluators/${item.id}`"
+          >{{ item.name }}</EntityLink
+        >
       </h2>
       <p>{{ item.description }}</p>
-      <p class="muted">
-        {{ kinds[item.versions.slice(-1)[0]?.kind ?? 'rule'] }} ·
-        {{ item.versions.length }} 个发布版本 · {{ item.archived ? '已归档' : '使用中' }}
-      </p>
+      <MetadataGroup
+        :items="[
+          { label: '类型', value: kinds[item.versions.slice(-1)[0]?.kind ?? 'rule'] },
+          { label: '最新发布版本', value: item.versions.slice(-1)[0]?.version },
+          { label: '发布版本数', value: item.versions.length },
+          { label: '状态', value: item.archived ? '已归档' : '使用中' },
+        ]"
+      />
       <div class="action-row">
-        <EntityLink context-key="src/preview/pages/EvaluatorsPage.vue:144" :related="detailItems" :to="`/preview/evaluators/${item.id}`">查看配置与试评</EntityLink
+        <EntityLink
+          context-key="src/preview/pages/EvaluatorsPage.vue:144"
+          :related="detailItems"
+          :to="`/preview/evaluators/${item.id}`"
+          >查看配置与试评</EntityLink
         ><el-button :disabled="state.role === 'viewer'" @click="copy(item)">复制</el-button
         ><el-popconfirm
           :title="item.archived ? '恢复此评估器？' : '归档后保留历史引用，继续？'"

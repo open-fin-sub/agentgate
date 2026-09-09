@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import EntityRef from '../../components/EntityRef.vue'
+import MetadataGroup from '../../components/MetadataGroup.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePreview } from '../workspace'
 import {
   percent,
+  retryScopeLabels,
   queryText,
   runMetrics,
   statuses,
@@ -175,7 +178,8 @@ watch(() => route.fullPath, readQuery, { immediate: true })
   >
   <section v-else class="panel">
     <p class="muted small">
-      共 {{ filtered.length }} 次运行 · 质量统计均来自该次运行的机器原判，NA／error 不计入分数。
+      共
+      {{ filtered.length }} 次测评任务。质量统计来自该次任务的机器原判，不适用和执行错误不计入分数。
     </p>
     <div class="table-scroll">
       <table class="preview-table data-table">
@@ -203,27 +207,43 @@ watch(() => route.fullPath, readQuery, { immediate: true })
               <RouterLink
                 :to="{ path: `/preview/runs/${run.id}`, query: { listReturn: route.fullPath } }"
                 >{{ run.name }}</RouterLink
-              ><small>{{ run.target.name }} · {{ run.config.targetVersion }}</small
-              ><small
-                >{{
-                  state.datasets.find((item) => item.id === run.config.datasetId)?.name ||
-                  run.config.datasetId
-                }}
-                v{{ run.config.datasetVersion }} · {{ run.cases.length }} 条</small
-              ><small v-if="run.sourceRunId"
-                >复跑来源：{{ run.sourceRunId }} · {{ run.retryScope || 'all' }}</small
               >
+              <EntityRef
+                :name="run.target.name"
+                :type="run.target.type"
+                :version="run.config.targetVersion"
+                compact
+              />
+              <EntityRef
+                :name="state.datasets.find((item) => item.id === run.config.datasetId)?.name ?? ''"
+                type="测评集"
+                :version="run.config.datasetVersion"
+                compact
+              />
+              <MetadataGroup :items="[{ label: '用例数', value: run.cases.length }]" />
+              <MetadataGroup
+                v-if="run.sourceRunId"
+                :items="[
+                  {
+                    label: '复跑来源',
+                    value: state.runs.find((item) => item.id === run.sourceRunId)?.name,
+                  },
+                  { label: '复跑范围', value: retryScopeLabels[run.retryScope || 'all'] },
+                ]"
+              />
             </td>
             <td><RunProgress :run="run" :state="state" compact /></td>
             <td>
               <template v-if="run.results.length"
                 ><strong>{{ percent(runMetrics(run).passRate) }}</strong
-                ><small>Case 通过率 · 适用 {{ runMetrics(run).applicable }} 条</small
-                ><small
-                  >{{ runMetrics(run).counts.fail }} 不通过 /
-                  {{ runMetrics(run).counts.review }} 待复核 /
-                  {{ runMetrics(run).counts.error }} 错误</small
-                ></template
+                ><small>用例通过率</small>
+                <MetadataGroup
+                  :items="[
+                    { label: '适用用例数', value: runMetrics(run).applicable },
+                    { label: '不通过', value: runMetrics(run).counts.fail },
+                    { label: '需复核', value: runMetrics(run).counts.review },
+                    { label: '执行错误', value: runMetrics(run).counts.error },
+                  ]" /></template
               ><span v-else class="muted">尚无结果</span>
             </td>
             <td>{{ formatTime(run.createdAt) }}</td>

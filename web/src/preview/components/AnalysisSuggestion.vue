@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../../components/EntityRef.vue'
+import MetadataGroup from '../../components/MetadataGroup.vue'
 import { useDetailState } from '../../components/detailState'
 import StatusNotice from '../../components/StatusNotice.vue'
 import CaseEvidenceDrawer from './CaseEvidenceDrawer.vue'
@@ -76,14 +78,14 @@ watch(
 )
 const verification = computed(() => {
   const suggestion = props.suggestion
-  if (suggestion.decision === 'ignored') return '已忽略 · 可重新处理，历史验证保留'
-  if (suggestion.decision === 'pending') return '待确认 · 尚未认定或修复问题'
+  if (suggestion.decision === 'ignored') return '已忽略。可重新处理，历史验证保留'
+  if (suggestion.decision === 'pending') return '待确认。尚未认定或修复问题'
   if (!suggestion.comparisonId)
     return suggestion.kind === 'dataset'
-      ? '已采纳 · 等待修订用例并复验'
+      ? '已采纳。等待修订用例并复验'
       : suggestion.linkedVersion
-        ? '已关联外部版本 · 等待回归'
-        : '已采纳 · 等待外部修改'
+        ? '已关联外部版本。等待回归'
+        : '已采纳。等待外部修改'
   const base = regressionBase.value,
     candidate = regressionRun.value
   if (!base || !candidate || !regression.value) return '回归证据缺失'
@@ -91,9 +93,8 @@ const verification = computed(() => {
     ['failed', 'cancelled', 'terminated'].includes(base.status) ||
     ['failed', 'cancelled', 'terminated'].includes(candidate.status)
   )
-    return '回归执行未完成 · 不能验证'
-  if (base.status !== 'completed' || candidate.status !== 'completed')
-    return '回归执行中 · 等待结果'
+    return '回归执行未完成。不能验证'
+  if (base.status !== 'completed' || candidate.status !== 'completed') return '回归执行中。等待结果'
   const results = suggestion.caseIds.map((id) =>
     candidate.results.find((item) => item.caseId === id),
   )
@@ -101,16 +102,16 @@ const verification = computed(() => {
     !results.length ||
     results.some((item) => !item || item.outcome === 'NA' || item.outcome === 'review')
   )
-    return '关联样本证据不足 · 需要补充或复核'
-  if (results.some((item) => item?.outcome === 'error')) return '关联样本执行错误 · 未完成验证'
+    return '关联样本证据不足。需要补充或复核'
+  if (results.some((item) => item?.outcome === 'error')) return '关联样本执行错误。未完成验证'
   if (suggestion.kind === 'dataset')
     return results.every((item) => item?.outcome === 'pass')
       ? '修订用例复验符合新期望（Mock；输入已改变，仅描述性）'
       : '修订用例复验仍未通过（Mock）'
-  if (!preflight(base, candidate).controlled) return '配置不可比 · 不能验证改进效果'
+  if (!preflight(base, candidate).controlled) return '配置不可比。不能验证改进效果'
   if (candidate.config.targetVersion !== suggestion.linkedVersion)
-    return '回归版本与当前关联版本不同 · 需重新验证'
-  if (results.some((item) => item?.outcome === 'fail')) return '关联问题仍存在 · 改进未验证'
+    return '回归版本与当前关联版本不同。需重新验证'
+  if (results.some((item) => item?.outcome === 'fail')) return '关联问题仍存在。改进未验证'
   const improved = suggestion.caseIds.some(
     (id) =>
       base.results.find((item) => item.caseId === id)?.outcome === 'fail' &&
@@ -119,8 +120,8 @@ const verification = computed(() => {
   const gates = measureGates(base, candidate, regression.value.rules)
   if (!improved) return '关联样本无可确认改善（Mock）'
   return gates.some((item) => item.status === 'failed')
-    ? '关联样本已改善 · 全量回归仍未通过（Mock）'
-    : '关联样本已改善（Mock）· 统计 / 发布结论见对比报告'
+    ? '关联样本已改善。全量回归仍未通过（Mock）'
+    : '关联样本已改善（Mock）。统计与发布结论见对比报告'
 })
 
 function decide(decision: Suggestion['decision']) {
@@ -296,30 +297,41 @@ function startRegression() {
 
 <template>
   <section class="panel suggestion-detail">
-    <p class="muted">
-      {{ kindLabels[suggestion.kind] }} · {{ suggestion.priority }} ·
-      {{ decisionLabels[suggestion.decision] }}
-    </p>
+    <MetadataGroup
+      :items="[
+        { label: '建议类型', value: kindLabels[suggestion.kind] },
+        { label: '优先级', value: suggestion.priority },
+        { label: '处理状态', value: decisionLabels[suggestion.decision] },
+      ]"
+    />
     <h2>{{ suggestion.title }}</h2>
     <StatusNotice>{{ verification }}</StatusNotice>
     <p><strong>来源事实：</strong>{{ suggestion.evidence }}</p>
     <p><strong>待验证假设：</strong>{{ suggestion.hypothesis }}</p>
     <p><strong>建议动作：</strong>{{ suggestion.action }}</p>
     <StatusNotice type="error" v-if="!sourceRun">
-      404 · 来源运行不存在，无法关联证据或创建回归。
+      找不到来源任务，无法查看证据或创建回归。请从任务列表重新选择报告。
+      <RouterLink to="/preview/runs">查看测评任务</RouterLink>
     </StatusNotice>
     <template v-else
       ><p>
         <RouterLink :to="`/preview/runs/${sourceRun.id}`">来源运行 {{ sourceRun.name }}</RouterLink>
-        · {{ suggestion.targetVersion }}
       </p>
+      <EntityRef
+        :name="sourceRun.target.name"
+        :type="sourceRun.target.type"
+        :version="suggestion.targetVersion"
+        compact
+      />
       <div class="action-row">
-        <button class="text-button"
+        <button
+          class="text-button"
           v-for="id in suggestion.caseIds"
           :key="id"
           @click="evidenceCase = id"
-          >{{ id }} · 输出 / Trace →</button
         >
+          {{ sourceRun.cases.find((item) => item.id === id)?.question || '查看用例证据' }}
+        </button>
       </div></template
     >
     <label class="feedback-label"
@@ -370,7 +382,9 @@ function startRegression() {
           {{ sourceRun.config.targetVersion }}，无需新 Agent 版本。
         </p>
         <label v-for="item in corrections" :key="item.id" class="correction-label"
-          >{{ item.id }} · 修订期望<el-input v-model="item.expected" type="textarea" :rows="3"
+          >修订期望：{{
+            sourceRun.cases.find((entry) => entry.id === item.id)?.question || '用例内容未提供'
+          }}<el-input v-model="item.expected" type="textarea" :rows="3"
         /></label>
         <div class="action-row">
           <el-button :disabled="state.role === 'viewer'" @click="saveDraft"
@@ -383,8 +397,14 @@ function startRegression() {
               v-for="version in dataset?.versions ?? []"
               :key="version.version"
               :value="version.version"
-              :label="`v${version.version} · ${version.note}`"
-              :disabled="version.version === sourceRun.config.datasetVersion" /></el-select
+              :label="`版本 ${version.version}`"
+              :disabled="version.version === sourceRun.config.datasetVersion"
+              ><EntityRef
+                :name="dataset?.name ?? ''"
+                type="测评集"
+                :version="version.version"
+                compact /><MetadataGroup
+                :items="[{ label: '发布说明', value: version.note }]" /></el-option></el-select
         ></label>
         <StatusNotice type="warning">
           旧输入与新输入只能描述性比较；复验用于核对修订后的期望，不把差值归因于 Agent 改善。
@@ -413,18 +433,33 @@ function startRegression() {
       <summary>回归历史与操作留痕</summary>
       <ul>
         <li v-for="attempt in allAttempts" :key="attempt.id">
-          <RouterLink :to="`/preview/comparisons/${attempt.id}`">{{ attempt.name }}</RouterLink> ·
-          {{ new Date(attempt.createdAt).toLocaleString() }}
+          <RouterLink :to="`/preview/comparisons/${attempt.id}`">{{ attempt.name }}</RouterLink>
+          <MetadataGroup
+            :items="[{ label: '创建时间', value: new Date(attempt.createdAt).toLocaleString() }]"
+          />
         </li>
       </ul>
       <ul>
         <li v-for="entry in relatedAudit" :key="entry.id">
-          {{ new Date(entry.time).toLocaleString() }} · {{ entry.action }}
+          <p>{{ entry.action }}</p>
+          <MetadataGroup
+            :items="[{ label: '操作时间', value: new Date(entry.time).toLocaleString() }]"
+          />
         </li>
       </ul>
     </details>
   </section>
-  <CaseEvidenceDrawer v-if="sourceRun" v-model="evidenceCase" :run-id="sourceRun.id" :items="suggestion.caseIds.map(id => ({ key: id, label: sourceRun?.cases.find(item => item.id === id)?.question ?? '用例证据' }))" />
+  <CaseEvidenceDrawer
+    v-if="sourceRun"
+    v-model="evidenceCase"
+    :run-id="sourceRun.id"
+    :items="
+      suggestion.caseIds.map((id) => ({
+        key: id,
+        label: sourceRun?.cases.find((item) => item.id === id)?.question ?? '用例证据',
+      }))
+    "
+  />
 </template>
 
 <style scoped>

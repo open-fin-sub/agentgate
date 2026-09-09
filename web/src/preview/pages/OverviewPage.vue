@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../../components/EntityRef.vue'
+import MetadataGroup from '../../components/MetadataGroup.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import { computed, ref } from 'vue'
 import { usePreview } from '../workspace'
@@ -52,11 +54,13 @@ function rate(run: (typeof state.runs)[number]) {
   </div>
   <div class="stats-grid">
     <RouterLink class="stat-box" to="/preview/targets"
-      ><div class="stat-label">接入对象 · 体验目录</div>
-      <div class="stat-number">
-        {{ state.targets.filter((t) => t.type === 'Agent').length }} <small>Agent</small> /
-        {{ state.targets.filter((t) => t.type === 'Skill').length }} <small>Skill</small>
-      </div>
+      ><div class="stat-label">接入对象</div>
+      <MetadataGroup
+        :items="[
+          { label: 'Agent', value: state.targets.filter((t) => t.type === 'Agent').length },
+          { label: 'Skill', value: state.targets.filter((t) => t.type === 'Skill').length },
+        ]"
+      />
       <div class="stat-note">查看外部版本及可执行状态</div></RouterLink
     ><RouterLink class="stat-box" to="/preview/datasets"
       ><div class="stat-label">可复用测评集</div>
@@ -65,7 +69,7 @@ function rate(run: (typeof state.runs)[number]) {
       </div>
       <div class="stat-note">发布版本与草稿分开管理</div></RouterLink
     ><RouterLink class="stat-box" to="/preview/runs?status=running"
-      ><div class="stat-label">正在执行 / 等待</div>
+      ><div class="stat-label">进行中的任务</div>
       <div class="stat-number">
         {{ state.runs.filter((r) => ['running', 'queued', 'scheduled'].includes(r.status)).length }}
       </div>
@@ -88,14 +92,21 @@ function rate(run: (typeof state.runs)[number]) {
             :value="item.id"
         /></el-select>
       </div>
-      <p class="muted">
-        固定输入：端到端回归 v1 · 标准 v1 · 公共体验模型 · 全量 12
-        条。通过率以适用且无执行错误的用例为分母，review 不计通过。
-      </p>
+      <MetadataGroup
+        :items="[
+          { label: '测评集', value: '端到端回归' },
+          { label: '测评集版本', value: 1 },
+          { label: '评分标准版本', value: 1 },
+          { label: '模型', value: '公共体验模型' },
+          { label: '用例数', value: 12 },
+        ]"
+      />
+      <p class="muted">通过率以适用且无执行错误的用例为分母，需复核结果不计通过。</p>
       <div v-for="run in group" :key="run.id" class="overview-trend">
-        <RouterLink :to="`/preview/runs/${run.id}`"
-          >{{ run.name }} · {{ run.config.targetVersion }}</RouterLink
-        >
+        <div>
+          <RouterLink :to="`/preview/runs/${run.id}`">{{ run.name }}</RouterLink>
+          <MetadataGroup :items="[{ label: '对象版本', value: run.config.targetVersion }]" />
+        </div>
         <div class="overview-bar"><span :style="{ width: `${rate(run) ?? 0}%` }"></span></div>
         <strong>{{ rate(run) === null ? '无适用样本' : `${rate(run)}%` }}</strong>
       </div>
@@ -163,12 +174,19 @@ function rate(run: (typeof state.runs)[number]) {
           <RouterLink :to="`/preview/runs/${run.id}`">{{ run.name }}</RouterLink
           ><span class="badge" :class="run.status">{{ statusLabels[run.status] }}</span>
         </div>
-        <p>
-          {{ run.target.name }} · {{ run.config.targetVersion }}<br />输入 v{{
-            run.config.datasetVersion
-          }}
-          · {{ run.results.length }} / {{ run.cases.length }} 条已返回
-        </p>
+        <EntityRef
+          :name="run.target.name"
+          :type="run.target.type"
+          :version="run.config.targetVersion"
+          compact
+        />
+        <MetadataGroup
+          :items="[
+            { label: '测评集版本', value: run.config.datasetVersion },
+            { label: '已返回用例数', value: run.results.length },
+            { label: '用例总数', value: run.cases.length },
+          ]"
+        />
         <RouterLink :to="`/preview/runs/${run.id}`"
           >{{ run.status === 'completed' ? '查看报告与证据' : '查看进度与处理' }} →</RouterLink
         >
@@ -258,7 +276,7 @@ function rate(run: (typeof state.runs)[number]) {
   .overview-trend {
     grid-template-columns: 1fr 55px;
   }
-  .overview-trend > a {
+  .overview-trend > div:first-child {
     grid-column: 1/-1;
   }
 }

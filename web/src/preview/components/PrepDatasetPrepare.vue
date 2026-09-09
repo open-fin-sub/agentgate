@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../../components/EntityRef.vue'
+import MetadataGroup from '../../components/MetadataGroup.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
@@ -74,7 +76,11 @@ const sourceOptions = computed(() =>
         .filter(() => matchesSkill(item.targetId))
         .map((entry) => ({
           value: `${item.id}@${entry.version}`,
-          label: `${item.name} · v${entry.version} · ${entry.cases.length} 条 · ${coverage(item.targetId, item.id, entry.version)}`,
+          label: `${item.name}（版本：${entry.version}）`,
+          name: item.name,
+          version: entry.version,
+          caseCount: entry.cases.length,
+          coverage: coverage(item.targetId, item.id, entry.version),
         })),
     ),
 )
@@ -532,8 +538,12 @@ onUnmounted(() => {
           ><el-option
             v-for="item in state.targets"
             :key="item.id"
-            :label="`${item.name} · ${item.type}`"
-            :value="item.id" /></el-select></el-form-item
+            :label="item.name"
+            :value="item.id"
+            ><EntityRef
+              :name="item.name"
+              :type="item.type"
+              compact /></el-option></el-select></el-form-item
       ><el-form-item v-if="mode === 'generate' || mode === 'merge'" label="固定对象版本"
         ><el-select :model-value="versionId" @update:model-value="selectVersion"
           ><el-option
@@ -597,7 +607,16 @@ onUnmounted(() => {
           :key="source.value"
           :value="source.value"
           :label="source.label"
-      /></el-select>
+          ><EntityRef
+            :name="source.name"
+            type="测评集"
+            :version="source.version"
+            compact /><MetadataGroup
+            :items="[
+              { label: '用例数', value: source.caseCount },
+              { label: 'Skill 版本使用记录', value: source.coverage },
+            ]" /></el-option
+      ></el-select>
       <p class="muted">
         测评集版本独立于 Skill 版本。系统按已完成的单测任务显示该 Skill
         版本的使用记录；尚未验证的测评集版本仍可选择，但必须审阅用例及 Agent 上下文适配。
@@ -613,17 +632,25 @@ onUnmounted(() => {
       />
       <p v-if="!sourceOptions.length" class="muted">所选版本没有可合并的关联 Skill 发布集。</p>
       <el-button class="prep-space" @click="previewMerge">检查来源与冲突</el-button>
-      <p v-if="merged">
-        去重 {{ duplicateCount }} 条 · {{ conflicts.length }} 组差异冲突 ·
-        {{ unique.length }} 条无冲突输入
-      </p>
+      <MetadataGroup
+        v-if="merged"
+        :items="[
+          { label: '已去重用例数', value: duplicateCount },
+          { label: '冲突组数', value: conflicts.length },
+          { label: '无冲突用例数', value: unique.length },
+        ]"
+      />
       <article v-for="(conflict, index) in conflicts" :key="conflict.key" class="panel">
         <h3>冲突 {{ index + 1 }}：{{ conflict.variants[0].question }}</h3>
         <div v-for="(variant, variantIndex) in conflict.variants" :key="variant.id">
-          <p>
-            选项 {{ variantIndex + 1 }} · 期望 {{ variant.expected }} · 路由
-            {{ variant.expectedSkill }} · {{ variant.priority }}
-          </p>
+          <h4>选项 {{ variantIndex + 1 }}</h4>
+          <MetadataGroup
+            :items="[
+              { label: '期望', value: variant.expected },
+              { label: '期望 Skill', value: variant.expectedSkill },
+              { label: '优先级', value: variant.priority },
+            ]"
+          />
           <PrepLineage :sources="variant.sources" />
         </div>
         <el-select

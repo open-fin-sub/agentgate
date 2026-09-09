@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../../components/EntityRef.vue'
+import MetadataGroup from '../../components/MetadataGroup.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
 import FormSection from '../../components/FormSection.vue'
 import { computed, reactive, ref } from 'vue'
@@ -263,7 +265,8 @@ function create() {
               v-for="item in state.targets"
               :key="item.id"
               :value="item.id"
-              :label="`${item.type} · ${item.name}`" /></el-select
+              :label="item.name"
+              ><EntityRef :name="item.name" :type="item.type" compact /></el-option></el-select
         ></el-form-item>
       </div>
       <template v-if="mode === 'historical'">
@@ -272,11 +275,12 @@ function create() {
         >
         <el-form-item label="基线运行 A"
           ><el-select v-model="baselineId" @change="changeBaseline"
-            ><el-option
-              v-for="run in runs"
-              :key="run.id"
-              :value="run.id"
-              :label="`${run.name} · ${run.config.targetVersion} · ${runStatusLabels[run.status]}`" /></el-select
+            ><el-option v-for="run in runs" :key="run.id" :value="run.id" :label="run.name"
+              ><EntityRef :name="run.name" type="测评任务" compact /><MetadataGroup
+                :items="[
+                  { label: '对象版本', value: run.config.targetVersion },
+                  { label: '状态', value: runStatusLabels[run.status] },
+                ]" /></el-option></el-select
         ></el-form-item>
         <el-form-item label="候选运行 B（可多选，分别对基线）"
           ><el-select v-model="candidateIds" multiple
@@ -284,7 +288,12 @@ function create() {
               v-for="run in runs.filter((item) => item.id !== baselineId)"
               :key="run.id"
               :value="run.id"
-              :label="`${run.name} · ${run.config.targetVersion} · ${runStatusLabels[run.status]}`" /></el-select
+              :label="run.name"
+              ><EntityRef :name="run.name" type="测评任务" compact /><MetadataGroup
+                :items="[
+                  { label: '对象版本', value: run.config.targetVersion },
+                  { label: '状态', value: runStatusLabels[run.status] },
+                ]" /></el-option></el-select
         ></el-form-item>
         <template v-if="baseline"
           ><ComparePreflight
@@ -328,7 +337,15 @@ function create() {
                 v-for="version in dataset?.versions ?? []"
                 :key="version.version"
                 :value="version.version"
-                :label="`v${version.version} · ${version.cases.length} 条`" /></el-select
+                :label="`版本 ${version.version}`"
+                ><EntityRef
+                  :name="dataset?.name ?? ''"
+                  type="测评集"
+                  :version="version.version"
+                  compact /><MetadataGroup
+                  :items="[
+                    { label: '用例数', value: version.cases.length },
+                  ]" /></el-option></el-select
           ></el-form-item>
         </div>
         <el-form-item label="共同评估器（固定版本）"
@@ -418,7 +435,12 @@ function create() {
                 v-for="item in datasetVersion?.cases ?? []"
                 :key="item.id"
                 :value="item.id"
-                :label="`${item.id} · ${item.question}`" /></el-select
+                :label="item.question"
+                ><EntityRef :name="item.question" type="用例" compact /><MetadataGroup
+                  :items="[
+                    { label: '分类', value: item.category },
+                    { label: '难度', value: item.difficulty },
+                  ]" /></el-option></el-select
           ></el-form-item>
         </FormSection>
         <StatusNotice>
@@ -439,8 +461,9 @@ function create() {
         <div class="gate-rule-grid">
           <div v-for="rule in rules" :key="rule.metric" class="rule-card">
             <label :for="`rule-${rule.metric}`"
-              >{{ metricDefinitions[rule.metric].label }} ·
-              {{ metricDefinitions[rule.metric].unit }}</label
+              >{{ metricDefinitions[rule.metric].label }}（{{
+                metricDefinitions[rule.metric].unit
+              }}）</label
             >
             <div class="action-row">
               <el-select

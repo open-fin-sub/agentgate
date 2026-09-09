@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../components/EntityRef.vue'
+import MetadataGroup from '../components/MetadataGroup.vue'
 import EmptyState from '../components/EmptyState.vue'
 import StatusNotice from '../components/StatusNotice.vue'
 import { userError } from '../apiErrors'
@@ -119,15 +121,23 @@ const labels = {
           <tbody>
             <tr v-for="run in runs" :key="run.id">
               <td>
-                {{ run.manifest.target.display_name
-                }}<small>{{ run.manifest.target.ref.external_version_id }}</small>
+                <EntityRef
+                  :name="run.manifest.target.display_name"
+                  type="测评对象"
+                  :version="run.manifest.target.ref.external_version_id"
+                  compact
+                />
               </td>
               <td>
-                {{ run.manifest.dataset.dataset_name
-                }}<small
-                  >v{{ run.manifest.dataset.version }} ·
-                  {{ run.manifest.dataset.cases.length }} 条用例</small
-                >
+                <EntityRef
+                  :name="run.manifest.dataset.dataset_name"
+                  type="测评集"
+                  :version="run.manifest.dataset.version"
+                  compact
+                />
+                <MetadataGroup
+                  :items="[{ label: '用例数', value: run.manifest.dataset.cases.length }]"
+                />
               </td>
               <td>
                 <span class="badge" :class="run.status">{{ labels[run.status] }}</span>
@@ -142,7 +152,7 @@ const labels = {
         </table>
       </div>
       <div class="table-foot">
-        最近 10 条运行记录 · <RouterLink to="/capabilities">当前接入范围</RouterLink>
+        <span>最近 10 条测评任务</span><RouterLink to="/capabilities">当前接入范围</RouterLink>
       </div>
     </section></template
   >

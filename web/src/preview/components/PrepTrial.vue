@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import MetadataGroup from '../../components/MetadataGroup.vue'
+import { outcomeLabels } from './RunSupport'
 import StatusNotice from '../../components/StatusNotice.vue'
 import { ref, reactive, watch } from 'vue'
 import type { EvaluatorVersion, Outcome } from '../types'
@@ -85,18 +87,36 @@ watch(
     ><el-button type="primary" @click="trial">运行单样本试评</el-button
     ><StatusNotice v-if="error" :title="error" type="error" />
     <div v-if="result" class="prep-result" role="status">
-      <h3>
-        {{ result.outcome }} ·
-        {{ result.score === null ? '无分数' : `${result.score.toFixed(2)} 分` }}
-      </h3>
+      <h3>{{ outcomeLabels[result.outcome] }}</h3>
+      <MetadataGroup
+        :items="[
+          {
+            label: '分数',
+            value: result.score === null ? '无分数' : `${result.score.toFixed(2)} 分`,
+          },
+        ]"
+      />
       <p>{{ result.reason }}</p>
       <ul v-if="result.children">
         <li v-for="(child, index) in result.children" :key="index">
-          <strong>{{ child.name }}：{{ child.outcome }} · {{ child.score ?? '无分数' }}</strong>
+          <strong>{{ child.name }}</strong>
+          <MetadataGroup
+            :items="[
+              { label: '结果', value: outcomeLabels[child.outcome] },
+              { label: '分数', value: child.score ?? '无分数' },
+            ]"
+          />
           <p>{{ child.reason }}</p>
           <ul v-if="child.children">
             <li v-for="(nested, position) in child.children" :key="position">
-              {{ nested.name }} · {{ nested.outcome }} · {{ nested.reason }}
+              <strong>{{ nested.name }}</strong>
+              <MetadataGroup
+                :items="[
+                  { label: '结果', value: outcomeLabels[nested.outcome] },
+                  { label: '分数', value: nested.score ?? '无分数' },
+                ]"
+              />
+              <p>{{ nested.reason }}</p>
             </li>
           </ul>
         </li>

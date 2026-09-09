@@ -71,14 +71,24 @@ test('real comparison uses server deltas, exposes counts, and preserves both evi
   const parentUrl = page.url()
   await page.getByRole('button', { name: '查看基线证据', exact: true }).first().click()
   const before = page.getByRole('dialog', { name: '基线用例证据', exact: true })
-  await expect(before.getByRole('link', { name: '全页打开' })).toHaveAttribute('href', new RegExp(`/runs/${baseline}/cases/`))
-  await expect(before.getByText(/评分标准固定版本/)).toBeVisible()
+  await expect(before.getByRole('link', { name: '全页打开' })).toHaveAttribute(
+    'href',
+    new RegExp(`/runs/${baseline}/cases/`),
+  )
+  const evaluatorRef = before
+    .locator('.ux-entity')
+    .filter({ has: page.getByRole('heading', { level: 3 }) })
+  await expect(evaluatorRef.locator('dt').filter({ hasText: /^版本$/ })).toBeVisible()
+  await expect(evaluatorRef.locator('dd').filter({ hasText: /^评估器$/ })).toBeVisible()
   await expect(page).toHaveURL(parentUrl)
   await before.getByRole('button', { name: '关闭此对话框' }).click()
   await expect(page).toHaveURL(/change=improvement/)
   await page.getByRole('button', { name: '查看候选证据', exact: true }).first().click()
   const after = page.getByRole('dialog', { name: '候选用例证据', exact: true })
-  await expect(after.getByRole('link', { name: '全页打开' })).toHaveAttribute('href', new RegExp(`/runs/${candidate}/cases/`))
+  await expect(after.getByRole('link', { name: '全页打开' })).toHaveAttribute(
+    'href',
+    new RegExp(`/runs/${candidate}/cases/`),
+  )
   await expect(page).toHaveURL(parentUrl)
 })
 
@@ -109,8 +119,16 @@ test('real forward and reverse lineage preserve exact content and reach reports'
   await page.locator('.asset-group > summary').filter({ hasText: '评估器' }).click()
   const evaluator = page.locator('.related-list article').filter({ hasText: 'final-state' })
   await evaluator.getByRole('button', { name: '查看此版本关联任务', exact: true }).click()
-  await expect(drawer.getByRole('link', { name: '全页打开' })).toHaveAttribute('href', /kind=evaluator/)
-  expect(new URL((await drawer.getByRole('link', { name: '全页打开' }).getAttribute('href'))!, page.url()).searchParams.get('hash')).toMatch(/^[a-f0-9]{64}$/)
+  await expect(drawer.getByRole('link', { name: '全页打开' })).toHaveAttribute(
+    'href',
+    /kind=evaluator/,
+  )
+  expect(
+    new URL(
+      (await drawer.getByRole('link', { name: '全页打开' }).getAttribute('href'))!,
+      page.url(),
+    ).searchParams.get('hash'),
+  ).toMatch(/^[a-f0-9]{64}$/)
   await expect(page.getByText(/结果可能不是全部；可扩大查询上限/)).toBeVisible()
   await expect(page.getByRole('link', { name: '查看任务与报告' }).first()).toBeVisible()
   await page.goto(`/lineage?kind=dataset&id=loan-risk-policy&version=1`)
@@ -121,13 +139,22 @@ test('real forward and reverse lineage preserve exact content and reach reports'
   await page.goto(`/lineage?kind=case&id=loan-risk-policy&version=1&case=${caseId}`)
   await expect(page.getByRole('heading', { name: '关联测评任务', exact: true })).toBeVisible()
   await page.goto(`/runs/${baseline}`)
-  await expect(drawer.getByRole('link', { name: '全页打开' })).toHaveAttribute('href', /kind=evaluator/)
+  await expect(drawer.getByRole('link', { name: '全页打开' })).toHaveAttribute(
+    'href',
+    /kind=evaluator/,
+  )
   await drawer.getByRole('button', { name: '关闭此对话框' }).click()
   await page.getByRole('button', { name: '此对象版本的关联任务', exact: true }).click()
-  await expect(drawer.getByRole('link', { name: '全页打开' })).toHaveAttribute('href', /kind=target/)
-  expect(new URL((await drawer.getByRole('link', { name: '全页打开' }).getAttribute('href'))!, page.url()).searchParams.get('hash')).toBe(
-    report.run.manifest.target.descriptor_sha256,
+  await expect(drawer.getByRole('link', { name: '全页打开' })).toHaveAttribute(
+    'href',
+    /kind=target/,
   )
+  expect(
+    new URL(
+      (await drawer.getByRole('link', { name: '全页打开' }).getAttribute('href'))!,
+      page.url(),
+    ).searchParams.get('hash'),
+  ).toBe(report.run.manifest.target.descriptor_sha256)
   await expect(page.getByRole('heading', { name: '引用关系', exact: true })).toBeVisible()
   await page.goto('/lineage?kind=dataset&id=unknown&version=1')
   await expect(page.getByText('关系读取失败', { exact: true })).toBeVisible()
@@ -159,7 +186,12 @@ test('Judge response rendering distinguishes missing usage and sanitized executi
   await page.route(`**/api/runs/${baseline}`, (route) => route.fulfill({ json: sample }))
   await page.goto(`/runs/${baseline}/cases/${result.case_id}?evaluator=${result.evaluator_id}`)
   const call = page.getByRole('region', { name: 'LLM 评分调用信息' })
-  await expect(call).toContainText('requested-test-model / resolved-test-model')
+  await expect(
+    call.locator('dl > div').filter({ has: page.getByText('请求模型', { exact: true }) }),
+  ).toHaveText('请求模型requested-test-model')
+  await expect(
+    call.locator('dl > div').filter({ has: page.getByText('实际模型', { exact: true }) }),
+  ).toHaveText('实际模型resolved-test-model')
   await expect(call.locator('.ux-token-usage')).toContainText('输入 Token未采集')
   await expect(call.locator('.ux-token-usage')).toContainText('输出 Token0')
   await expect(call.locator('.ux-token-usage')).toContainText('总 Token未采集')

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EntityRef from '../components/EntityRef.vue'
 import StatusNotice from '../components/StatusNotice.vue'
 import { userError } from '../apiErrors'
 import { catalogLabel } from '../catalogLabels'
@@ -38,14 +39,11 @@ onMounted(load)
   <div v-if="loading" class="skeleton">正在加载对象版本…</div>
   <div v-else-if="!error" class="panel">
     <div class="panel-title">
-      <h2>Loan Agent <span class="badge">Agent · 演示接入</span></h2>
+      <h2>信贷助手</h2>
     </div>
-    <p class="muted">确定性执行，用于验证真实测评和 Trace 链路。对象由接入端管理。</p>
+    <p class="muted">选择下列版本开始测评。需要修改对象时，请前往对象所属平台。</p>
     <div v-for="version in versions" :key="version.id" class="detail-row">
-      <div>
-        <strong>{{ version.label }}</strong>
-        <div class="muted small">{{ version.id }}</div>
-      </div>
+      <EntityRef :name="catalogLabel(version.label)" type="Agent" :version="version.id" />
       <RouterLink class="ag-button" :to="{ path: '/runs/new', query: { target: version.id } }"
         >测评此版本</RouterLink
       >

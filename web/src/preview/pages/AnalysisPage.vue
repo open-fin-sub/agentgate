@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../../components/EntityRef.vue'
+import MetadataGroup from '../../components/MetadataGroup.vue'
 import { useDetailState } from '../../components/detailState'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
@@ -252,11 +254,12 @@ function generateSuggestions() {
     <section class="panel">
       <label
         >分析运行<el-select v-model="runId"
-          ><el-option
-            v-for="item in state.runs"
-            :key="item.id"
-            :value="item.id"
-            :label="`${item.name} · ${item.config.targetVersion} · ${runStatusLabels[item.status]}`" /></el-select
+          ><el-option v-for="item in state.runs" :key="item.id" :value="item.id" :label="item.name"
+            ><EntityRef :name="item.name" type="测评任务" compact /><MetadataGroup
+              :items="[
+                { label: '对象版本', value: item.config.targetVersion },
+                { label: '状态', value: runStatusLabels[item.status] },
+              ]" /></el-option></el-select
       ></label>
     </section>
     <EmptyState
@@ -268,16 +271,34 @@ function generateSuggestions() {
     <template v-else>
       <section class="panel">
         <div class="panel-title">
-          <h2>{{ run.name }} · {{ run.config.targetVersion }}</h2>
+          <h2>{{ run.name }}</h2>
           <RouterLink :to="`/preview/runs/${run.id}`">查看完整报告 →</RouterLink>
         </div>
-        <p>
-          {{ runStatusLabels[run.status] }} · 已返回 {{ records.length }} /
-          {{ run.cases.length }} 条。机器原判的业务失败
-          {{ records.filter((item) => item.result.outcome === 'fail').length }} 条；执行错误
-          {{ records.filter((item) => item.result.outcome === 'error').length }} 条；待复核
-          {{ records.filter((item) => item.result.outcome === 'review').length }} 条。
-        </p>
+        <EntityRef
+          :name="run.target.name"
+          :type="run.target.type"
+          :version="run.config.targetVersion"
+          compact
+        />
+        <MetadataGroup
+          :items="[
+            { label: '任务状态', value: runStatusLabels[run.status] },
+            { label: '已返回结果数', value: records.length },
+            { label: '用例总数', value: run.cases.length },
+            {
+              label: '机器判定不通过',
+              value: records.filter((item) => item.result.outcome === 'fail').length,
+            },
+            {
+              label: '执行错误',
+              value: records.filter((item) => item.result.outcome === 'error').length,
+            },
+            {
+              label: '需复核',
+              value: records.filter((item) => item.result.outcome === 'review').length,
+            },
+          ]"
+        />
         <StatusNotice type="warning" v-if="run.status !== 'completed'">
           这是当前部分结果，不是完成后的完整分布。运行继续时此页自动更新。
         </StatusNotice>
@@ -293,18 +314,14 @@ function generateSuggestions() {
           >
             <span>{{ cluster.label }}</span
             ><strong>{{ cluster.records.length }}</strong
-            ><small>{{
-              cluster.records[0]
-                ? `代表样本 ${cluster.records[0].sample.id} · 点击看证据`
-                : '暂无发生记录'
-            }}</small>
+            ><small>{{ cluster.records[0] ? '查看代表用例的证据' : '暂无发生记录' }}</small>
           </button>
         </div>
         <h3>业务失败的场景标签</h3>
         <p v-if="!tagDistribution.length" class="muted">当前没有带标签的业务失败。</p>
         <div class="action-row">
           <el-button v-for="item in tagDistribution" :key="item.tag" @click="tag = item.tag"
-            >{{ item.tag }} · {{ item.count }} 条</el-button
+            >{{ item.tag }}（{{ item.count }} 条）</el-button
           >
         </div>
         <p class="muted">一个样本可含多个标签，标签计数不相加为总失败数。</p>
@@ -348,8 +365,17 @@ function generateSuggestions() {
       <section id="analysis-evidence" class="panel">
         <h2>筛选发生记录 → 输出与 Trace</h2>
         <StatusNotice v-if="group || expected || actual">
-          当前：{{ groupLabels[group as IssueGroup] ?? '全部类型'
-          }}<template v-if="expected"> · 预期 {{ expected }} → 实际 {{ actual }}</template>
+          <MetadataGroup
+            :items="[
+              { label: '问题类型', value: groupLabels[group as IssueGroup] ?? '全部类型' },
+              ...(expected
+                ? [
+                    { label: '预期 Skill', value: expected },
+                    { label: '实际 Skill', value: actual },
+                  ]
+                : []),
+            ]"
+          />
         </StatusNotice>
         <div class="action-row evidence-filters">
           <label>搜索用例<el-input v-model="search" clearable /></label
@@ -383,9 +409,9 @@ function generateSuggestions() {
             <strong>实际输出</strong>
             <ValueView :value="item.result.output" />
           </details>
-          <button class="text-button" @click="evidenceCase = item.sample.id"
-            >查看样本与 Trace{{ item.result.trace.length ? '' : '（Trace 未采集）' }} →</button
-          >
+          <button class="text-button" @click="evidenceCase = item.sample.id">
+            查看样本与 Trace{{ item.result.trace.length ? '' : '（Trace 未采集）' }} →
+          </button>
         </article>
       </section>
       <section id="analysis-suggestion" class="panel">
@@ -413,16 +439,22 @@ function generateSuggestions() {
             :class="{ active: selectedSuggestion?.id === suggestion.id }"
             @click="selectSuggestion(suggestion.id)"
           >
-            <span
-              >{{ suggestion.priority }} · {{ suggestion.targetVersion }} ·
-              {{
-                suggestion.decision === 'adopted'
-                  ? '已采纳'
-                  : suggestion.decision === 'ignored'
-                    ? '已忽略'
-                    : '待确认'
-              }}</span
-            ><strong>{{ suggestion.title }}</strong
+            <MetadataGroup
+              inline
+              :items="[
+                { label: '优先级', value: suggestion.priority },
+                { label: '对象版本', value: suggestion.targetVersion },
+                {
+                  label: '处理状态',
+                  value:
+                    suggestion.decision === 'adopted'
+                      ? '已采纳'
+                      : suggestion.decision === 'ignored'
+                        ? '已忽略'
+                        : '待确认',
+                },
+              ]"
+            /><strong>{{ suggestion.title }}</strong
             ><small
               >来源
               {{
@@ -433,7 +465,7 @@ function generateSuggestions() {
         </div>
       </section>
       <StatusNotice type="error" v-if="route.query.suggestion && !requestedSuggestion">
-        404 · 建议不存在，请选择有效建议。
+        找不到这条建议，请从上方建议列表重新选择。
       </StatusNotice>
       <AnalysisSuggestion
         v-if="selectedSuggestion"
@@ -448,7 +480,12 @@ function generateSuggestions() {
     description="请从测评任务查看问题证据，或从测评对象检查定义风险。"
     ><RouterLink class="ag-button" to="/preview/runs">查看测评任务</RouterLink></EmptyState
   >
-  <CaseEvidenceDrawer v-if="run" v-model="evidenceCase" :run-id="run.id" :items="filtered.map(item => ({ key: item.sample.id, label: item.sample.question }))" />
+  <CaseEvidenceDrawer
+    v-if="run"
+    v-model="evidenceCase"
+    :run-id="run.id"
+    :items="filtered.map((item) => ({ key: item.sample.id, label: item.sample.question }))"
+  />
 </template>
 
 <style scoped>

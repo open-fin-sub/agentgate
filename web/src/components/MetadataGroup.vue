@@ -2,15 +2,23 @@
 defineProps<{
   items: { label: string; value: string | number | boolean | null | undefined }[]
   title?: string
+  inline?: boolean
 }>()
 </script>
 <template>
-  <div class="ux-metadata">
-    <h4 v-if="title">{{ title }}</h4>
-    <dl>
-      <div v-for="(item, index) in items" :key="`${item.label}-${index}`">
-        <dt>{{ item.label }}</dt>
-        <dd>
+  <component :is="inline ? 'span' : 'div'" class="ux-metadata" :class="{ inline }">
+    <component :is="inline ? 'span' : 'h4'" v-if="title" class="metadata-title">{{
+      title
+    }}</component>
+    <component :is="inline ? 'span' : 'dl'" class="metadata-list">
+      <component
+        :is="inline ? 'span' : 'div'"
+        v-for="(item, index) in items"
+        :key="`${item.label}-${index}`"
+        class="metadata-item"
+      >
+        <component :is="inline ? 'span' : 'dt'" class="metadata-label">{{ item.label }}</component>
+        <component :is="inline ? 'span' : 'dd'" class="metadata-value">
           {{
             item.value === null || item.value === undefined || item.value === ''
               ? '未提供'
@@ -20,39 +28,43 @@ defineProps<{
                   ? '否'
                   : item.value
           }}
-        </dd>
-      </div>
-    </dl>
-  </div>
+        </component>
+      </component>
+    </component>
+  </component>
 </template>
 <style scoped>
 .ux-metadata {
   margin: 12px 0;
   min-width: 0;
 }
-.ux-metadata h4 {
+.ux-metadata.inline {
+  display: inline-flex;
+  margin: 0;
+}
+.metadata-title {
   margin: 0 0 8px;
 }
-.ux-metadata dl {
+.metadata-list {
   display: flex;
   flex-wrap: wrap;
   gap: 12px 24px;
   margin: 0;
 }
-.ux-metadata dl > div {
+.metadata-item {
   min-width: 0;
   max-width: 100%;
   display: flex;
   align-items: baseline;
   gap: 8px;
 }
-.ux-metadata dt {
+.metadata-label {
   font-size: 12px;
   line-height: 20px;
   color: var(--ag-muted);
   flex-shrink: 0;
 }
-.ux-metadata dd {
+.metadata-value {
   font-size: 14px;
   line-height: 22px;
   color: var(--ag-body);

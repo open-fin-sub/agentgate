@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../../components/EntityRef.vue'
+import MetadataGroup from '../../components/MetadataGroup.vue'
 import TaskBackLink from '../../components/TaskBackLink.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
 import FormSection from '../../components/FormSection.vue'
@@ -89,7 +91,10 @@ const evaluatorOptions = computed(() =>
   state.evaluators.flatMap((item) =>
     item.versions.map((version) => ({
       key: `${item.id}@${version.version}`,
-      label: `${item.name} · v${version.version} · ${version.kind}`,
+      label: `${item.name}（版本：${version.version}）`,
+      name: item.name,
+      version: version.version,
+      kind: { rule: '规则评估器', llm: 'LLM 评估器', composite: '复合评估器' }[version.kind],
       disabled: item.archived,
     })),
   ),
@@ -255,7 +260,10 @@ function saveDraft() {
 }
 function prepare(mode: 'manual' | 'merge') {
   if (!saveDraft()) return
-  const returnTo = router.resolve({ path: '/preview/runs/new', query: { draft: '1', origin: route.query.origin } }).href
+  const returnTo = router.resolve({
+    path: '/preview/runs/new',
+    query: { draft: '1', origin: route.query.origin },
+  }).href
   void router.push({
     path: '/preview/datasets',
     query: { mode, target: config.targetId, targetVersion: config.targetVersion, returnTo },
@@ -297,7 +305,10 @@ watch(() => route.fullPath, initialize, { immediate: true })
 </script>
 
 <template>
-  <TaskBackLink :fallback="sourceRunId ? `/preview/runs/${encodeURIComponent(sourceRunId)}` : '/preview/runs'" :label="sourceRunId ? '返回来源报告' : '返回任务列表'" />
+  <TaskBackLink
+    :fallback="sourceRunId ? `/preview/runs/${encodeURIComponent(sourceRunId)}` : '/preview/runs'"
+    :label="sourceRunId ? '返回来源报告' : '返回任务列表'"
+  />
   <div class="page-intro">
     <div>
       <h1>创建测评</h1>
@@ -346,7 +357,8 @@ watch(() => route.fullPath, initialize, { immediate: true })
               v-for="item in state.targets"
               :key="item.id"
               :value="item.id"
-              :label="`${item.type} · ${item.name}`" /></el-select
+              :label="item.name"
+              ><EntityRef :name="item.name" :type="item.type" compact /></el-option></el-select
         ></label>
         <label class="field"
           >对象版本<el-select v-model="config.targetVersion" aria-label="对象版本"
@@ -354,13 +366,22 @@ watch(() => route.fullPath, initialize, { immediate: true })
               v-for="item in target?.versions ?? []"
               :key="item.id"
               :value="item.id"
-              :label="`${item.id} · ${item.label}${item.executable ? '' : '（不可执行）'}`" /></el-select
+              :label="item.label"
+              ><EntityRef
+                :name="item.label"
+                :type="target?.type ?? '测评对象'"
+                :version="item.id"
+                compact /><MetadataGroup
+                :items="[{ label: '可执行', value: item.executable }]" /></el-option></el-select
         ></label>
       </div>
-      <p class="muted small">
-        {{ target?.description }} · 来源：{{ target?.platform }} /
-        {{ target?.form }}。对象定义由外部平台管理。
-      </p>
+      <p class="muted small">{{ target?.description }}</p>
+      <MetadataGroup
+        :items="[
+          { label: '所属平台', value: target?.platform },
+          { label: '对象形态', value: target?.form },
+        ]"
+      />
     </section>
     <section class="panel">
       <div class="panel-title">
@@ -392,7 +413,13 @@ watch(() => route.fullPath, initialize, { immediate: true })
               v-for="item in dataset?.versions ?? []"
               :key="item.version"
               :value="item.version"
-              :label="`v${item.version} · ${item.cases.length} 条用例`" /></el-select
+              :label="`版本 ${item.version}`"
+              ><EntityRef
+                :name="dataset?.name ?? ''"
+                type="测评集"
+                :version="item.version"
+                compact /><MetadataGroup
+                :items="[{ label: '用例数', value: item.cases.length }]" /></el-option></el-select
           ><span class="hint">只使用已发布版本；预约执行不会追随最新版本。</span></label
         >
       </div>
@@ -425,18 +452,24 @@ watch(() => route.fullPath, initialize, { immediate: true })
                 v-for="item in input?.cases ?? []"
                 :key="item.id"
                 :value="item.id"
-                :label="`${item.id} · ${item.question}`" /></el-select
+                :label="item.question"
+                ><EntityRef :name="item.question" type="用例" compact /><MetadataGroup
+                  :items="[
+                    { label: '分类', value: item.category },
+                    { label: '难度', value: item.difficulty },
+                  ]" /></el-option></el-select
           ></label>
         </div>
       </FormSection>
       <details>
         <summary>查看实际样本 ID 与输入来源</summary>
         <p class="run-wrap">{{ config.caseIds.join('、') || '尚未选择' }}</p>
-        <p class="muted">
-          发布说明：{{ input?.note || '无' }} · 来源：{{
-            input?.sources.join('、') || '无来源记录'
-          }}
-        </p>
+        <MetadataGroup
+          :items="[
+            { label: '发布说明', value: input?.note || '无' },
+            { label: '来源记录', value: input?.sources.join('、') || '无' },
+          ]"
+        />
       </details>
     </section>
     <section class="panel">
@@ -452,7 +485,12 @@ watch(() => route.fullPath, initialize, { immediate: true })
             :key="item.key"
             :value="item.key"
             :label="item.label"
-            :disabled="item.disabled" /></el-select
+            :disabled="item.disabled"
+            ><EntityRef
+              :name="item.name"
+              :type="item.kind"
+              :version="item.version"
+              compact /></el-option></el-select
       ></label>
       <div class="preview-form form-grid run-spacing">
         <label class="field"
@@ -464,7 +502,14 @@ watch(() => route.fullPath, initialize, { immediate: true })
               v-for="item in state.credentials"
               :key="item.id"
               :value="item.id"
-              :label="`${item.name} · ${item.kind === 'public' ? '公共' : '私有'}${!item.enabled || !item.healthy ? '（失效）' : ''}`" /></el-select
+              :label="item.name"
+              ><EntityRef
+                :name="item.name"
+                :type="item.kind === 'public' ? '公共资源' : '私有资源'"
+                compact /><MetadataGroup
+                :items="[
+                  { label: '可用', value: item.enabled && item.healthy },
+                ]" /></el-option></el-select
           ><span class="hint">执行模型：{{ config.model || '缺失' }}（由资源确定）</span></label
         >
         <label class="field"
@@ -473,7 +518,14 @@ watch(() => route.fullPath, initialize, { immediate: true })
               v-for="item in state.credentials"
               :key="item.id"
               :value="item.id"
-              :label="`${item.name} · ${item.kind === 'public' ? '公共' : '私有'}${!item.enabled || !item.healthy ? '（失效）' : ''}`" /></el-select
+              :label="item.name"
+              ><EntityRef
+                :name="item.name"
+                :type="item.kind === 'public' ? '公共资源' : '私有资源'"
+                compact /><MetadataGroup
+                :items="[
+                  { label: '可用', value: item.enabled && item.healthy },
+                ]" /></el-option></el-select
           ><span class="hint"
             >评分模型：{{ scoringResource?.model || '缺失' }}。用于所选标准中的 LLM 评分。</span
           ></label
@@ -552,15 +604,29 @@ watch(() => route.fullPath, initialize, { immediate: true })
     </section>
     <section class="panel">
       <h2>提交摘要</h2>
-      <p>
-        {{ target?.name || config.targetId }} / {{ config.targetVersion }} →
-        {{ dataset?.name || config.datasetId }} v{{ config.datasetVersion }} ·
-        {{ config.caseIds.length }} 条固定样本 · {{ config.evaluatorRefs.length }} 个评估器
-      </p>
-      <p class="muted">
-        执行：{{ resource?.name || '未选择' }} · 评分：{{ scoringResource?.name || '未选择' }} ·
-        {{ scheduled ? `预约 ${localTime}（${timezone}）` : '立即入队' }}
-      </p>
+      <div class="entity-group">
+        <EntityRef
+          :name="target?.name ?? ''"
+          :type="target?.type ?? '测评对象'"
+          :version="config.targetVersion"
+          compact
+        />
+        <EntityRef
+          :name="dataset?.name ?? ''"
+          type="测评集"
+          :version="config.datasetVersion"
+          compact
+        />
+      </div>
+      <MetadataGroup
+        :items="[
+          { label: '固定用例数', value: config.caseIds.length },
+          { label: '评估器数', value: config.evaluatorRefs.length },
+          { label: '执行资源', value: resource?.name },
+          { label: '评分资源', value: scoringResource?.name },
+          { label: '入队方式', value: scheduled ? `预约 ${localTime}（${timezone}）` : '立即入队' },
+        ]"
+      />
       <StatusNotice type="warning" v-if="errors.length" aria-label="配置校验"
         ><ul>
           <li v-for="error in errors" :key="error">{{ error }}</li>

@@ -30,9 +30,7 @@ test('reload after another tab edits a dataset refreshes the editor baseline', a
     .filter({ hasText: 'case-01' })
     .getByRole('button', { name: '编辑用例', exact: true })
     .click()
-  await other
-    .getByLabel('期望输出 / 工具及业务要求', { exact: true })
-    .fill('其他标签页保存的最新期望')
+  await other.getByLabel('预期表现', { exact: true }).fill('其他标签页保存的最新期望')
   await other.getByRole('button', { name: '应用用例修改', exact: true }).click()
   await other.getByRole('button', { name: '保存草稿', exact: true }).click()
   await expect(page.locator('.preview-storage-alert')).toBeVisible()

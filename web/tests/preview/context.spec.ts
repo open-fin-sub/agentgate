@@ -1,17 +1,46 @@
 import { test, expect } from '@playwright/test'
 
+test('dataset provenance opens fixed source versions without leaving the parent', async ({
+  page,
+}) => {
+  await page.goto('/preview/datasets/ds-service?version=1')
+  const parent = page.url()
+  const opener = page
+    .locator('.prep-sources')
+    .getByRole('button', { name: '贷款办理 · Skill 单元集', exact: true })
+  await opener.click()
+  const drawer = page.getByRole('dialog', { name: '测评集详情', exact: true })
+  await expect(
+    drawer.getByRole('heading', { name: '贷款办理 · Skill 单元集', exact: true }),
+  ).toBeVisible()
+  await expect(drawer.getByText('版本 1', { exact: true })).toBeVisible()
+  await expect(page).toHaveURL(parent)
+  await drawer.getByRole('button', { name: '下一条', exact: true }).click()
+  await expect(
+    drawer.getByRole('heading', { name: '常见问题 · Skill 单元集', exact: true }),
+  ).toBeVisible()
+  await expect(page).toHaveURL(parent)
+  await drawer.getByRole('button', { name: '关闭此对话框' }).click()
+  await expect(opener).toBeFocused()
+})
+
 test('creating from a target drawer returns to its filtered source', async ({ page }) => {
   await page.goto('/preview/targets?type=Agent')
   await page.getByRole('button', { name: '查看版本与定义 →', exact: true }).first().click()
   const drawer = page.getByRole('dialog', { name: '测评对象详情', exact: true })
   await drawer.getByRole('link', { name: '配置测评', exact: true }).click()
-  await expect(page.getByRole('link', { name: '返回来源页面', exact: true })).toHaveAttribute('href', '/preview/targets?type=Agent')
+  await expect(page.getByRole('link', { name: '返回来源页面', exact: true })).toHaveAttribute(
+    'href',
+    '/preview/targets?type=Agent',
+  )
   await page.getByRole('link', { name: '返回来源页面', exact: true }).click()
   await expect(drawer).toBeVisible()
   await expect(page).toHaveURL(/\/preview\/targets\?type=Agent$/)
 })
 
-test('full evidence returns to its source task and rejects external return destinations', async ({ page }) => {
+test('full evidence returns to its source task and rejects external return destinations', async ({
+  page,
+}) => {
   const source = '/preview/analysis?tab=dynamic&q=贷款'
   await page.goto(`/preview/runs/run-baseline/cases/case-01?returnTo=${encodeURIComponent(source)}`)
   const back = page.getByRole('link', { name: '返回来源页面（保留筛选）' })
@@ -19,10 +48,15 @@ test('full evidence returns to its source task and rejects external return desti
   await back.click()
   await expect(page).toHaveURL(new URL(source, page.url()).href)
   await page.goto('/preview/runs/run-baseline/cases/case-01?returnTo=https%3A%2F%2Fexample.com')
-  await expect(page.getByRole('link', { name: '返回来源页面（保留筛选）' })).toHaveAttribute('href', '/preview/runs/run-baseline')
+  await expect(page.getByRole('link', { name: '返回来源页面（保留筛选）' })).toHaveAttribute(
+    'href',
+    '/preview/runs/run-baseline',
+  )
 })
 
-test('review drawer protects unsaved input on next and close without losing the report', async ({ page }) => {
+test('review drawer protects unsaved input on next and close without losing the report', async ({
+  page,
+}) => {
   await page.goto('/preview/runs/run-baseline')
   const openers = page.getByRole('button', { name: '查看证据与复核 →', exact: true })
   await expect(openers.first()).toBeVisible()
@@ -54,17 +88,28 @@ test('return from full evidence restores the report scroll position', async ({ p
   const position = await page.evaluate(() => window.scrollY)
   expect(position).toBeGreaterThan(0)
   await opener.click()
-  const evidencePath = await page.getByRole('dialog', { name: '用例证据与复核', exact: true }).getByRole('link', { name: '全页打开', exact: true }).getAttribute('href')
-  await page.getByRole('dialog', { name: '用例证据与复核', exact: true }).getByRole('link', { name: '全页打开', exact: true }).click()
+  const evidencePath = await page
+    .getByRole('dialog', { name: '用例证据与复核', exact: true })
+    .getByRole('link', { name: '全页打开', exact: true })
+    .getAttribute('href')
+  await page
+    .getByRole('dialog', { name: '用例证据与复核', exact: true })
+    .getByRole('link', { name: '全页打开', exact: true })
+    .click()
   await expect(page).toHaveURL(/\/cases\//)
   await page.reload()
   await page.getByRole('link', { name: '返回来源页面（保留筛选）' }).click()
   await expect(page).toHaveURL(parentUrl)
   const restored = page.getByRole('dialog', { name: '用例证据与复核', exact: true })
   await expect(restored).toBeVisible()
-  await expect(restored.getByRole('link', { name: '全页打开', exact: true })).toHaveAttribute('href', evidencePath!)
+  await expect(restored.getByRole('link', { name: '全页打开', exact: true })).toHaveAttribute(
+    'href',
+    evidencePath!,
+  )
   await restored.getByRole('button', { name: '关闭此对话框' }).click()
-  await expect.poll(async () => Math.abs(await page.evaluate(() => window.scrollY) - position)).toBeLessThan(5)
+  await expect
+    .poll(async () => Math.abs((await page.evaluate(() => window.scrollY)) - position))
+    .toBeLessThan(5)
 })
 
 test('asset drawers keep list filters and protect edited evaluator versions', async ({ page }) => {
@@ -77,14 +122,22 @@ test('asset drawers keep list filters and protect edited evaluator versions', as
   await target.getByRole('combobox', { name: '对象版本', exact: true }).press('Enter')
   await page.getByRole('option').nth(1).click()
   await expect(page).toHaveURL(targetUrl)
-  await expect(target.getByRole('link', { name: '全页打开', exact: true })).toHaveAttribute('href', /version=/)
-  const selectedVersionPath = await target.getByRole('link', { name: '全页打开', exact: true }).getAttribute('href')
+  await expect(target.getByRole('link', { name: '全页打开', exact: true })).toHaveAttribute(
+    'href',
+    /version=/,
+  )
+  const selectedVersionPath = await target
+    .getByRole('link', { name: '全页打开', exact: true })
+    .getAttribute('href')
   await target.getByRole('link', { name: '全页打开', exact: true }).click()
   await page.reload()
   await page.getByRole('link', { name: '返回来源页面', exact: true }).click()
   await expect(page).toHaveURL(targetUrl)
   await expect(target).toBeVisible()
-  await expect(target.getByRole('link', { name: '全页打开', exact: true })).toHaveAttribute('href', selectedVersionPath!)
+  await expect(target.getByRole('link', { name: '全页打开', exact: true })).toHaveAttribute(
+    'href',
+    selectedVersionPath!,
+  )
   await target.getByRole('button', { name: '关闭此对话框' }).click()
   await expect(targetOpener).toBeFocused()
 
@@ -93,10 +146,14 @@ test('asset drawers keep list filters and protect edited evaluator versions', as
   await opener.click()
   const evaluator = page.getByRole('dialog', { name: '评估器详情', exact: true })
   await evaluator.getByRole('button', { name: '编辑并发布新版本', exact: true }).click()
-  await evaluator.getByRole('textbox', { name: '版本说明（发布时必填）', exact: true }).fill('待核对的标准修改')
+  await evaluator
+    .getByRole('textbox', { name: '版本说明（发布时必填）', exact: true })
+    .fill('待核对的标准修改')
   await evaluator.getByRole('button', { name: '下一条', exact: true }).click()
   await page.getByRole('button', { name: '继续编辑', exact: true }).click()
-  await expect(evaluator.getByRole('textbox', { name: '版本说明（发布时必填）', exact: true })).toHaveValue('待核对的标准修改')
+  await expect(
+    evaluator.getByRole('textbox', { name: '版本说明（发布时必填）', exact: true }),
+  ).toHaveValue('待核对的标准修改')
   await expect(page).toHaveURL(/\/preview\/evaluators$/)
   await evaluator.getByRole('button', { name: '关闭此对话框' }).click()
   await page.getByRole('button', { name: '放弃修改', exact: true }).click()

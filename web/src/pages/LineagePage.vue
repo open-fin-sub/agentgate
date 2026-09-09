@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EntityRef from '../components/EntityRef.vue'
 import DatasetVersionLink from '../components/dataset/DatasetVersionLink.vue'
 import EmptyState from '../components/EmptyState.vue'
 import StatusNotice from '../components/StatusNotice.vue'
@@ -13,7 +14,9 @@ import { catalogLabel } from '../catalogLabels'
 const route = useRoute(),
   router = useRouter()
 const props = defineProps<{ context?: LocationQuery; embedded?: boolean }>()
-const emit = defineEmits<{ navigate: [query: LocationQuery, siblings: { label: string; query: LocationQuery }[]] }>()
+const emit = defineEmits<{
+  navigate: [query: LocationQuery, siblings: { label: string; query: LocationQuery }[]]
+}>()
 const context = computed(() => props.context ?? route.query)
 const graph = ref<LineageGraph | null>(null),
   loading = ref(false),
@@ -71,17 +74,27 @@ const returnPath = computed(() => {
   return /^\/(runs|datasets|evaluators|comparisons|targets)(\/|\?|$)/.test(path) ? path : '/runs'
 })
 const label = (node?: LineageNode) =>
-  node ? `${catalogLabel(node.label)}${node.version ? ` · 版本 ${node.version}` : ''}` : '未知节点'
-function runSummary(run: LineageNode) {
+  node
+    ? `${catalogLabel(node.label)}${node.version ? `（版本：${node.version}）` : ''}`
+    : '名称未提供'
+function entity(node?: LineageNode) {
+  return {
+    name: node?.kind === 'run' ? '测评任务' : node ? catalogLabel(node.label) : '',
+    type: node ? kinds[node.kind] : '引用对象',
+    version: node?.version,
+    id: node?.external_id,
+  }
+}
+function runAssets(run: LineageNode) {
   const edges = graph.value?.edges.filter((edge) => edge.source_id === run.id) ?? []
   const target = edges.find(
     (edge) => edge.relation === 'evaluates_agent' || edge.relation === 'evaluates_skill',
   )
   const dataset = edges.find((edge) => edge.relation === 'uses_dataset')
-  return [
-    target ? label(nodes.value.get(target.target_id)) : '对象未提供',
-    dataset ? label(nodes.value.get(dataset.target_id)) : '输入未提供',
-  ].join(' · ')
+  return [target, dataset].flatMap((edge) => {
+    const node = edge ? nodes.value.get(edge.target_id) : undefined
+    return node ? [node] : []
+  })
 }
 let controller: AbortController | undefined
 async function load() {
@@ -172,11 +185,18 @@ function setLimit(event: Event) {
 function openSubject(node: LineageNode, siblings: LineageNode[]) {
   const location = linkedSubject(node)
   if (!location) return
-  if (!props.embedded) { void router.push(location); return }
-  emit('navigate', router.resolve(location).query, siblings.flatMap(item => {
-    const target = linkedSubject(item)
-    return target ? [{ label: label(item), query: router.resolve(target).query }] : []
-  }))
+  if (!props.embedded) {
+    void router.push(location)
+    return
+  }
+  emit(
+    'navigate',
+    router.resolve(location).query,
+    siblings.flatMap((item) => {
+      const target = linkedSubject(item)
+      return target ? [{ label: label(item), query: router.resolve(target).query }] : []
+    }),
+  )
 }
 watch(
   () => [
@@ -221,15 +241,7 @@ onUnmounted(() => controller?.abort())
   </StatusNotice>
   <template v-if="graph && root">
     <section class="panel">
-      <h2>
-        {{ kinds[root.kind] }} ·
-        {{ root.kind === 'run' ? root.external_id.slice(0, 8) : label(root) }}
-      </h2>
-      <details v-if="root.kind === 'run'">
-        <summary>完整任务编号</summary>
-        <code class="hash">{{ root.external_id }}</code>
-      </details>
-      <p v-else class="muted">{{ root.external_id }}</p>
+      <EntityRef v-bind="entity(root)" :heading-level="2" />
       <details v-if="root.content_sha256">
         <summary>高级：查看版本校验信息</summary>
         <code class="hash">{{ root.content_sha256 }}</code>
@@ -262,8 +274,15 @@ onUnmounted(() => controller?.abort())
       <p v-else class="muted small">以下按任务标识排列；创建时间、运行状态和判定请进入任务查看。</p>
       <div class="related-list">
         <article v-for="run in visibleRuns" :key="run.id">
-          <strong>{{ runSummary(run) }}</strong>
-          <p class="muted small">任务 {{ run.external_id.slice(0, 8) }}</p>
+          <EntityRef v-bind="entity(run)" :heading-level="3" compact />
+          <div class="entity-group">
+            <EntityRef
+              v-for="asset in runAssets(run)"
+              :key="asset.id"
+              v-bind="entity(asset)"
+              compact
+            />
+          </div>
           <RouterLink :to="`/runs/${encodeURIComponent(run.external_id)}`"
             >查看任务与报告</RouterLink
           >
@@ -289,21 +308,27 @@ onUnmounted(() => controller?.abort())
         :open="subject.kind === 'run' && ['dataset', 'agent'].includes(group.kind)"
         class="asset-group"
       >
-        <summary>{{ kinds[group.kind] }} · {{ group.nodes.length }} 个固定版本</summary>
+        <summary>{{ kinds[group.kind] }}（固定版本数：{{ group.nodes.length }}）</summary>
         <div class="related-list">
           <article v-for="node in group.nodes" :key="node.id">
-            <span class="badge">{{ kinds[node.kind] }}</span>
-            <h3>{{ label(node) }}</h3>
-            <p class="muted small">{{ node.external_id }}</p>
+            <EntityRef v-bind="entity(node)" :heading-level="3" />
             <details v-if="node.content_sha256">
               <summary>高级：查看版本校验信息</summary>
               <code class="hash">{{ node.content_sha256 }}</code>
             </details>
             <div class="action-row">
-              <DatasetVersionLink v-if="node.kind === 'dataset' && node.version" :dataset-id="node.external_id" :version="Number(node.version)" />
-              <button class="text-button" v-if="linkedSubject(node)" @click="openSubject(node, group.nodes)"
-                >查看此版本关联任务</button
+              <DatasetVersionLink
+                v-if="node.kind === 'dataset' && node.version"
+                :dataset-id="node.external_id"
+                :version="Number(node.version)"
+              />
+              <button
+                class="text-button"
+                v-if="linkedSubject(node)"
+                @click="openSubject(node, group.nodes)"
               >
+                查看此版本关联任务
+              </button>
             </div>
           </article>
         </div>
@@ -328,9 +353,9 @@ onUnmounted(() => controller?.abort())
                 v-for="edge in graph.edges"
                 :key="`${edge.source_id}:${edge.relation}:${edge.target_id}`"
               >
-                <td>{{ label(nodes.get(edge.source_id)) }}</td>
+                <td><EntityRef v-bind="entity(nodes.get(edge.source_id))" compact /></td>
                 <td>{{ relations[edge.relation] }}</td>
-                <td>{{ label(nodes.get(edge.target_id)) }}</td>
+                <td><EntityRef v-bind="entity(nodes.get(edge.target_id))" compact /></td>
               </tr>
             </tbody>
           </table>

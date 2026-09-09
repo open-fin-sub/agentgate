@@ -1,10 +1,24 @@
 import { test, expect } from '@playwright/test'
 
-test('editing a dataset during report reuse preserves the changed target and selected standards', async ({ page, request }) => {
-  const response = await request.post('/api/evaluations', { data: { version: 'loan-agent-v1-risky', dataset_id: 'loan-risk-policy', dataset_version: 1, evaluator_ids: ['final-state', 'final-output'] } })
+test('editing a dataset during report reuse preserves the changed target and selected standards', async ({
+  page,
+  request,
+}) => {
+  const response = await request.post('/api/evaluations', {
+    data: {
+      version: 'loan-agent-v1-risky',
+      dataset_id: 'loan-risk-policy',
+      dataset_version: 1,
+      evaluator_ids: ['final-state', 'final-output'],
+    },
+  })
   expect(response.status()).toBe(202)
   const { run_id } = await response.json()
-  await expect.poll(async () => (await (await request.get(`/api/runs/${run_id}/status`)).json()).status, { timeout: 45000 }).toBe('completed')
+  await expect
+    .poll(async () => (await (await request.get(`/api/runs/${run_id}/status`)).json()).status, {
+      timeout: 45000,
+    })
+    .toBe('completed')
   await page.goto(`/runs/new?source=${run_id}`)
   await expect(page.getByRole('button', { name: '提交测评', exact: true })).toBeEnabled()
   await page.getByLabel('对象版本', { exact: true }).selectOption('loan-agent-v2-fixed')
@@ -18,31 +32,60 @@ test('editing a dataset during report reuse preserves the changed target and sel
   await expect(page.getByLabel('对象版本', { exact: true })).toHaveValue('loan-agent-v2-fixed')
   await expect(page.getByRole('checkbox', { checked: true })).toHaveCount(1)
   await expect(page.getByRole('checkbox', { checked: true })).toHaveAttribute('value', remaining!)
-  await expect(page.getByRole('link', { name: '返回来源报告' })).toHaveAttribute('href', `/runs/${run_id}`)
+  await expect(page.getByRole('link', { name: '返回来源报告' })).toHaveAttribute(
+    'href',
+    `/runs/${run_id}`,
+  )
   await page.goto('/datasets?dataset=loan-risk-policy&version=1')
   await expect(page.getByTestId('version-published-1')).toHaveClass(/active/)
   const caseName = await page.getByTestId('case-name').inputValue()
   await page.getByTestId('run-dataset-version').click()
   const returnToDataset = page.getByRole('link', { name: '返回来源页面', exact: true })
-  await expect(returnToDataset).toHaveAttribute('href', /dataset=loan-risk-policy.*case=.*view=list/)
+  await expect(returnToDataset).toHaveAttribute(
+    'href',
+    /dataset=loan-risk-policy.*case=.*view=list/,
+  )
   await returnToDataset.click()
   await expect(page.getByTestId('case-name')).toHaveValue(caseName)
   await expect(page.locator('.dataset-layout')).toHaveAttribute('data-view', 'list')
 })
 
-test('report evidence keeps its filtered parent, switches in order and restores focus', async ({ page, request }, testInfo) => {
-  const submitted = await request.post('/api/evaluations', { data: { version: 'loan-agent-v1-risky', dataset_id: 'loan-risk-policy', dataset_version: 1, evaluator_ids: ['final-state', 'final-output'] } })
+test('report evidence keeps its filtered parent, switches in order and restores focus', async ({
+  page,
+  request,
+}, testInfo) => {
+  const submitted = await request.post('/api/evaluations', {
+    data: {
+      version: 'loan-agent-v1-risky',
+      dataset_id: 'loan-risk-policy',
+      dataset_version: 1,
+      evaluator_ids: ['final-state', 'final-output'],
+    },
+  })
   expect(submitted.status()).toBe(202)
   const { run_id } = await submitted.json()
-  await expect.poll(async () => (await (await request.get(`/api/runs/${run_id}/status`)).json()).status, { timeout: 45000 }).toBe('completed')
+  await expect
+    .poll(async () => (await (await request.get(`/api/runs/${run_id}/status`)).json()).status, {
+      timeout: 45000,
+    })
+    .toBe('completed')
   let reportReads = 0
-  page.on('request', req => { if (new URL(req.url()).pathname === `/api/runs/${run_id}`) reportReads++ })
+  page.on('request', (req) => {
+    if (new URL(req.url()).pathname === `/api/runs/${run_id}`) reportReads++
+  })
   await page.goto(`/runs/${run_id}?tab=cases`)
   const opener = page.getByRole('button', { name: '查看证据', exact: true }).first()
   await expect(opener).toBeVisible()
   const parentUrl = page.url()
   const rows = page.locator('.table-panel tbody tr')
-  const expectedSecond = await rows.nth(1).locator('td').first().locator('small').innerText()
+  const expectedSecond = await rows
+    .nth(1)
+    .locator('td')
+    .first()
+    .locator('dl > div')
+    .filter({ has: page.getByText('评分标准', { exact: true }) })
+    .locator('dd')
+    .innerText()
   const readCount = reportReads
   await opener.click()
   const drawer = page.getByRole('dialog', { name: '用例证据', exact: true })
@@ -50,7 +93,9 @@ test('report evidence keeps its filtered parent, switches in order and restores 
   await expect(page).toHaveURL(parentUrl)
   await expect(drawer.getByRole('button', { name: '上一条', exact: true })).toBeDisabled()
   await drawer.getByRole('button', { name: '下一条', exact: true }).click()
-  await expect(drawer.locator('[aria-label="选择评分标准"] [aria-current="true"]')).toContainText(expectedSecond)
+  await expect(drawer.locator('[aria-label="选择评分标准"] [aria-current="true"]')).toContainText(
+    expectedSecond,
+  )
   await expect(drawer.getByRole('link', { name: '全页打开' })).toHaveAttribute('href', /\/cases\//)
   await drawer.getByRole('button', { name: '关闭此对话框' }).click()
   await expect(drawer).not.toBeVisible()
@@ -70,7 +115,10 @@ test('report evidence keeps its filtered parent, switches in order and restores 
   await expect(version.getByTestId('case-name')).toHaveValue(fixedVersion.cases[0].name)
   await expect(version.getByRole('button', { name: '上一条', exact: true })).toBeDisabled()
   await expect(version.getByRole('button', { name: '下一条', exact: true })).toBeDisabled()
-  await page.screenshot({ path: testInfo.outputPath('lineage-version-drawer.png'), animations: 'disabled' })
+  await page.screenshot({
+    path: testInfo.outputPath('lineage-version-drawer.png'),
+    animations: 'disabled',
+  })
   const bounds = await version.boundingBox()
   expect(bounds?.y).toBeCloseTo(0)
   expect(bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width)
@@ -78,9 +126,17 @@ test('report evidence keeps its filtered parent, switches in order and restores 
   await version.getByRole('button', { name: '关闭此对话框' }).click()
   await expect(versionOpener).toBeFocused()
   await lineage.locator('.asset-group > summary').filter({ hasText: '评估器' }).click()
-  await lineage.locator('.asset-group').filter({ has: page.locator('summary').filter({ hasText: '评估器' }) }).getByRole('button', { name: '查看此版本关联任务', exact: true }).first().click()
+  await lineage
+    .locator('.asset-group')
+    .filter({ has: page.locator('summary').filter({ hasText: '评估器' }) })
+    .getByRole('button', { name: '查看此版本关联任务', exact: true })
+    .first()
+    .click()
   await expect(lineage.getByRole('heading', { name: '关联测评任务', exact: true })).toBeVisible()
-  await expect(lineage.getByRole('link', { name: '全页打开', exact: true })).toHaveAttribute('href', /kind=evaluator/)
+  await expect(lineage.getByRole('link', { name: '全页打开', exact: true })).toHaveAttribute(
+    'href',
+    /kind=evaluator/,
+  )
   await expect(page).toHaveURL(parentUrl)
   await lineage.getByRole('button', { name: '下一条', exact: true }).click()
   await expect(lineage.getByRole('button', { name: '上一条', exact: true })).toBeEnabled()

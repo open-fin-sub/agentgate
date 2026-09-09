@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityRef from '../../components/EntityRef.vue'
+import MetadataGroup from '../../components/MetadataGroup.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -92,22 +94,35 @@ function created(id: string) {
             row.comparison.name
           }}</RouterLink>
         </h2>
-        <p>
-          {{ row.baseline?.target.name ?? '基线记录不存在' }} ·
-          {{ row.comparison.mode === 'controlled' ? '共同配置新实验' : '已有结果比较 / 事后规则' }}
-          · {{ new Date(row.comparison.createdAt).toLocaleString() }}
-        </p>
+        <MetadataGroup
+          :items="[
+            { label: '测评对象', value: row.baseline?.target.name },
+            {
+              label: '对比方式',
+              value: row.comparison.mode === 'controlled' ? '受控对比' : '已有结果对比',
+            },
+            { label: '创建时间', value: new Date(row.comparison.createdAt).toLocaleString() },
+          ]"
+        />
       </div>
-      <p>
-        基线：{{ row.baseline?.name ?? row.comparison.baselineRunId }} ·
-        {{ row.baseline?.config.targetVersion }}
-      </p>
+      <EntityRef
+        :name="row.baseline?.name ?? ''"
+        type="基线任务"
+        :id="row.comparison.baselineRunId"
+        compact
+      />
+      <MetadataGroup
+        :items="[{ label: '基线对象版本', value: row.baseline?.config.targetVersion }]"
+      />
       <ul>
         <li
           v-for="(candidate, index) in row.candidates"
           :key="row.comparison.candidateRunIds[index]"
         >
-          {{ candidate?.name ?? '候选记录不存在' }} · {{ candidate?.config.targetVersion }} ·
+          <EntityRef :name="candidate?.name ?? ''" type="候选任务" compact />
+          <MetadataGroup
+            :items="[{ label: '候选对象版本', value: candidate?.config.targetVersion }]"
+          />
           <strong>{{
             row.baseline && candidate
               ? comparisonConclusion(row.baseline, candidate, row.comparison.rules)

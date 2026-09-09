@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MetadataGroup from '../../components/MetadataGroup.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
 import { computed, ref, watch } from 'vue'
@@ -167,15 +168,25 @@ watch(
     <article v-for="row in visible" :key="row.id" class="prep-case">
       <div>
         <strong>{{ caseTitle(row) }}</strong>
-        <p class="muted">
-          {{ row.id }} · {{ row.category }} · {{ row.difficulty }} · {{ row.priority }} ·
-          {{ row.turns.length ? `${row.turns.length} 轮` : '单轮' }}
-        </p>
-        <p>
-          期望：{{ row.expected || '未填写'
-          }}<span v-if="row.expectedSkill"> · 路由 {{ row.expectedSkill }}</span>
-        </p>
-        <p v-if="row.tags.length" class="muted">{{ row.tags.join(' · ') }}</p>
+        <MetadataGroup
+          :items="[
+            { label: '分类', value: row.category },
+            { label: '难度', value: row.difficulty },
+            { label: '优先级', value: row.priority },
+            { label: '轮次', value: row.turns.length || 1 },
+          ]"
+        />
+        <p>期望：{{ row.expected || '未填写' }}</p>
+        <MetadataGroup
+          :items="[
+            { label: '期望 Skill', value: row.expectedSkill || '未指定' },
+            { label: '标签', value: row.tags.join('、') || '无' },
+          ]"
+        />
+        <details>
+          <summary>查看用例编号</summary>
+          <code>{{ row.id }}</code>
+        </details>
       </div>
       <div class="action-row">
         <el-button @click="open(row)">{{ readonly ? '查看用例' : '编辑用例' }}</el-button
@@ -197,13 +208,13 @@ watch(
       <h3>{{ readonly ? '用例快照' : originalId ? '编辑用例' : '新增用例' }}</h3>
       <StatusNotice v-if="error" :title="error" type="error" />
       <el-form label-position="top" :disabled="readonly" class="preview-form">
-        <el-form-item v-if="!item.turns.length" label="问题 / 场景入口（必填）"
+        <el-form-item v-if="!item.turns.length" label="用户输入（必填）"
           ><el-input v-model="item.question" type="textarea" :rows="2"
         /></el-form-item>
         <p v-else class="muted">
           多轮摘要：{{ caseTitle(item) }}。摘要由逐轮输入自动同步，执行输入以各轮内容为准。
         </p>
-        <el-form-item label="期望输出 / 工具及业务要求"
+        <el-form-item label="预期表现"
           ><el-input v-model="item.expected" type="textarea" :rows="3"
         /></el-form-item>
         <FormSection title="处理流程要求" optional :open="!!item.expectedSkill">

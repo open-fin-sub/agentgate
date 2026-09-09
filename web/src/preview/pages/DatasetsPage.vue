@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import EntityRef from '../../components/EntityRef.vue'
+import MetadataGroup from '../../components/MetadataGroup.vue'
+import { statusLabels } from '../components/RunSupport'
 import EntityLink from '../components/EntityLink.vue'
 import type { LocationQuery, LocationQueryRaw } from 'vue-router'
 import EmptyState from '../../components/EmptyState.vue'
@@ -20,7 +23,11 @@ const emit = defineEmits<{ 'change-query': [query: LocationQuery] }>()
 const pageQuery = computed(() => props.context?.query ?? route.query)
 const id = computed(() => props.context?.id ?? String(route.params.id ?? ''))
 function applyQuery(query: LocationQueryRaw, replace = false) {
-  if (props.context) emit('change-query', router.resolve({ path: '/preview/datasets/' + encodeURIComponent(id.value), query }).query)
+  if (props.context)
+    emit(
+      'change-query',
+      router.resolve({ path: '/preview/datasets/' + encodeURIComponent(id.value), query }).query,
+    )
   else void router[replace ? 'replace' : 'push']({ query })
 }
 const dataset = computed(() => state.datasets.find((item) => item.id === id.value))
@@ -86,7 +93,12 @@ const rows = computed(() =>
   ),
 )
 const visible = computed(() => rows.value.slice((page.value - 1) * 8, page.value * 8))
-const detailItems = computed(() => rows.value.map(item => ({ label: item.name, to: { path: `/preview/datasets/${item.id}`, query: item.versions.length ? {} : { draft: '1' } } })))
+const detailItems = computed(() =>
+  rows.value.map((item) => ({
+    label: item.name,
+    to: { path: `/preview/datasets/${item.id}`, query: item.versions.length ? {} : { draft: '1' } },
+  })),
+)
 const base = computed(() =>
   dataset.value?.versions.find(
     (entry) =>
@@ -306,7 +318,11 @@ function useDataset() {
       <h1>{{ dataset?.name ?? '测评集' }}</h1>
       <p>审阅输入、发布固定版本，保留每次任务使用的历史内容。</p>
     </div>
-    <RouterLink v-if="!context && (id || pageQuery.mode)" :to="previewReturn(pageQuery.origin, '/preview/datasets')">{{ pageQuery.origin ? '返回来源页面' : '返回测评集列表' }}</RouterLink>
+    <RouterLink
+      v-if="!context && (id || pageQuery.mode)"
+      :to="previewReturn(pageQuery.origin, '/preview/datasets')"
+      >{{ pageQuery.origin ? '返回来源页面' : '返回测评集列表' }}</RouterLink
+    >
   </div>
   <StatusNotice
     v-if="state.role === 'viewer'"
@@ -327,11 +343,7 @@ function useDataset() {
     <StatusNotice v-if="revisionError" :title="revisionError" type="error" />
     <section class="panel">
       <div class="action-row">
-        <el-tag>{{
-          editing
-            ? `草稿 · 基于 ${dataset.draftBase ? `v${dataset.draftBase}` : '新建'}`
-            : `发布版本 v${versionNumber}`
-        }}</el-tag
+        <el-tag>{{ editing ? '草稿' : '已发布' }}</el-tag
         ><el-tag v-if="dataset.ephemeral" type="info">本次输入</el-tag
         ><el-select
           v-if="dataset.versions.length"
@@ -341,18 +353,45 @@ function useDataset() {
           ><el-option
             v-for="entry in dataset.versions"
             :key="entry.version"
-            :label="`v${entry.version} · ${entry.cases.length} 条 · ${entry.note}`"
-            :value="String(entry.version)" /></el-select
-        ><EntityLink context-key="src/preview/pages/DatasetsPage.vue:44" :to="`/preview/targets/${dataset.targetId}`">查看测评对象</EntityLink>
+            :label="`版本 ${entry.version}`"
+            :value="String(entry.version)"
+            ><EntityRef
+              :name="dataset.name"
+              type="测评集"
+              :version="entry.version"
+              compact /><MetadataGroup
+              :items="[
+                { label: '用例数', value: entry.cases.length },
+                { label: '发布备注', value: entry.note },
+              ]" /></el-option></el-select
+        ><EntityLink
+          context-key="src/preview/pages/DatasetsPage.vue:44"
+          :to="`/preview/targets/${dataset.targetId}`"
+          >查看测评对象</EntityLink
+        >
       </div>
-      <p v-if="!editing" class="muted">
-        已发布版本只读。{{ version?.note }} · {{ version?.createdAt }}
-      </p>
+      <MetadataGroup
+        v-if="!editing"
+        :items="[
+          { label: '发布版本', value: versionNumber },
+          { label: '发布说明', value: version?.note },
+          { label: '发布时间', value: version?.createdAt },
+        ]"
+      />
       <p v-else class="muted">
         修改先应用到本页，再保存草稿或发布。{{
           dirty ? '当前有未保存修改。' : '本页内容与已保存草稿一致。'
         }}
       </p>
+      <MetadataGroup
+        v-if="editing"
+        :items="[
+          {
+            label: '草稿基于',
+            value: dataset.draftBase ? `发布版本 ${dataset.draftBase}` : '新建测评集',
+          },
+        ]"
+      />
       <div class="action-row">
         <el-button
           v-if="!editing"
@@ -395,7 +434,7 @@ function useDataset() {
           "
           >返回原报告证据</RouterLink
         >
-        · 原任务仍引用 v{{ sourceRun.config.datasetVersion }}，发布不会改变原报告。
+        原任务仍引用发布版本 {{ sourceRun.config.datasetVersion }}，发布不会改变原报告。
       </p>
     </section>
     <StatusNotice
@@ -411,21 +450,34 @@ function useDataset() {
     />
     <section v-if="editing || version" class="panel">
       <h2>版本变化摘要</h2>
-      <p>
-        相对 {{ base ? `v${base.version}` : '空测评集' }}：新增 {{ diff.added.length }} · 修改
-        {{ diff.changed.length }} · 删除 {{ diff.removed.length }}
-      </p>
+      <MetadataGroup
+        :items="[
+          { label: '比较基准', value: base ? `发布版本 ${base.version}` : '空测评集' },
+          { label: '新增用例数', value: diff.added.length },
+          { label: '修改用例数', value: diff.changed.length },
+          { label: '删除用例数', value: diff.removed.length },
+        ]"
+      />
       <details v-if="diff.added.length || diff.changed.length || diff.removed.length">
         <summary>查看增删改用例</summary>
-        <p v-for="entry in diff.added" :key="`add-${entry.id}`">
-          新增 · {{ entry.id }} · {{ entry.question }}
-        </p>
-        <p v-for="entry in diff.changed" :key="`change-${entry.id}`">
-          修改 · {{ entry.id }} · {{ entry.question }}
-        </p>
-        <p v-for="entry in diff.removed" :key="`remove-${entry.id}`">
-          删除 · {{ entry.id }} · {{ entry.question }}
-        </p>
+        <div
+          v-for="group in [
+            { label: '新增', rows: diff.added },
+            { label: '修改', rows: diff.changed },
+            { label: '删除', rows: diff.removed },
+          ]"
+          :key="group.label"
+        >
+          <h3 v-if="group.rows.length">{{ group.label }}</h3>
+          <EntityRef
+            v-for="entry in group.rows"
+            :key="entry.id"
+            :name="entry.question"
+            :id="entry.id"
+            type="用例"
+            compact
+          />
+        </div>
       </details>
       <template v-if="editing"
         ><el-form label-position="top"
@@ -449,9 +501,14 @@ function useDataset() {
       </section>
       <section class="panel">
         <h2>相关任务</h2>
-        <EmptyState v-if="!relatedRuns.length" title="此版本还没有关联任务" description="可使用已发布版本创建测评；草稿请先审阅并发布。" />
+        <EmptyState
+          v-if="!relatedRuns.length"
+          title="此版本还没有关联任务"
+          description="可使用已发布版本创建测评；草稿请先审阅并发布。"
+        />
         <p v-for="run in relatedRuns" :key="run.id">
-          <RouterLink :to="`/preview/runs/${run.id}`">{{ run.name }}</RouterLink> · {{ run.status }}
+          <RouterLink :to="`/preview/runs/${run.id}`">{{ run.name }}</RouterLink
+          ><span>（{{ statusLabels[run.status] }}）</span>
         </p>
       </section>
     </div>
@@ -500,7 +557,9 @@ function useDataset() {
     <article v-for="item in visible" :key="item.id" class="panel">
       <div class="action-row">
         <h2>
-          <EntityLink context-key="src/preview/pages/DatasetsPage.vue:201" :related="detailItems"
+          <EntityLink
+            context-key="src/preview/pages/DatasetsPage.vue:201"
+            :related="detailItems"
             :to="{
               path: `/preview/datasets/${item.id}`,
               query: item.versions.length ? {} : { draft: '1' },
@@ -512,14 +571,23 @@ function useDataset() {
         ><el-tag v-if="item.draft !== null">有草稿</el-tag
         ><el-tag v-if="item.ephemeral" type="info">本次输入</el-tag>
       </div>
-      <p class="muted">
-        {{ state.targets.find((target) => target.id === item.targetId)?.name ?? '对象不可用' }} ·
-        {{ item.versions.length }} 个发布版本 ·
-        {{ item.versions[item.versions.length - 1]?.cases.length ?? item.draft?.length ?? 0 }}
-        条用例
-      </p>
+      <MetadataGroup
+        :items="[
+          {
+            label: '测评对象',
+            value: state.targets.find((target) => target.id === item.targetId)?.name,
+          },
+          { label: '发布版本数', value: item.versions.length },
+          {
+            label: item.versions.length ? '最新发布用例数' : '草稿用例数',
+            value: item.versions[item.versions.length - 1]?.cases.length ?? item.draft?.length,
+          },
+        ]"
+      />
       <div class="action-row">
-        <EntityLink context-key="src/preview/pages/DatasetsPage.vue:220" :related="detailItems"
+        <EntityLink
+          context-key="src/preview/pages/DatasetsPage.vue:220"
+          :related="detailItems"
           :to="{
             path: `/preview/datasets/${item.id}`,
             query: item.versions.length ? {} : { draft: '1' },

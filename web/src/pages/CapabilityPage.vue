@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MetadataGroup from '../components/MetadataGroup.vue'
 import DetailDrawer from '../components/DetailDrawer.vue'
 import EmptyState from '../components/EmptyState.vue'
 import StatusNotice from '../components/StatusNotice.vue'
@@ -41,7 +42,8 @@ function exportMatrix() {
           {
             title: 'AgentGate 需求与接入差距',
             generatedAt: new Date().toISOString(),
-            notice: '已核对后端基线 9686d59。各条目分别列出现有接口与联合接入缺口；Mock 入口仅用于模拟体验。',
+            notice:
+              '已核对后端基线 9686d59。各条目分别列出现有接口与联合接入缺口；Mock 入口仅用于模拟体验。',
             filters: { search: search.value, group: group.value, status: status.value },
             requirements: visible.value,
           },
@@ -130,9 +132,14 @@ function exportMatrix() {
         <tbody>
           <tr v-for="item in visible" :key="item.id">
             <td>
-              <button class="cap-title" @click="selected = item">{{ item.title }}</button
-              ><small>{{ item.id }} · {{ item.group }}</small
-              ><small>{{ item.stories }}</small>
+              <button class="cap-title" @click="selected = item">{{ item.title }}</button>
+              <MetadataGroup
+                :items="[
+                  { label: '需求编号', value: item.id },
+                  { label: '功能分类', value: item.group },
+                  { label: '用户故事', value: item.stories },
+                ]"
+              />
             </td>
             <td>
               <el-tag
@@ -173,10 +180,14 @@ function exportMatrix() {
   <DetailDrawer
     :model-value="!!selected"
     :title="selected?.title ?? '能力详情'"
-    :items="visible.map(item => ({ key: item.id, label: item.title }))"
+    :items="visible.map((item) => ({ key: item.id, label: item.title }))"
     :current-key="selected?.id"
-    @select="id => selected = visible.find(item => item.id === id) ?? null"
-    @update:model-value="value => { if (!value) selected = null }"
+    @select="(id) => (selected = visible.find((item) => item.id === id) ?? null)"
+    @update:model-value="
+      (value) => {
+        if (!value) selected = null
+      }
+    "
     ><template v-if="selected"
       ><el-tag>{{ selected.id }}</el-tag>
       <h3 class="cap-detail-heading">需求与用户故事</h3>

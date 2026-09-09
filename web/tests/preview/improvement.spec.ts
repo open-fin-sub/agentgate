@@ -10,9 +10,15 @@ test('historical comparison explains changed inputs with business-readable prefl
   await page.getByRole('button', { name: '生成已有结果对比', exact: true }).click()
   await expect(page).toHaveURL(/\/preview\/comparisons\/cmp-/)
   await expect(page.getByText(/控制变量存在差异/).first()).toBeVisible()
-  await expect(page.locator('table').first()).toContainText(
-    '并发 4 · 超时 60 秒 · 重试 1 次 · 采样 100%',
-  )
+  const execution = page
+    .locator('table')
+    .first()
+    .getByRole('row')
+    .filter({ has: page.getByRole('rowheader', { name: '执行参数', exact: true }) })
+  await expect(execution.locator('td').first()).toContainText('并发数4')
+  await expect(execution.locator('td').first()).toContainText('超时60 秒')
+  await expect(execution.locator('td').first()).toContainText('重试上限1')
+  await expect(execution.locator('td').first()).toContainText('采样率100%')
   await expect(page.getByRole('button', { name: /仅 A 1/ })).toBeVisible()
   await expect(page.getByRole('button', { name: /仅 B 1/ })).toBeVisible()
   await expect(page.getByRole('button', { name: /未配对 1/ })).toBeVisible()
@@ -47,8 +53,10 @@ test('static analysis failure is retained, retry produces evidence, and risk can
   await expect(page).toHaveURL(/sourceAnalysis=/)
   await expect(page.getByText(/已带入静态风险/)).toBeVisible()
   await page.getByRole('button', { name: '新增用例', exact: true }).click()
-  await page.getByLabel('问题 / 场景入口（必填）', { exact: true }).fill('我想提交贷款申请，同时了解办理条件')
-  await page.getByLabel('期望输出 / 工具及业务要求', { exact: true }).fill('澄清意图，完成必要校验后办理')
+  await page
+    .getByLabel('用户输入（必填）', { exact: true })
+    .fill('我想提交贷款申请，同时了解办理条件')
+  await page.getByLabel('预期表现', { exact: true }).fill('澄清意图，完成必要校验后办理')
   await page.getByRole('button', { name: '应用用例修改', exact: true }).click()
   await expect(page.getByRole('heading', { name: '用例（1）', exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: '查看来源静态分析', exact: true })).toBeVisible()
