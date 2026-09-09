@@ -1,148 +1,200 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import type { Expectation } from '../../types/dataset'
-
+import type { Condition, Expectation } from '../../types/dataset'
+import RuleBuilder from '../RuleBuilder.vue'
+import FormSection from '../FormSection.vue'
+import EmptyState from '../EmptyState.vue'
+import { ElMessageBox } from 'element-plus'
 const props = defineProps<{ modelValue: Expectation[]; disabled?: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: Expectation[]] }>()
-const rows = ref<any[]>([])
-let syncing = false
-const cloneJson = <T>(value: T): T => JSON.parse(JSON.stringify(value))
-
-watch(
-  () => props.modelValue,
-  value => {
-    syncing = true
-    rows.value = cloneJson(value ?? [])
-    queueMicrotask(() => { syncing = false })
-  },
-  { immediate: true, deep: true },
-)
-watch(rows, value => {
-  if (!syncing) emit('update:modelValue', cloneJson(value))
-}, { deep: true })
-
-const uuid = () => crypto.randomUUID()
-const condition = (kind = 'equals'): any => {
-  if (kind === 'equals') return { kind, expected: '' }
-  if (kind === 'within_tolerance') return { kind, expected: 0, epsilon: 0.000001 }
-  if (kind === 'within_range') return { kind, minimum: null, maximum: null }
-  if (kind === 'matches_pattern') return { kind, pattern: '' }
-  if (kind === 'one_of') return { kind, allowed: [] }
-  return { kind: 'must_be_missing' }
+function change(index: number, patch: Partial<Expectation>) {
+  emit(
+    'update:modelValue',
+    props.modelValue.map((row, i) => (i === index ? ({ ...row, ...patch } as Expectation) : row)),
+  )
 }
-
-function add(kind: 'state'|'tool_argument'|'output' = 'state') {
-  const base: any = { id: uuid(), kind, name: null, path: '', condition: condition() }
-  if (kind === 'tool_argument') Object.assign(base, { tool: '', occurrence: 'last' })
-  if (kind === 'output') base.path = null
-  rows.value.push(base)
-}
-
-function changeKind(index: number, kind: string) {
-  const current = rows.value[index]
-  const next: any = {
-    id: current.id,
-    kind,
-    name: current.name,
-    path: kind === 'output' ? null : current.path ?? '',
-    condition: current.condition,
+function empty(kind: Expectation['kind'], id: string = crypto.randomUUID(), name: string | null = null): Expectation {
+  const base = { id, name }
+  const condition: Condition = { kind: 'equals', expected: '' }
+  switch (kind) {
+    case 'tool_call': return { ...base, kind, tool: '', mode: 'required' }
+    case 'policy': return { ...base, kind, policy_id: '' }
+    case 'skill_route': return { ...base, kind, condition }
+    case 'tool_argument': return { ...base, kind, condition, path: '', tool: '', occurrence: 'last' }
+    case 'state': return { ...base, kind, condition, path: '' }
+    case 'output': return { ...base, kind, condition, path: null }
   }
-  if (kind === 'tool_argument') Object.assign(next, {
-    tool: current.tool ?? '',
-    occurrence: current.occurrence ?? 'last',
-  })
-  rows.value[index] = next
 }
-
-function changeCondition(row: any, kind: string) {
-  row.condition = condition(kind)
+function add(kind: Expectation['kind'] = 'output') {
+  emit('update:modelValue', [...props.modelValue, empty(kind)])
 }
-
-function asJson(value: unknown) {
-  return JSON.stringify(value ?? '', null, 0)
+async function changeKind(index: number, kind: Expectation['kind']) {
+  const row = props.modelValue[index]!
+  if (kind === row.kind) return
+  try { await ElMessageBox.confirm('更换检查对象将清空本项的判断条件。', '更换检查对象', { confirmButtonText: '更换并重新填写', cancelButtonText: '保留原检查' }) } catch { return }
+  const next = empty(kind, row.id, row.name)
+  emit(
+    'update:modelValue',
+    props.modelValue.map((entry, i) => (i === index ? next : entry)),
+  )
 }
-
-function setJson(row: any, field: string, value: string) {
-  try { row.condition[field] = JSON.parse(value) }
-  catch { row.condition[field] = value }
+function form(condition: Condition) {
+  return {
+    operator: condition.kind,
+    ...('expected' in condition ? { value: condition.expected } : {}),
+    ...('json_schema' in condition ? { value: condition.json_schema } : {}),
+    ...('epsilon' in condition ? { epsilon: condition.epsilon } : {}),
+    ...('minimum' in condition ? { minimum: condition.minimum, maximum: condition.maximum } : {}),
+    ...('pattern' in condition ? { pattern: condition.pattern } : {}),
+    ...('allowed' in condition ? { allowed: condition.allowed } : {}),
+  }
 }
-
-function allowedText(row: any) {
-  return (row.condition.allowed ?? []).map((item: unknown) =>
-    typeof item === 'string' ? item : JSON.stringify(item)
-  ).join(', ')
-}
-
-function setAllowed(row: any, value: string) {
-  row.condition.allowed = value.split(',').map(item => item.trim()).filter(Boolean).map(item => {
-    try { return JSON.parse(item) } catch { return item }
-  })
+function updateCondition(index: number, value: ReturnType<typeof form>) {
+  let condition: Condition
+  switch (value.operator) {
+    case 'within_tolerance':
+      condition = {
+        kind: 'within_tolerance',
+        expected: Number(value.value ?? 0),
+        epsilon: value.epsilon ?? 0.000001,
+      }
+      break
+    case 'within_range':
+      condition = {
+        kind: 'within_range',
+        minimum: value.minimum ?? null,
+        maximum: value.maximum ?? null,
+      }
+      break
+    case 'matches_pattern':
+      condition = { kind: 'matches_pattern', pattern: value.pattern ?? '' }
+      break
+    case 'one_of':
+      condition = { kind: 'one_of', allowed: value.allowed ?? [] }
+      break
+    case 'must_be_missing':
+      condition = { kind: 'must_be_missing' }
+      break
+    case 'matches_json_schema':
+      condition = {
+        kind: 'matches_json_schema',
+        json_schema:
+          typeof value.value === 'object' && value.value && !Array.isArray(value.value)
+            ? value.value
+            : {},
+      }
+      break
+    default:
+      condition = { kind: 'equals', expected: value.value ?? '' }
+  }
+  change(index, { condition })
 }
 </script>
-
 <template>
   <div class="expectation-editor">
     <div class="subsection-heading">
-      <div><b>期望结果</b><small>系统会把每一项期望与真实 Trace、状态或输出比较。</small></div>
-      <el-dropdown v-if="!disabled" trigger="click" @command="add">
-        <el-button size="small" data-testid="add-expectation">添加期望</el-button>
-        <template #dropdown>
-          <el-dropdown-menu>
-            <el-dropdown-item command="state">最终状态</el-dropdown-item>
-            <el-dropdown-item command="tool_argument">工具参数</el-dropdown-item>
-            <el-dropdown-item command="output">最终输出</el-dropdown-item>
-          </el-dropdown-menu>
-        </template>
-      </el-dropdown>
+      <h3>预期结果</h3>
+      <el-dropdown v-if="!disabled" trigger="click" @command="add"
+        ><el-button data-testid="add-expectation">添加期望</el-button
+        ><template #dropdown
+          ><el-dropdown-menu
+            ><el-dropdown-item command="output">最终输出</el-dropdown-item
+            ><el-dropdown-item command="state">最终状态</el-dropdown-item
+            ><el-dropdown-item command="tool_argument">工具参数</el-dropdown-item>
+            <el-dropdown-item command="skill_route">处理流程</el-dropdown-item>
+            <el-dropdown-item command="tool_call">工具调用</el-dropdown-item>
+            <el-dropdown-item command="policy">业务策略</el-dropdown-item></el-dropdown-menu
+          ></template
+        ></el-dropdown
+      >
     </div>
-
-    <div v-for="(row, index) in rows" :key="row.id" class="expectation-row" :data-testid="`expectation-${index}`">
-      <div class="expectation-row-head">
-        <el-select :model-value="row.kind" :disabled="disabled" size="small" @update:model-value="changeKind(index, $event)">
-          <el-option label="最终状态" value="state" />
-          <el-option label="工具参数" value="tool_argument" />
-          <el-option label="最终输出" value="output" />
-        </el-select>
-        <el-input v-model="row.name" :disabled="disabled" size="small" placeholder="检查名称（可选）" />
-        <el-button v-if="!disabled" link type="danger" @click="rows.splice(index, 1)">删除</el-button>
-      </div>
-      <div class="expectation-fields">
-        <el-input v-if="row.kind === 'tool_argument'" v-model="row.tool" :disabled="disabled" :data-testid="`expectation-tool-${index}`" placeholder="工具名，例如 approve_loan" />
-        <el-input v-model="row.path" :disabled="disabled" :data-testid="`expectation-path-${index}`" :placeholder="row.kind === 'output' ? '输出路径（留空表示完整输出）' : '字段路径，例如 status'" />
-        <el-select v-if="row.kind === 'tool_argument'" v-model="row.occurrence" :disabled="disabled">
-          <el-option label="最后一次调用" value="last" />
-          <el-option label="第一次调用" value="first" />
-          <el-option label="任意一次通过" value="any" />
-          <el-option label="所有调用通过" value="all" />
-        </el-select>
-        <el-select :model-value="row.condition.kind" :disabled="disabled" @update:model-value="changeCondition(row, $event)">
-          <el-option label="等于" value="equals" />
-          <el-option label="数值容差" value="within_tolerance" />
-          <el-option label="数值范围" value="within_range" />
-          <el-option label="正则匹配" value="matches_pattern" />
-          <el-option label="属于集合" value="one_of" />
-          <el-option label="字段不存在" value="must_be_missing" />
-        </el-select>
-        <el-input
-          v-if="row.condition.kind === 'equals'"
-          :model-value="asJson(row.condition.expected)"
+    <EmptyState
+      v-if="!modelValue.length"
+      title="尚未添加预期结果"
+      description="添加一项检查，说明回答内容、业务状态或工具参数应符合什么条件。"
+      :action-label="disabled ? undefined : '添加输出检查'"
+      @action="add('output')"
+    />
+    <article
+      v-for="(row, index) in modelValue"
+      :key="row.id"
+      class="expectation-row"
+      :data-testid="`expectation-${index}`"
+    >
+      <h4>检查 {{ index + 1 }}</h4>
+      <el-form-item label="检查对象"
+        ><el-select
+          :model-value="row.kind"
           :disabled="disabled"
-          :data-testid="`expectation-value-${index}`"
-          placeholder="期望值，支持 JSON"
-          @input="setJson(row, 'expected', $event)"
-        />
-        <template v-else-if="row.condition.kind === 'within_tolerance'">
-          <el-input-number v-model="row.condition.expected" :disabled="disabled" placeholder="期望值" />
-          <el-input-number v-model="row.condition.epsilon" :disabled="disabled" :min="0.000000001" placeholder="容差" />
-        </template>
-        <template v-else-if="row.condition.kind === 'within_range'">
-          <el-input-number v-model="row.condition.minimum" :disabled="disabled" placeholder="最小值" />
-          <el-input-number v-model="row.condition.maximum" :disabled="disabled" placeholder="最大值" />
-        </template>
-        <el-input v-else-if="row.condition.kind === 'matches_pattern'" v-model="row.condition.pattern" :disabled="disabled" placeholder="正则表达式" />
-        <el-input v-else-if="row.condition.kind === 'one_of'" :model-value="allowedText(row)" :disabled="disabled" placeholder="允许值，逗号分隔" @input="setAllowed(row, $event)" />
-      </div>
-    </div>
-    <el-empty v-if="!rows.length" description="暂无字段、状态或输出期望" :image-size="58" />
+          :aria-label="`检查${index + 1}对象`"
+          @update:model-value="changeKind(index, $event)"
+          ><el-option label="最终输出" value="output" /><el-option
+            label="最终状态"
+            value="state" /><el-option
+            label="工具参数"
+            value="tool_argument" /><el-option label="处理流程" value="skill_route" /><el-option label="工具调用" value="tool_call" /><el-option label="业务策略" value="policy" /></el-select></el-form-item
+      ><el-form-item v-if="'tool' in row" label="工具名称" required
+        ><el-input
+          :model-value="row.tool"
+          :disabled="disabled"
+          :data-testid="`expectation-tool-${index}`"
+          @update:model-value="change(index, { tool: $event })" /></el-form-item
+      ><el-form-item v-if="'path' in row" label="检查字段" :required="row.kind !== 'output'"
+        ><el-input
+          :model-value="row.path ?? ''"
+          :disabled="disabled"
+          :data-testid="`expectation-path-${index}`"
+          :placeholder="row.kind === 'output' ? '留空表示检查完整回答' : '例如：status'"
+          @update:model-value="
+            change(index, { path: $event || (row.kind === 'output' ? null : '') })
+          " /></el-form-item
+      ><el-form-item v-if="row.kind === 'tool_call'" label="调用要求">
+        <el-select :model-value="row.mode" :disabled="disabled" :aria-label="`检查${index + 1}调用要求`" @update:model-value="change(index,{mode:$event})"><el-option label="必须调用" value="required" /><el-option label="不得调用" value="forbidden" /></el-select>
+      </el-form-item>
+      <el-form-item v-if="row.kind === 'policy'" label="业务策略" required>
+        <el-input :model-value="row.policy_id" :disabled="disabled" :aria-label="`检查${index + 1}业务策略`" placeholder="填写被测对象中使用的策略名称" @update:model-value="change(index,{policy_id:$event})" />
+      </el-form-item>
+      <RuleBuilder v-if="'condition' in row"
+        :model-value="form(row.condition)"
+        :disabled="disabled"
+        :label="`检查${index + 1}`"
+        :operators="[
+          'equals',
+          'within_tolerance',
+          'within_range',
+          'matches_pattern',
+          'one_of',
+          'must_be_missing',
+          'matches_json_schema',
+        ]"
+        @update:model-value="updateCondition(index, $event)"
+      /><FormSection title="检查说明与调用范围" optional
+        ><el-form-item label="检查名称"
+          ><el-input
+            :model-value="row.name ?? ''"
+            :disabled="disabled"
+            @update:model-value="change(index, { name: $event || null })" /></el-form-item
+        ><el-form-item v-if="row.kind === 'tool_argument'" label="检查哪一次调用"
+          ><el-select
+            :model-value="row.occurrence"
+            :disabled="disabled"
+            @update:model-value="change(index, { occurrence: $event })"
+            ><el-option label="最后一次" value="last" /><el-option
+              label="第一次"
+              value="first" /><el-option label="任意一次符合即可" value="any" /><el-option
+              label="每次都应符合"
+              value="all" /></el-select></el-form-item></FormSection
+      ><el-button
+        v-if="!disabled"
+        text
+        type="danger"
+        @click="
+          emit(
+            'update:modelValue',
+            modelValue.filter((_, i) => i !== index),
+          )
+        "
+        >移除此检查</el-button
+      >
+    </article>
   </div>
 </template>

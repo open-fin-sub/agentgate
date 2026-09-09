@@ -1,6 +1,64 @@
 # AgentGate Project Progress
 
-Last updated: 2026-09-08
+Last updated: 2026-09-09
+
+## Active Web usability Goal — WEB-UX-GOAL-001
+
+最新：A 类结构化输入与已定范围变更完成本批验证，详见 [实施记录](web/productization/usability-implementation.md)。含六类预期完整保存、Token 替换、自动生成延后。人工补查后459条：75已验证、19非缺陷、2后续范围、363待整改；G/C/B/D/E/H/I及全站最终验收继续执行。此前“正在执行A”段保留为开始阶段记录。最新独立验证环境 Web15473/API18473，旧环境保留。
+
+用户显式授权按 A–I 模式类自主整改，完成条件以 `docs/web/productization/ux-design-rules.md` 与 Goal 请求为准。仅 Web 可用性与现有 API 映射；禁止 push、PR、合并。保留原有未提交工作，不与原评审任务协调。
+
+全站初始扫描登记 441 个候选实例、25 个页面；候选必须经人工核实，不能直接等同于已确认缺陷。台账见 [usability-audit.md](web/productization/usability-audit.md)，逐页检查见 [usability-page-checklist.md](web/productization/usability-page-checklist.md)。P10/P11/P12/P08 的桌面与移动改前截图已保存。
+
+正在执行 A 类：建立共享结构化输入、规则、字段组、可读值、原始内容折叠及其他后续模式组件；迁移真实用例/预期编辑与 Mock 规则、变量、试评输入。嵌套变量校验向父表单传递，更改非空字段类型需要确认。证据与快照展示正在迁移共享组件。新后端评估器目录通过摘要和精确版本接口映射为页面数据。当前 typecheck 通过；本轮 build、交互回归、逐页验收尚未完成，尚无模式类收口提交。
+
+需求变更已拍板：货币成本全部移除，使用输入/输出/总 Token 与耗时；测评集自动生成本轮延后，只验收手工创建和导入。后续记录不得重新将这两条列为未决产品规则。
+
+## Latest upstream source sync — WEB-BE-002
+
+SSH fetch succeeded after HTTPS connection failures. User-requested `integration/backend-features` fast-forwarded from `78f9dfa` to `9686d595b5970eebf83a09017108cb525196c614` on the existing `codex/web-productization` branch (six commits, 44 changed files). New upstream work includes the persistent Evaluator Catalog and Skill analysis workflow, persistence and HTTP APIs.
+
+Pre-sync local changes, including AGENTS.md and ux-design-rules.md, were preserved in stash `2b1ea919c3f48d4655a944ab0404c9d8769abfb0` and restored; the backup remains. Audited 119 pre-existing modified/untracked files: 117 retained their content (Git normalized line endings in five documents); architecture.md merged automatically and project-progress.md was resolved to retain both current backend facts and Web history. No backend source/test edits, no Web implementation changes, no commit/push, no coordination with the former review task.
+
+Local full backend regression at 9686d59: **627 passed, 2 failed, 1 warning**. Failures: `tests/test_in_memory_observability.py::test_resolve_builds_complete_domain_trace_from_real_sdk_spans` (case/routing/turn order) and `tests/test_rule_evaluators.py::test_seven_rules_keep_details_and_trace_ordered_primary_failure` (final_state versus tool_selection). These failures are recorded, not fixed or hidden by repeated runs in this source-sync task. The prior WEB-BE-001 results below belong to 78f9dfa.
+
+Frontend adaptation is pending the user's next optimization rules. In particular, GET `/api/evaluators` now returns catalog summaries with `latest_version` and optional kind/implementation metadata, rather than the previous complete specification with `version` and `config`; pages and historical configuration reuse must adopt the new identity/version endpoints. Existing capability-matrix claims about missing evaluator management and Skill analysis APIs are now historical and need reconciliation during that adaptation. Existing preview processes/databases were not restarted or migrated during this source sync; this is not a new UI integration acceptance.
+
+## Latest backend integration — WEB-BE-001
+
+User-requested `upstream/integration/backend-features` merged by fast-forward to `78f9dfa` on `codex/web-productization`. All prior Web changes restored; stash `0045573ef6c67c5a1a5d9d6469ff1ff4848bb0bc` retained. Only the project progress document required a text-conflict resolution. No Web commit or push, no parent-worktree changes. Current design, review and verification: [backend integration](web/productization/backend-integration-design.md).
+
+Real pages now expose compatible historical Run comparison, forward/reverse fixed-version lineage and Judge/error provenance. Explicit evaluator selection, light activity polling and the 33-item capability matrix distinguish callable APIs from internal modules and Mock-only behavior. This uses backend capabilities already available; it does not change PRD priorities or complete general Agent/Skill execution, automatic generation, evaluator editing, resource management, writeback or static analysis. Previous Web test counts below describe their own stages.
+
+WEB-BE-001 verification: product configuration 18/18, final affected tests 10/10, post-merge Mock 68/68 and affected Mock 12/12, final layout checks 54/54, typecheck/build/diff-check passed. Backend: 550 passed, one reproduced upstream tool-span ordering failure. Independent mobile comparison/lineage visual findings were corrected and rechecked. These are separate verification scopes, not one combined acceptance total.
+
+## Web Mock workspace — WEB-MOCK-001
+
+The user explicitly authorized implementing missing backend behavior as Mock and listing requirement/story impacts with missing APIs. The isolated `/preview` workspace now has all core page modules and local persistence; real routes remain independent with no error fallback to Mock. See `docs/web/productization/mock-workspace-design.md` and `mock-implementation.md`. The shared capability matrix covers 24/24 customer functional requirements plus nine PRD/cross-cutting/future entries. Acceptance passed: full Mock regression 68/68 (34 distinct tests in two projects), final affected comparison/improvement regression 34/34, existing real API/Celery/Redis regression 8/8, and 85/85 page/viewport checks including static analysis results. Final typecheck/build passed, with the existing bundle-size warning retained. Independent review findings were corrected, including optional human score semantics, readable preflight/static evidence, and the static-risk-to-published-input-to-run return path. No production backend contracts were changed, and no commit/push was made.
+
+## Web Productization — first real slice (historical WEB-IMPL-001)
+
+Worktree `.worktrees/web-productization`, branch `codex/web-productization`, upstream
+baseline `c3353b1`. The user's latest instruction authorizes continued implementation
+and independent review in the discussed frontend scope. No commit/push was performed.
+
+- [x] Vue Router, light product layout, desktop/collapsed/mobile navigation and focus handling.
+- [x] Real overview/catalogs, create evaluation, active progress, completed report and Case/Trace evidence.
+- [x] Dataset draft/edit/save/publish, fixed-version deep links, JSON and Excel import/export.
+- [x] Preserve report filters and exact evaluator across evidence/dataset return paths; preserve historical input.
+- [x] Guard unsaved Case edits; replace disconnected launch action with configuration and exact Run navigation.
+- [x] Desktop two-column Case workspace with collapsible dataset picker; mobile list/detail sections.
+- [x] Independent browser review and eight desktop/mobile product E2E checks passed with real API/Celery/Redis.
+- [x] Typecheck/build and 36 responsive page inspections passed; explicit NA and result-count semantics.
+- [ ] Full customer/PRD scope: external targets, generated/merged inputs, managed LLM evaluators/resources,
+      scheduling/cancellation/resume, persisted comparisons, review/analysis/optimization and collaboration.
+- [ ] Production acceptance, performance optimization and remaining backend contracts.
+
+Current source of truth: [implementation and acceptance](web/productization/live-implementation.md),
+[productization index](web/productization/README.md), and [joint design decisions](web/productization/joint-design-resolution.md).
+The former v0.1 prototype is withdrawn as the delivery baseline. This first implemented
+slice does not claim full product-requirements coverage. Historical backend checklists
+below retain their existing meaning; their earlier test totals are not this Web round's results.
 
 ## Status Legend
 
@@ -56,7 +114,7 @@ Last updated: 2026-09-08
 | [x] | POC Judge environment configuration | Build one optional process-level model connection from four environment variables, remain Rule-only when absent, and reject partial configuration | `src/agentgate/integrations/model_providers/environment.py` |
 | [ ] | Persistent model provider configuration | Store allowlisted endpoints, managed secrets, and production credential resolution for application use | Design required before implementation |
 | [ ] | Multimodal evaluation | Evaluate files, images, and other Artifacts | `src/agentgate/evaluator/judge/multimodal.py` **new**; planned after 2026-09-15 |
-| [x] | Result comparison | Compare two compatible EvaluationRuns and expose the comparison API | `src/agentgate/result/comparison.py`, `src/agentgate/server/routes/comparisons.py` |
+| [x] | Result comparison | Read deterministic differences of two compatible completed Runs; no experiment orchestration or statistical significance | `src/agentgate/result/comparison.py`, GET `/api/run-comparisons` |
 
 ## Trace And Target Execution
 
@@ -109,6 +167,7 @@ Last updated: 2026-09-08
 | [ ] | Model provider management API | Configure provider endpoints, model options, and secret references without exposing credentials | Design required before implementation |
 | [x] | Skill analysis workflow and API | Resolve exact Targets, run static analysis, persist reports, review findings, and expose HTTP endpoints | `src/agentgate/application/skill_analysis.py`, `src/agentgate/server/routes/skill_analysis.py` |
 | [x] | Lineage queries | Find Runs by Dataset, Case, Target, Skill, or Evaluator version and construct relationship graphs | `src/agentgate/application/lineage_queries.py`, `src/agentgate/server/routes/lineage.py` |
+| [ ] | Extended lineage | Experiment/generation/Prompt/model lineage, authorization and complete reverse pagination/summaries | Additional contracts required |
 | [x] | Asynchronous Run API | Create a Run, dispatch it, and return `202 Accepted` | `src/agentgate/server/routes/runs.py` |
 | [x] | Run activity API | Expose queue, running status, progress, and history | `src/agentgate/server/routes/runs.py` |
 | [ ] | API contract review | Finalize response models and sanitized error behavior | `src/agentgate/server/` |
@@ -133,12 +192,14 @@ the server. Removing the remaining legacy Control Plane test callers is separate
 |---|---|---|---|
 | [x] | Dataset workspace foundation | Browse and edit Dataset content | `web/src/pages/DatasetWorkspace.vue` |
 | [x] | Web routing | Provide Vue Router navigation for implemented pages | web/src/router/, web/src/layouts/AppLayout.vue |
-| [ ] | Overview | Show Dataset and Run status statistics | `web/src/pages/OverviewPage.vue` **new** |
-| [x] | Run workspace | Show lifecycle counters plus queued, running, and historical work | `web/src/pages/RunWorkspacePage.vue` |
-| [x] | Progress polling | Refresh every two seconds while active work exists and stop at terminal state | `web/src/api/runs.ts`, `web/src/pages/RunWorkspacePage.vue` |
-| [ ] | Result center | Browse completed and failed Runs | `web/src/pages/ResultCenterPage.vue` **new** |
-| [ ] | Result detail | Show metrics, release gate, badcases, evidence, and Trace attribution | `web/src/pages/ResultDetailPage.vue` **new** |
-| [ ] | Evaluator management | Configure Rule, Judge, and Hybrid Evaluators | `web/src/pages/EvaluatorWorkspacePage.vue` **new** |
+| [x] | Overview | Show available Dataset, catalog and Run activity summaries; no claim of complete historical analytics | `web/src/pages/OverviewPage.vue` |
+| [x] | Run workspace | Browse queued, running, completed and failed work; create and inspect Runs | `web/src/pages/RunListPage.vue`, `RunCreatePage.vue`, `RunDetailPage.vue` |
+| [x] | Progress polling | Run list polls light activity every five seconds while active; refreshes history on lifecycle changes and stops at terminal state | `web/src/api/runs.ts`, `web/src/pages/RunListPage.vue` |
+| [x] | Result browsing | Filter completed/failed Runs within the common task list and open reports | `web/src/pages/RunListPage.vue` |
+| [x] | Result detail | Show metrics, gate, badcases, Case/Trace evidence and nullable Judge/error provenance | `web/src/pages/RunDetailPage.vue`, `CaseResultPage.vue` |
+| [x] | Evaluator catalog | Read available Rule and environment-configured Judge standards, inspect version lineage and explicitly select standards for a Run | `web/src/pages/EvaluatorWorkspacePage.vue`, `RunCreatePage.vue` |
+| [ ] | Evaluator management | Persist Rule/Judge/Hybrid editing, publishing and trial evaluation; currently Mock only | `web/src/preview/pages/EvaluatorsPage.vue`; management APIs missing |
+| [x] | Source and related tasks | Follow fixed Run/Dataset/Case/Target/Skill/Evaluator references; reverse results capped by API, locally paged | `web/src/pages/LineagePage.vue` |
 | [ ] | Model provider settings | Configure provider connections and available Judge models | `web/src/pages/ModelProviderSettingsPage.vue` **new** |
 | [ ] | Skill analysis | Display Skill conflicts and prompt mismatches | `web/src/pages/SkillAnalysisPage.vue` **new** |
 | [ ] | Optimizer | Display failure clusters and suggestions | `web/src/pages/OptimizerPage.vue` **new** |
@@ -153,10 +214,12 @@ and comments remain English.
 |---|---|---|---|
 | [ ] | A/B definition | Bind two Target versions to one Dataset and evaluation configuration | `src/agentgate/application/ab_testing.py` **new** |
 | [ ] | A/B execution | Create two ordinary EvaluationRuns through RunManagement | `src/agentgate/application/ab_testing.py` **new** |
-| [x] | Two-Run comparison foundation | Compare compatible Runs by metrics, Cases, and failure movement | `src/agentgate/result/comparison.py`, `src/agentgate/server/routes/comparisons.py` |
+| [x] | Historical Run comparison | Read score/count/outcome deltas for two compatible completed Runs; not controlled experiment execution | `src/agentgate/result/comparison.py` |
 | [ ] | Significance | Calculate confidence and statistical significance | `src/agentgate/result/statistics.py` **new** |
-| [ ] | A/B orchestration API | Create both variant Runs and retrieve their comparison as one workflow | Extend `src/agentgate/application/ab_testing.py` and `src/agentgate/server/routes/comparisons.py` |
-| [ ] | A/B Web page | Display variants, differences, confidence, and winner | `web/src/pages/ComparisonPage.vue` **new** |
+| [x] | Comparison read API | GET `/api/run-comparisons`; rejects incompatible inputs with 409 | `src/agentgate/server/routes/comparisons.py` |
+| [ ] | Experiment orchestration API | Persist controlled experiments, launch variants and replay frozen configurations | Additional contracts required |
+| [x] | Historical comparison Web page | Select completed Runs, inspect differences by Case/standard, reach both evidence paths and return with filters | `web/src/pages/RunComparisonPage.vue` |
+| [ ] | Complete A/B Web integration | Controlled/multi-variant execution, confidence, performance/cost, persistence and exports remain Mock or unavailable | `web/src/preview/pages/ComparisonPage.vue`; backend contracts missing |
 
 A/B testing composes ordinary Runs. It does not require a broad top-level
 `experiment/` package for the POC.
@@ -184,9 +247,12 @@ plan before implementation.
 
 | Status | Capability | Function | Code location |
 |---|---|---|---|
-| [x] | Current backend regression | Verify the refactor, Evaluator Catalog, and Static Skill Analysis behavior | `tests/` - 629 passing |
+| [x] | Upstream backend regression record | Upstream reports 629 passing at 9686d59; not a local verification result | Upstream integration record |
+| [ ] | Current local backend regression | At 9686d59: 627 passed, two Trace-order/primary-failure assertions failed; prior 78f9dfa result remains historical | WEB-BE-002 above |
 | [x] | Redis/Celery integration | Verify broker, worker, state, queue visibility, and progress end to end | `tests/test_celery_dispatcher.py`, `web/tests/`, operational smoke |
-| [x] | Browser verification | Verify all currently implemented desktop and mobile workflows | `web/tests/` - 8 passing |
+| [x] | Real browser regression | 18 passing across desktop/mobile: 14 real API workflow checks and four explicit Judge-rendering/activity-poll contract fixture checks | `web/tests/product/`; WEB-BE-001 |
+| [x] | Mock browser regression | 68 passing after backend merge; 12 affected journey/improvement checks passed after shared navigation refinements | `web/tests/preview/`; counts are separate from real integration |
+| [x] | Responsive layout checks | 54 checks across nine real pages and six widths; 18 screenshots reviewed with mobile table refinement | `web/scripts/capture-product-ui.mjs`; WEB-BE-001 final evidence |
 | [x] | Documentation | Explain setup, APIs, Redis, Celery, and demo operation | `README.md`, `web/README.md`, `docs/` |
 | [ ] | Repository cleanup | Delete obsolete placeholders and compatibility code | Entire repository |
 | [ ] | Demo packaging cleanup | Move standalone demo behavior out of the reusable AgentGate package if still appropriate | `src/agentgate/demo/`, `examples/` |

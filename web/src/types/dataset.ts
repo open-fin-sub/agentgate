@@ -18,27 +18,26 @@ export type Condition =
 interface ExpectationBase {
   id: string
   name: string | null
-  condition: Condition
 }
 
 export type Expectation =
-  | (ExpectationBase & { kind: 'state'; path: string })
+  | (ExpectationBase & { kind: 'skill_route'; condition: Condition })
+  | (ExpectationBase & { kind: 'tool_call'; tool: string; mode: 'required' | 'forbidden' })
+  | (ExpectationBase & { kind: 'policy'; policy_id: string })
+  | (ExpectationBase & { kind: 'state'; path: string; condition: Condition })
   | (ExpectationBase & {
       kind: 'tool_argument'
+      condition: Condition
       tool: string
       path: string
       occurrence: 'first' | 'last' | 'any' | 'all'
     })
-  | (ExpectationBase & { kind: 'output'; path: string | null })
+  | (ExpectationBase & { kind: 'output'; path: string | null; condition: Condition })
 
 export interface CaseTurn {
   id: string
   input: JsonObject
-  expected_skill: string | null
   expectations: Expectation[]
-  required_tools: string[]
-  forbidden_tools: string[]
-  policy_rules: string[]
   notes: string
 }
 

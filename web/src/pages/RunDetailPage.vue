@@ -1,0 +1,433 @@
+<script setup lang="ts">
+import JsonFallback from '../components/JsonFallback.vue'
+import MetadataGroup from '../components/MetadataGroup.vue'
+import { catalogLabel } from '../catalogLabels'
+import { computed, onUnmounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { api, type Report, type Outcome } from '../api/client'
+import { runsApi } from '../api/runs'
+import type { RunProgress } from '../types/run'
+import { outcomeLabels, gateLabels, scoreText } from '../resultLabels'
+import { metricLabel } from '../metricLabels'
+const route = useRoute(),
+  router = useRouter(),
+  report = ref<Report | null>(null),
+  progress = ref<RunProgress | null>(null),
+  error = ref(''),
+  loading = ref(true)
+const tab = ref(String(route.query.tab ?? 'summary')),
+  filter = ref(String(route.query.outcome ?? '')),
+  query = ref(String(route.query.q ?? '')),
+  dimension = ref(String(route.query.dimension ?? ''))
+watch([tab, filter, query, dimension], () =>
+  router.replace({
+    query: {
+      ...route.query,
+      tab: tab.value,
+      outcome: filter.value || undefined,
+      q: query.value || undefined,
+      dimension: dimension.value || undefined,
+    },
+  }),
+)
+watch(
+  () => route.query,
+  () => {
+    tab.value = String(route.query.tab ?? 'summary')
+    filter.value = String(route.query.outcome ?? '')
+    query.value = String(route.query.q ?? '')
+    dimension.value = String(route.query.dimension ?? '')
+  },
+)
+let controller: AbortController, timer: ReturnType<typeof setTimeout> | undefined
+const overall = computed(() => report.value?.metrics.find((m) => m.level === 'overall'))
+const cases = computed(
+  () => new Map(report.value?.run.manifest.dataset.cases.map((c) => [c.id, c]) ?? []),
+)
+const primary = computed(
+  () =>
+    report.value?.results.filter((r) =>
+      report.value!.run.manifest.primary_evaluator_ids.includes(r.evaluator_id),
+    ) ?? [],
+)
+const results = computed(() =>
+  primary.value.filter(
+    (r) =>
+      (!filter.value || r.outcome === filter.value) &&
+      (!dimension.value || r.dimension === dimension.value) &&
+      `${cases.value.get(r.case_id)?.name} ${r.evaluator_name} ${r.reason}`
+        .toLowerCase()
+        .includes(query.value.toLowerCase()),
+  ),
+)
+const statusLabels = {
+  pending: '排队中',
+  running: '运行中',
+  completed: '已完成',
+  failed: '执行失败',
+  cancelled: '已取消',
+}
+async function load() {
+  clearTimeout(timer)
+  controller?.abort()
+  controller = new AbortController()
+  const signal = controller.signal
+  error.value = ''
+  try {
+    const state = await runsApi.status(String(route.params.runId), signal)
+    if (signal.aborted) return
+    progress.value = state
+    if (state.status === 'completed') {
+      const value = await api.report(state.run_id, signal)
+      if (!signal.aborted) report.value = value
+    } else report.value = null
+  } catch (e) {
+    if (!signal.aborted) error.value = String(e)
+  } finally {
+    if (!signal.aborted) {
+      loading.value = false
+      if (progress.value?.status === 'pending' || progress.value?.status === 'running')
+        timer = setTimeout(load, 2000)
+    }
+  }
+}
+watch(
+  () => route.params.runId,
+  () => {
+    report.value = null
+    progress.value = null
+    loading.value = true
+    load()
+  },
+  { immediate: true },
+)
+onUnmounted(() => {
+  controller?.abort()
+  clearTimeout(timer)
+})
+function exportReport() {
+  if (!report.value) return
+  const url = URL.createObjectURL(
+    new Blob([JSON.stringify(report.value, null, 2)], { type: 'application/json' }),
+  )
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `report-${report.value.run.id}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+function showResults(key = '') {
+  tab.value = 'cases'
+  dimension.value = key
+}
+function showOutcome(key: Outcome) {
+  filter.value = key
+  showResults()
+}
+function showDimension(key: string) {
+  filter.value = ''
+  showResults(key)
+}
+</script>
+<template>
+  <RouterLink
+    class="back-link"
+    :to="{ path: '/runs', query: { status: route.query.fromStatus, q: route.query.fromQuery } }"
+    >← 返回任务列表</RouterLink
+  >
+  <div class="page-intro">
+    <div>
+      <h1>{{ progress?.target_name ?? '任务详情' }}</h1>
+      <p>
+        {{ progress?.target_version }}
+        <span v-if="progress">· {{ progress.dataset_name }} v{{ progress.dataset_version }}</span>
+      </p>
+      <p class="small">任务编号 {{ route.params.runId }}</p>
+    </div>
+    <div v-if="report" class="action-row">
+      <RouterLink
+        class="ag-button primary"
+        :to="{ path: '/runs/new', query: { source: report.run.id } }"
+        >沿用配置新建测评</RouterLink
+      ><button class="ag-button" @click="exportReport">导出报告数据</button>
+      <RouterLink
+        class="ag-button"
+        :to="{ path: '/comparisons', query: { baseline: report.run.id } }"
+        >作为基线对比</RouterLink
+      >
+      <RouterLink
+        class="ag-button"
+        :to="{
+          path: '/lineage',
+          query: {
+            kind: 'run',
+            id: report.run.id,
+            source: report.run.manifest.target.ref.source_id,
+            returnTo: route.fullPath,
+          },
+        }"
+        >来源与关联任务</RouterLink
+      >
+      <RouterLink
+        class="ag-button"
+        :to="{
+          path: '/lineage',
+          query: {
+            kind: 'target',
+            id: report.run.manifest.target.ref.external_target_id,
+            source: report.run.manifest.target.ref.source_id,
+            targetType: report.run.manifest.target.ref.target_type,
+            version: report.run.manifest.target.ref.external_version_id,
+            hash: report.run.manifest.target.descriptor_sha256,
+            returnTo: route.fullPath,
+          },
+        }"
+        >此对象版本的关联任务</RouterLink
+      >
+    </div>
+  </div>
+  <div v-if="error" class="notice error" role="alert">
+    状态或报告读取失败：{{ error }} <button class="text-button" @click="load">重新加载</button>
+  </div>
+  <div v-if="loading" class="skeleton">正在读取当前任务…</div>
+  <section v-if="progress && !report" class="panel">
+    <div class="panel-title">
+      <h2>执行进度</h2>
+      <span class="badge" :class="progress.status">{{ statusLabels[progress.status] }}</span>
+    </div>
+    <p>{{ progress.completed_cases }} / {{ progress.total_cases }} 条用例已完成评估</p>
+    <div
+      class="progress-track"
+      role="progressbar"
+      :aria-valuenow="Math.round(progress.progress * 100)"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-label="用例进度"
+    >
+      <span :style="{ width: `${progress.progress * 100}%` }"></span>
+    </div>
+    <div class="detail-row">
+      <span>队列位置</span><span>{{ progress.queue_position ?? '—' }}</span>
+    </div>
+    <div class="detail-row">
+      <span>开始时间</span
+      ><span>{{
+        progress.started_at ? new Date(progress.started_at).toLocaleString('zh-CN') : '尚未开始'
+      }}</span>
+    </div>
+    <div v-if="progress.error" class="notice error">{{ progress.error }}</div>
+    <p class="muted">
+      {{
+        progress.status === 'pending' || progress.status === 'running'
+          ? '每 2 秒更新进度，完成后自动显示正式报告。'
+          : '本次运行没有完成态报告。现有数据和状态仍保留。'
+      }}
+    </p>
+    <p class="muted small">取消、恢复及部分报告尚未开放，见能力与接入。</p>
+  </section>
+  <template v-if="report"
+    ><div class="notice" :class="{ warning: report.release_gate.outcome === 'fail' }">
+      <strong>{{ gateLabels[report.release_gate.reason_code] }}</strong>
+      <div>执行已完成。判定依据为本次运行保存的规则，未自动发布任何 Agent。</div>
+    </div>
+    <nav class="local-tabs" aria-label="报告内容">
+      <button :class="{ active: tab === 'summary' }" @click="tab = 'summary'">总体结果</button
+      ><button :class="{ active: tab === 'cases' }" @click="tab = 'cases'">评估结果与用例</button
+      ><button :class="{ active: tab === 'config' }" @click="tab = 'config'">配置与版本</button>
+    </nav>
+    <template v-if="tab === 'summary'"
+      ><div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">总体分数 · 0～1</div>
+          <div class="stat-number">{{ scoreText(overall?.score) }}</div>
+          <div class="stat-note">按评分方案汇总，不是通过率</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">测评用例</div>
+          <div class="stat-number">{{ report.run.manifest.dataset.cases.length }}</div>
+          <div class="stat-note">来自本次固定输入</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">主评估器结果</div>
+          <div class="stat-number">{{ overall?.total ?? '—' }}</div>
+          <div class="stat-note">一个用例可有多个评估结果</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">最低总分要求</div>
+          <div class="stat-number">{{ scoreText(report.release_gate.minimum_score) }}</div>
+          <div class="stat-note">达到分数仍须满足阻断规则</div>
+        </div>
+      </div>
+      <section class="panel">
+        <h2>评估结果分布</h2>
+        <div class="action-row">
+          <button
+            v-for="(label, key) in outcomeLabels"
+            :key="key"
+            class="ag-button"
+            @click="showOutcome(key)"
+          >
+            {{ label }} ·
+            {{
+              key === 'pass'
+                ? overall?.passed
+                : key === 'fail'
+                  ? overall?.failed
+                  : key === 'review'
+                    ? overall?.reviewed
+                    : key === 'error'
+                      ? overall?.errors
+                      : overall?.not_applicable
+            }}
+          </button>
+        </div>
+        <p class="muted small">
+          单位：用例 × 主评估器结果。“需复核”为机器结论，不表示已完成人工复核。
+        </p>
+      </section>
+      <section class="panel table-panel">
+        <div class="panel-title">
+          <h2>质量维度</h2>
+          <span class="small muted">点击维度下钻证据</span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>维度</th>
+                <th>总分</th>
+                <th>通过 / 不通过</th>
+                <th>需复核 / 错误</th>
+                <th>不适用</th>
+                <th>适用 / 总数</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="m in report.metrics.filter((m) => m.level === 'dimension')" :key="m.key">
+                <td>{{ metricLabel(m.key) }}</td>
+                <td>{{ scoreText(m.score) }}</td>
+                <td>{{ m.passed }} / {{ m.failed }}</td>
+                <td>{{ m.reviewed }} / {{ m.errors }}</td>
+                <td>{{ m.not_applicable }}</td>
+                <td>{{ m.applicable }} / {{ m.total }}</td>
+                <td>
+                  <button class="text-button" @click="showDimension(m.key)">查看对应结果</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <div v-if="report.release_gate.missing_results.length" class="notice error">
+        <p>有 {{ report.release_gate.missing_results.length }} 项检查缺少结果，请核对以下用例与评分标准后重新测评。</p>
+        <MetadataGroup v-for="[caseId, evaluatorId] in report.release_gate.missing_results" :key="`${caseId}:${evaluatorId}`" :items="[
+          {label:'用例',value:report.run.manifest.dataset.cases.find(c=>c.id===caseId)?.name ?? '名称未提供'},
+          {label:'评分标准',value:catalogLabel(report.run.manifest.evaluator_specs.find(e=>e.id===evaluatorId)?.name ?? '名称未提供')}
+        ]" />
+      </div></template
+    >
+    <section v-else-if="tab === 'cases'" class="panel table-panel">
+      <div class="panel-title">
+        <h2>逐项结果 · {{ results.length }} 条</h2>
+        <button v-if="dimension" class="text-button" @click="dimension = ''">
+          清除维度：{{ metricLabel(dimension) }}
+        </button>
+      </div>
+      <div class="toolbar" style="padding: 0 20px">
+        <label class="field"
+          >结果状态<select v-model="filter" aria-label="结果状态">
+            <option value="">全部状态</option>
+            <option v-for="(label, key) in outcomeLabels" :key="key" :value="key">
+              {{ label }}
+            </option>
+          </select></label
+        ><label class="field"
+          >搜索证据<input v-model="query" placeholder="用例、评估器或原因"
+        /></label>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>用例 / 评分标准</th>
+              <th>结论 / 分数</th>
+              <th>原因</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in results" :key="`${item.case_id}:${item.evaluator_id}`">
+              <td>
+                {{ cases.get(item.case_id)?.name ?? item.case_id
+                }}<small>{{ catalogLabel(item.evaluator_name) }}</small>
+              </td>
+              <td>
+                <span class="badge" :class="item.outcome">{{ outcomeLabels[item.outcome] }}</span
+                ><small>{{ scoreText(item.score) }}</small>
+              </td>
+              <td>{{ item.reason }}</td>
+              <td>
+                <RouterLink
+                  :to="{
+                    path: `/runs/${report.run.id}/cases/${item.case_id}`,
+                    query: {
+                      evaluator: item.evaluator_id,
+                      outcome: filter,
+                      dimension,
+                      q: query,
+                      fromStatus: route.query.fromStatus,
+                      fromQuery: route.query.fromQuery,
+                    },
+                  }"
+                  >查看证据</RouterLink
+                >
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div v-if="!results.length" class="empty-state">没有匹配的评估结果，请调整条件。</div>
+    </section>
+    <section v-else class="panel">
+      <h2>固定版本与执行配置</h2>
+      <div class="detail-row">
+        <span>测评集</span
+        ><RouterLink
+          :to="{
+            path: '/datasets',
+            query: {
+              dataset: report.run.manifest.dataset.dataset_id,
+              version: report.run.manifest.dataset.version,
+            },
+          }"
+          >{{ report.run.manifest.dataset.dataset_name }} v{{
+            report.run.manifest.dataset.version
+          }}</RouterLink
+        >
+      </div>
+      <div class="detail-row">
+        <span>评分规则</span
+        ><span>{{
+          report.run.manifest.evaluator_specs.map((e) => `${e.name} v${e.version}`).join('、')
+        }}</span>
+      </div>
+      <div class="detail-row">
+        <span>聚合方案</span
+        ><span
+          >{{ report.run.manifest.metric_plan.id }} @{{
+            report.run.manifest.metric_plan.version
+          }}</span
+        >
+      </div>
+      <div class="detail-row">
+        <span>运行超时</span><span>{{ report.run.manifest.timeout_seconds }} 秒</span>
+      </div>
+      <div class="detail-row"><span>Token 用量</span><span>当前报告未提供</span></div>
+      <details>
+        <summary>查看本次完整配置快照</summary>
+        <JsonFallback :model-value="report.run.manifest" readonly />
+      </details>
+    </section></template
+  >
+</template>

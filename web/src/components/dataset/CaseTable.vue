@@ -24,7 +24,7 @@ const labels = {
 }
 
 function move(index: number, offset: number) {
-  const ids = props.items.map(item => item.id)
+  const ids = props.items.map((item) => item.id)
   const next = index + offset
   if (next < 0 || next >= ids.length) return
   ;[ids[index], ids[next]] = [ids[next], ids[index]]
@@ -35,8 +35,18 @@ function move(index: number, offset: number) {
 <template>
   <section class="dataset-column case-list-panel">
     <div class="dataset-panel-heading">
-      <div><span class="step">CASES</span><h2>用例</h2></div>
-      <el-button type="primary" size="small" :disabled="!editable" data-testid="add-case" @click="emit('add')">新增用例</el-button>
+      <div>
+        <span class="step">CASES</span>
+        <h2>用例</h2>
+      </div>
+      <el-button
+        type="primary"
+        size="small"
+        :disabled="!editable"
+        data-testid="add-case"
+        @click="emit('add')"
+        >新增用例</el-button
+      >
     </div>
     <div class="case-list">
       <article
@@ -47,7 +57,11 @@ function move(index: number, offset: number) {
         :data-testid="`case-item-${item.id}`"
         @click="emit('select', item)"
       >
-        <div class="case-list-main">
+        <button
+          class="case-list-main case-select-button"
+          @click.stop="emit('select', item)"
+          :aria-current="item.id === selectedId ? 'true' : undefined"
+        >
           <b>{{ item.name }}</b>
           <span>
             <el-tag size="small" effect="plain">{{ labels[item.category] }}</el-tag>
@@ -55,10 +69,24 @@ function move(index: number, offset: number) {
             <small>{{ item.turns.length }} 轮</small>
           </span>
           <small>{{ item.notes || item.tags.join(' · ') || '暂无备注' }}</small>
-        </div>
+        </button>
         <div v-if="editable" class="case-row-actions" @click.stop>
-          <el-button link size="small" :disabled="index === 0" @click="move(index, -1)">↑</el-button>
-          <el-button link size="small" :disabled="index === items.length - 1" @click="move(index, 1)">↓</el-button>
+          <el-button
+            link
+            size="small"
+            :disabled="index === 0"
+            aria-label="上移用例"
+            @click="move(index, -1)"
+            >↑</el-button
+          >
+          <el-button
+            link
+            size="small"
+            :disabled="index === items.length - 1"
+            aria-label="下移用例"
+            @click="move(index, 1)"
+            >↓</el-button
+          >
           <el-button link size="small" @click="emit('copy', item)">复制</el-button>
           <el-button link size="small" type="danger" @click="emit('remove', item)">删除</el-button>
         </div>

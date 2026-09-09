@@ -1,4 +1,5 @@
 import type { DatasetVersion } from './dataset'
+import type { EvaluatorOption } from '../api/client'
 
 export type RunStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
 
@@ -8,9 +9,20 @@ export interface EvaluationRun {
   manifest: {
     target: {
       display_name: string
-      ref: { external_version_id: string }
+      ref: {
+        source_id: string
+        target_type: 'agent' | 'skill'
+        external_target_id: string
+        external_version_id: string
+      }
+      descriptor_sha256: string
     }
     dataset: DatasetVersion
+    evaluator_specs: EvaluatorOption[]
+    primary_evaluator_ids: string[]
+    gate_spec: { minimum_score: number }
+    metric_plan: { id: string; version: string }
+    timeout_seconds: number
   }
   created_at: string
   started_at: string | null
