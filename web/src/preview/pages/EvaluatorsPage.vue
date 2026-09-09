@@ -86,7 +86,7 @@ const page = computed({
 function setFilter(key: string, value: string) {
   void router.replace({ query: { ...pageQuery.value, [key]: value || undefined, page: undefined } })
 }
-const kinds = { rule: '规则', llm: 'LLM', composite: '复合' }
+const kinds = { rule: '规则', llm: '大模型评分', composite: '复合' }
 const rows = computed(() =>
   state.evaluators.filter(
     (item) =>

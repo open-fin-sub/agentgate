@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MetadataGroup from '../../components/MetadataGroup.vue'
+import EntityRef from '../../components/EntityRef.vue'
 import RoleGate from '../../components/RoleGate.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
@@ -148,7 +149,7 @@ function exportAudit() {
         ><el-checkbox v-model="simulateFailure">模拟连通性失败</el-checkbox></RoleGate
       >
     </div>
-    <div class="table-scroll">
+    <RoleGate :role="state.role"><div class="table-scroll">
       <table class="data-table">
         <thead>
           <tr>
@@ -190,6 +191,18 @@ function exportAudit() {
         </tbody>
       </table>
     </div>
+    <template #readonly>
+      <div class="resource-summary">
+        <article v-for="item in state.credentials" :key="item.id">
+          <EntityRef :name="item.name" type="模型资源" compact />
+          <MetadataGroup :items="[
+            { label: '状态', value: !item.enabled ? '已停用' : item.healthy ? '可用' : '测试失败' },
+            { label: '模型', value: item.model },
+            { label: '使用范围', value: item.kind === 'public' ? '团队公共' : '本人专用' },
+          ]" />
+        </article>
+      </div>
+    </template></RoleGate>
     <RoleGate :role="state.role"
       ><p class="muted small">
         体验模式只保存虚构别名与掩码，没有真实密钥输入框；不会向模型服务发送测试请求。
@@ -301,6 +314,7 @@ function exportAudit() {
   >
 </template>
 <style scoped>
+.resource-summary { display: grid; gap: 16px; }
 .resource-queue {
   padding: 12px 0;
   border-bottom: 1px solid #e5e7eb;

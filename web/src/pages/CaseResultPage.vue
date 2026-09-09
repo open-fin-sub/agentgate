@@ -5,10 +5,10 @@ import LineageLink from '../components/LineageLink.vue'
 import EmptyState from '../components/EmptyState.vue'
 import StatusNotice from '../components/StatusNotice.vue'
 import { userError } from '../apiErrors'
-import { catalogLabel } from '../catalogLabels'
+import { catalogLabel, operationLabel, conditionField } from '../catalogLabels'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { api, type Report, type Trace } from '../api/client'
+import { api, type Report, type Trace, type CheckResult } from '../api/client'
 import { outcomeLabels, scoreText } from '../resultLabels'
 import ValueView from '../components/ValueView.vue'
 import JsonFallback from '../components/JsonFallback.vue'
@@ -46,6 +46,11 @@ let controller: AbortController
 const currentCase = computed(() =>
   report.value?.run.manifest.dataset.cases.find((c) => c.id === currentCaseId.value),
 )
+function checkField(check: CheckResult) {
+  const expectation = currentCase.value?.turns.flatMap(turn => turn.expectations)
+    .find(item => item.id === check.expectation_id)
+  return conditionField(expectation) ?? conditionField(check.expected)
+}
 const results = computed(
   () => report.value?.results.filter((r) => r.case_id === currentCaseId.value) ?? [],
 )
@@ -150,7 +155,7 @@ onUnmounted(() => controller?.abort())
       <h1>{{ currentCase?.name ?? '用例证据' }}</h1>
       <div v-if="report" class="entity-group">
         <EntityRef
-          :name="report.run.manifest.target.display_name"
+          :name="catalogLabel(report.run.manifest.target.display_name)"
           type="测评对象"
           :version="report.run.manifest.target.ref.external_version_id"
           compact
@@ -287,8 +292,8 @@ onUnmounted(() => controller?.abort())
               }}
             </p>
           </StatusNotice>
-          <section v-if="selected.judge_record" class="evidence-card" aria-label="LLM 评分调用信息">
-            <h3>LLM 评分调用</h3>
+          <section v-if="selected.judge_record" class="evidence-card" aria-label="大模型评分调用信息">
+            <h3>大模型评分调用</h3>
             <MetadataGroup
               :items="[
                 { label: '请求模型', value: selected.judge_record.requested_model },
@@ -314,18 +319,18 @@ onUnmounted(() => controller?.abort())
           </StatusNotice>
           <article v-for="check in selected.checks" :key="check.id" class="evidence-card">
             <div class="panel-title">
-              <h3>{{ check.name }}</h3>
+              <h3>{{ catalogLabel(check.name) }}</h3>
               <span class="badge" :class="check.outcome">{{ outcomeLabels[check.outcome] }}</span>
             </div>
             <p>{{ check.reason }}</p>
             <div class="detail-row">
               <span>预期</span>
-              <ValueView :value="check.expected" />
+              <ValueView :value="check.expected" :field="checkField(check)" />
             </div>
             <div class="detail-row">
               <span>实际</span>
               <span v-if="check.actual_missing">未采集到实际值</span>
-              <ValueView v-else :value="check.actual" />
+              <ValueView v-else :value="check.actual" :field="checkField(check)" />
             </div>
             <button
               v-if="check.failure_span_id && spans.some((s) => s.span_id === check.failure_span_id)"
@@ -373,11 +378,11 @@ onUnmounted(() => controller?.abort())
         :class="{ flagged: failureSpans.has(span.span_id) }"
       >
         <summary>
-          <strong>{{ span.name }}</strong>
+          <strong>{{ catalogLabel(span.name) }}</strong>
           <MetadataGroup
             :items="[
               { label: '步骤序号', value: span.sequence },
-              { label: '操作类型', value: span.operation_type },
+              { label: '操作类型', value: operationLabel(span.operation_type) },
               { label: '关联异常', value: failureSpans.has(span.span_id) },
             ]"
           />

@@ -13,6 +13,7 @@ import type { CaseResult, Suggestion, TestCase } from '../types'
 import AnalysisStatic from '../components/AnalysisStatic.vue'
 import AnalysisSuggestion from '../components/AnalysisSuggestion.vue'
 import { runStatusLabels } from '../comparison'
+import { outcomeLabels as labels } from '../components/RunSupport'
 
 const route = useRoute(),
   router = useRouter()
@@ -34,6 +35,11 @@ const runId = computed({
   },
 })
 const run = computed(() => state.runs.find((item) => item.id === runId.value))
+function skillRef(id: string) {
+  return run.value?.target.versions.find(item => item.id === run.value?.config.targetVersion)
+    ?.skillDefinitions?.find(item => item.id === id)
+}
+const skillName = (id: string) => skillRef(id)?.name ?? '技能名称未提供'
 const group = computed(() => String(route.query.group ?? ''))
 const tag = computed({
   get: () => String(route.query.tag ?? ''),
@@ -53,7 +59,7 @@ const groupLabels = {
   routing: '路由偏差',
   execution: '工具 / 执行异常',
   quality: '输出 / 规则未通过',
-  review: '待人工复核',
+  review: '需复核',
 }
 type IssueGroup = keyof typeof groupLabels
 function issueGroup(sample: TestCase, result: CaseResult): IssueGroup | '' {
@@ -130,7 +136,6 @@ const suggestions = computed(() =>
 const selectedSuggestion = computed(() =>
   route.query.suggestion ? requestedSuggestion.value : suggestions.value[0],
 )
-const labels = { pass: '通过', fail: '失败', review: '待复核', NA: '不适用', error: '执行错误' }
 function showRuntime() {
   router.replace({ query: { tab: 'runtime', run: runId.value } })
 }
@@ -215,12 +220,12 @@ function generateSuggestions() {
       evidence: `${cluster.records.length} 条本地 Mock 发生记录。代表 ${first.sample.id}：${first.result.reason}`,
       hypothesis:
         cluster.key === 'routing'
-          ? '职责描述或触发边界可能存在歧义，需要核对实际 Prompt 与 Skill 定义。此为待验证假设。'
+          ? '职责描述或触发边界可能存在歧义，需要核对实际提示词与技能定义。此为待验证假设。'
           : cluster.key === 'execution'
-            ? '工具连接、节点参数或执行环境可能异常；当前 Trace 不能单独证明根因。'
+            ? '工具连接、节点参数或执行环境可能异常；当前执行轨迹 不能单独证明根因。'
             : cluster.key === 'review'
               ? '用例期望可能不充分，建议先由业务人员核对；不能仅凭机器不确定性判为错误。'
-              : '输出约束或业务边界描述可能不完整，需要先查看输入、期望和 Trace。',
+              : '输出约束或业务边界描述可能不完整，需要先查看输入、期望和执行轨迹。',
       action:
         kind === 'dataset'
           ? '核对并修订测评用例，发布新输入版本后使用原 Agent 复验。'
@@ -329,8 +334,8 @@ function generateSuggestions() {
       <section class="panel">
         <h2>观测路由混淆矩阵</h2>
         <p>
-          行 = 预期 Skill；列 = 实际 Skill。{{ routed.length }} 条有路由证据，排除
-          {{ records.length - routed.length }} 条 NA / error 或缺失路由记录。点击格子筛选样本。
+          行表示预期技能，列表示实际技能。{{ routed.length }} 条用例有路由证据，排除
+          {{ records.length - routed.length }} 条不适用、执行错误或缺少路由的记录。点击格子筛选样本。
         </p>
         <EmptyState
           v-if="!routed.length"
@@ -342,16 +347,16 @@ function generateSuggestions() {
             <thead>
               <tr>
                 <th>预期 ↓ / 实际 →</th>
-                <th v-for="skill in actualSkills" :key="skill">{{ skill }}</th>
+                <th v-for="skill in actualSkills" :key="skill"><EntityRef :name="skillName(skill)" type="技能" :version="skillRef(skill)?.version" :id="skill" compact /></th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="expect in expectedSkills" :key="expect">
-                <th scope="row">{{ expect }}</th>
+                <th scope="row"><EntityRef :name="skillName(expect)" type="技能" :version="skillRef(expect)?.version" :id="expect" compact /></th>
                 <td v-for="act in actualSkills" :key="act">
                   <button
                     :class="{ mismatch: expect !== act && matrixCount(expect, act) > 0 }"
-                    :aria-label="`预期 ${expect} 实际 ${act}，${matrixCount(expect, act)} 条样本`"
+                    :aria-label="`预期 ${skillName(expect)}，实际 ${skillName(act)}，${matrixCount(expect, act)} 条样本`"
                     @click="selectMatrix(expect, act)"
                   >
                     {{ matrixCount(expect, act) }}
@@ -363,7 +368,7 @@ function generateSuggestions() {
         </div>
       </section>
       <section id="analysis-evidence" class="panel">
-        <h2>筛选发生记录 → 输出与 Trace</h2>
+        <h2>筛选发生记录 → 输出与 执行轨迹</h2>
         <StatusNotice v-if="group || expected || actual">
           <MetadataGroup
             :items="[
@@ -410,7 +415,7 @@ function generateSuggestions() {
             <ValueView :value="item.result.output" />
           </details>
           <button class="text-button" @click="evidenceCase = item.sample.id">
-            查看样本与 Trace{{ item.result.trace.length ? '' : '（Trace 未采集）' }} →
+            查看样本与 执行轨迹{{ item.result.trace.length ? '' : '（执行轨迹 未采集）' }} →
           </button>
         </article>
       </section>

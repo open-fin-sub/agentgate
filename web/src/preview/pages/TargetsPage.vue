@@ -153,13 +153,13 @@ const canAnalyze = computed(
         >
       </div>
       <p v-if="!canAnalyze" class="muted">
-        静态 Skill 冲突分析需要 Agent Prompt 和多个关联 Skill 定义；当前上下文不满足。
+        该版本的技能定义不足以分析技能冲突。可查看已有定义，或选择其他版本。
       </p>
     </section>
     <div class="preview-columns">
       <section class="panel">
-        <h2>Prompt 快照</h2>
-        <ValueView :value="version.prompt || '源平台未提供 Prompt'" />
+        <h2>提示词快照</h2>
+        <ValueView :value="version.prompt || '未提供提示词'" />
         <h3>工具定义</h3>
         <el-tag v-for="tool in version.tools" :key="tool" class="prep-tag">{{ tool }}</el-tag>
         <p v-if="!version.tools.length" class="muted">此版本没有工具定义。</p>

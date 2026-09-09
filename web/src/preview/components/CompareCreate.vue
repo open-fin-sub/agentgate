@@ -427,7 +427,7 @@ function create() {
                 ><el-option label="正常执行" value="none" /><el-option
                   label="基础设施中断"
                   value="infrastructure" /><el-option
-                  label="未采集 Trace"
+                  label="未采集 执行轨迹"
                   value="missing-trace" /><el-option
                   label="未采集 Token 用量与耗时"
                   value="missing-usage" /></el-select
@@ -450,7 +450,7 @@ function create() {
         <StatusNotice>
           执行量：{{ candidateVersions.length + 1 }} 个版本 × {{ caseCount }} 条 =
           {{ (candidateVersions.length + 1) * caseCount }} 次 Mock
-          样本执行。各版本使用同一输入范围；无真实 Agent 或 LLM 调用。
+          样本执行。各版本使用同一输入范围；无真实 Agent 或 大模型 调用。
         </StatusNotice>
       </template>
       <details open>

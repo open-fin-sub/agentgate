@@ -395,10 +395,10 @@ watch(() => route.fullPath, readQuery, { immediate: true })
       </StatusNotice>
       <div class="preview-grid run-kpis">
         <button class="preview-kpi" @click="selectOutcome('')">
-          <span>平均 Case 分数</span><strong>{{ scoreText(metrics.score) }}</strong
+          <span>平均用例分数</span><strong>{{ scoreText(metrics.score) }}</strong
           ><small>{{ metrics.scored }} 条适用有分数结果</small></button
         ><button class="preview-kpi" @click="selectOutcome('pass')">
-          <span>Case 通过率</span><strong>{{ percent(metrics.passRate) }}</strong
+          <span>用例通过率</span><strong>{{ percent(metrics.passRate) }}</strong
           ><small>{{ metrics.counts.pass }} / {{ metrics.applicable }} 条适用结果</small></button
         ><button class="preview-kpi" @click="selectOutcome('error')">
           <span>执行错误率</span><strong>{{ percent(metrics.errorRate) }}</strong
@@ -428,8 +428,8 @@ watch(() => route.fullPath, readQuery, { immediate: true })
       <details>
         <summary>指标定义与性能证据</summary>
         <p>
-          每条 Case 计数一次。通过率分母为 pass + fail + review；NA（不适用）和
-          error（执行错误）均不计入分数或通过率分母。执行错误率分母为已返回结果数，未返回项另计。机器检查数不能当作用例数；多标签统计不可相加。
+          每条用例计数一次。通过率为通过用例数除以通过、不通过和需复核用例总数。
+          不适用和执行错误均不计入分数或通过率分母。执行错误率按已返回结果计算，未返回项另计。机器检查数不能当作用例数；同一用例可能属于多个标签，标签数量不能相加。
         </p>
         <MetadataGroup
           :items="[
@@ -489,8 +489,7 @@ watch(() => route.fullPath, readQuery, { immediate: true })
         >
       </div>
       <p class="muted small">
-        恢复会清除基础设施故障，仅执行尚未返回结果的
-        ID。失败子集包括机器不通过和执行错误。所有复跑均保存原始快照并创建新运行，保留来源；预约时间改为立即入队。
+        恢复仅继续尚未完成的用例；重跑失败用例包括不通过和执行错误。重跑会创建关联原任务的新任务并立即排队，原任务与已有证据保留。
       </p>
     </section>
     <section class="panel">
@@ -624,7 +623,7 @@ watch(() => route.fullPath, readQuery, { immediate: true })
         ></label>
       </form>
       <p v-if="filters.evaluator" class="muted small">
-        结果筛选按所选评估器的机器检查判定；Case 分数仍按所选报告口径展示。
+        结果筛选按所选评估器的机器检查判定；用例分数仍按所选报告口径展示。
       </p>
       <EmptyState
         v-if="!rows.length"
@@ -638,7 +637,7 @@ watch(() => route.fullPath, readQuery, { immediate: true })
             <tr>
               <th>用例与输入</th>
               <th>用例属性</th>
-              <th>Case 判定与分数</th>
+              <th>用例 判定与分数</th>
               <th>原因与证据</th>
               <th>Token 用量</th>
             </tr>

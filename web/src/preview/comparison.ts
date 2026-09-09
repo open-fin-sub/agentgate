@@ -16,7 +16,7 @@ export const metricDefinitions: Record<
   { label: string; direction: 'higher' | 'lower'; unit: string }
 > = {
   score: { label: '平均分', direction: 'higher', unit: '分（0–1）' },
-  passRate: { label: '适用 Case 通过率', direction: 'higher', unit: '%' },
+  passRate: { label: '适用用例通过率', direction: 'higher', unit: '%' },
   errorRate: { label: '执行错误率', direction: 'lower', unit: '%' },
   latency: { label: '平均耗时', direction: 'lower', unit: 'ms' },
   tokens: { label: '平均单例 Token 用量', direction: 'lower', unit: 'Token' },

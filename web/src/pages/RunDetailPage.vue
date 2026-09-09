@@ -173,6 +173,7 @@ function showDimension(key: string) {
   <div class="page-intro">
     <div>
       <h1>{{ report ? '测评报告' : '任务详情' }}</h1>
+      <EntityRef v-if="progress" :name="catalogLabel(progress.target_name)" type="测评对象" :version="progress.target_version" compact />
       <StatusNotice
         v-if="report"
         :type="report.release_gate.outcome === 'fail' ? 'warning' : 'info'"

@@ -46,7 +46,7 @@ const relatedAudit = computed(() =>
   ),
 )
 const kindLabels = {
-  prompt: '系统 Prompt',
+  prompt: '系统提示词',
   skill: 'Skill 边界',
   tool: '工具 / 节点',
   dataset: '测评用例',
@@ -358,7 +358,7 @@ function startRegression() {
           请在源平台修改并发布后，关联这里已经同步的同一资产新版本。一个版本可以落实多条建议；采纳只记录决定。
         </p>
         <label
-          >已修改的外部版本<el-select v-model="versionId"
+          >已修改的外部版本<el-select v-model="versionId" aria-label="已修改的外部版本"
             ><el-option
               v-for="version in target?.versions ?? []"
               :key="version.id"
@@ -370,10 +370,9 @@ function startRegression() {
         ><el-button @click="linkVersion" :disabled="state.role === 'viewer'">关联此版本</el-button>
         <p>当前关联：{{ suggestion.linkedVersion ?? '尚未关联，等待外部修改' }}</p>
         <p class="muted">
-          将重新执行原基线与候选，共同使用 {{ sourceRun.config.datasetId }} v{{
-            sourceRun.config.datasetVersion
-          }}、原评估器 / 参数 / 用例快照；清除基础设施模拟故障。
+          将重新测评原基线与候选，共同使用下列固定输入和原评分标准、执行设置，原任务与证据保留。
         </p>
+        <EntityRef :name="dataset?.name ?? '测评集名称未提供'" type="测评集" :version="sourceRun.config.datasetVersion" compact />
       </div>
       <div v-else class="improvement-step">
         <h3>修订测评用例 → 使用原 Agent 复验</h3>
@@ -392,7 +391,7 @@ function startRegression() {
           ><el-button @click="openDataset">前往测评集继续修订 / 发布</el-button>
         </div>
         <label class="feedback-label"
-          >已修订发布的测评集版本<el-select v-model="inputVersion"
+          >已修订发布的测评集版本<el-select v-model="inputVersion" aria-label="已修订发布的测评集版本"
             ><el-option
               v-for="version in dataset?.versions ?? []"
               :key="version.version"
@@ -413,7 +412,7 @@ function startRegression() {
       <details>
         <summary>本次回归的 Mock 阈值</summary>
         <p>
-          平均分 ≥ 0.8；适用 Case 通过率 ≥ 80%；执行错误率 ≤ 0%；平均耗时 ≤ 3000 ms；平均单例 Token
+          平均分 ≥ 0.8；适用 用例通过率 ≥ 80%；执行错误率 ≤ 0%；平均耗时 ≤ 3000 ms；平均单例 Token
           用量 ≤ 2000。完整结果及模拟统计场景在对比报告逐项展示。
         </p>
       </details>

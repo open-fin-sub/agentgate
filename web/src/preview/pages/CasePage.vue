@@ -427,7 +427,7 @@ watch([currentRunId, currentCaseId], initializeReview, {
         <ValueView :value="testCase.question" />
         <h3 class="case-space">期望输出</h3>
         <ValueView :value="testCase.expected || '缺少期望输出'" />
-        <p class="case-space">期望 Skill：{{ testCase.expectedSkill || '未指定' }}</p>
+        <p class="case-space">期望处理流程：{{ testCase.expectedSkill || '未指定' }}</p>
         <details>
           <summary>变量、文件引用、标签与来源</summary>
           <ValueView :value="testCase.variables || '未提供变量'" />
@@ -463,7 +463,7 @@ watch([currentRunId, currentCaseId], initializeReview, {
         <p><strong>期望：</strong>{{ turn.expected || '未指定' }}</p>
       </article>
       <p class="muted small">
-        逐轮实际输出仅在下方 Trace 有证据时展示；不使用期望内容补齐缺失 Trace。
+        逐轮实际输出仅在下方 执行轨迹 有证据时展示；不使用期望内容补齐缺失 执行轨迹。
       </p>
     </section>
     <section class="panel">
@@ -522,9 +522,9 @@ watch([currentRunId, currentCaseId], initializeReview, {
       <p v-if="!result?.checks.length" class="muted">尚无评估器检查证据。</p>
     </section>
     <section class="panel">
-      <h2>执行 Trace</h2>
+      <h2>执行轨迹</h2>
       <StatusNotice type="warning" v-if="!result?.trace.length">
-        Trace 缺失或尚未返回。只能依据现有输入、输出和检查定位，无法确认具体调用或失败轮次。
+        执行轨迹缺失或尚未返回。只能依据现有输入、输出和检查定位，无法确认具体调用或失败轮次。
       </StatusNotice>
       <details
         v-for="step in result?.trace ?? []"
@@ -603,7 +603,7 @@ watch([currentRunId, currentCaseId], initializeReview, {
               maxlength="3000"
               show-word-limit
               aria-label="复核理由"
-              placeholder="结合期望、输出和 Trace 说明判断依据"
+              placeholder="结合期望、输出和 执行轨迹 说明判断依据"
           /></label>
         </div>
         <div class="action-row case-space">

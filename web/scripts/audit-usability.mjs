@@ -5,6 +5,12 @@ import { parse } from '@vue/compiler-sfc'
 
 const root = resolve('..')
 const docs = resolve(root, 'docs/web/productization')
+try {
+  const existing = JSON.parse(await readFile(resolve(docs, 'usability-audit.json'), 'utf8'))
+  if (existing.frozenTotal) throw new Error('台账已冻结。新问题写入JSON parkingLot；MD仅由update-usability-ledger.mjs生成。')
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error
+}
 const artifacts = 'C:/Users/yandong/.codex/visualizations/2026/09/08/01a07fca-edc8-73a2-9442-bdc1a59f1dc5/usability-goal'
 async function files(directory) {
   const entries = await readdir(directory, { withFileTypes: true })

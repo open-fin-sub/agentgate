@@ -107,8 +107,17 @@ try {
       }
       return found
     })
-    records.push({ route, title: await page.locator('h1').first().innerText(), failures })
-    console.log(JSON.stringify({ route, failures: failures.length }))
+    const content = await page.evaluate(() => {
+      const main = document.querySelector('main') ?? document.body
+      return {
+        text: main.innerText,
+        headings: [...main.querySelectorAll('h1,h2,h3')].filter(node => node.getClientRects().length).map(node => node.textContent.trim()),
+        actions: [...main.querySelectorAll('button,a')].filter(node => node.getClientRects().length).map(node => ({ text: node.textContent.trim(), disabled: !!node.disabled })),
+        overflow: document.documentElement.scrollWidth > innerWidth,
+      }
+    })
+    records.push({ route, title: await page.locator('h1').first().innerText(), failures, content })
+    if (failures.length || content.overflow) console.log(JSON.stringify({ route, failures: failures.length, overflow: content.overflow }))
   }
   await writeFile(
     resolve(output, 'text-contrast.json'),
@@ -122,6 +131,7 @@ try {
       2,
     ),
   )
+  console.log(JSON.stringify({ pages: records.length, textContrastCandidates: records.reduce((count, item) => count + item.failures.length, 0), overflowingPages: records.filter(item => item.content.overflow).length }))
 } finally {
   await browser.close()
 }

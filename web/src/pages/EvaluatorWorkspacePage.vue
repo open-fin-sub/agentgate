@@ -24,7 +24,7 @@ const visible = computed(() =>
       .includes(query.value.toLowerCase()),
   ),
 )
-const kinds = { rule: '规则', llm_judge: 'LLM', hybrid: '复合' }
+const kinds = { rule: '规则', llm_judge: '大模型评分', hybrid: '复合' }
 async function load() {
   loading.value = true
   error.value = ''

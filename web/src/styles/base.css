@@ -809,22 +809,22 @@ details[open] > summary {
 }
 .el-button--danger.is-link,
 .el-button--danger.is-text,
-.el-tag--danger {
+:root .el-tag.el-tag--danger {
   --el-button-text-color: var(--ag-error-text);
   --el-button-hover-text-color: #922018;
   --el-button-hover-link-text-color: #922018;
   --el-tag-text-color: var(--ag-error-text);
 }
-.el-tag--warning {
+:root .el-tag.el-tag--warning {
   --el-tag-text-color: var(--ag-warning-text);
 }
-.el-tag--success {
+:root .el-tag.el-tag--success {
   --el-tag-text-color: var(--ag-success-text);
 }
-.el-tag--info {
+:root .el-tag.el-tag--info {
   --el-tag-text-color: var(--ag-body);
 }
-.el-tag--primary {
+:root .el-tag.el-tag--primary {
   --el-tag-text-color: var(--ag-link);
 }
 .el-select .el-tag .el-select__tags-text,

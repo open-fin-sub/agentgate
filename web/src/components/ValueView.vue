@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-const props = defineProps<{ value: unknown; depth?: number }>()
+import { businessValueLabel, conditionField } from '../catalogLabels'
+const props = defineProps<{ value: unknown; depth?: number; field?: string }>()
 const resolved = computed(() => {
   if (typeof props.value === 'string' && /^[\s]*[\[{]/.test(props.value)) {
     try {
@@ -50,7 +51,7 @@ const fieldNames: Record<string, string> = {
   <dl v-if="record?.length" class="ux-value-record">
     <div v-for="[key, item] in record" :key="key">
       <dt>{{ fieldNames[key] ?? key }}</dt>
-      <dd><ValueView :value="item" :depth="(depth ?? 0) + 1" /></dd>
+      <dd><ValueView :value="item" :depth="(depth ?? 0) + 1" :field="['condition', 'expected', 'actual'].includes(key) ? conditionField(resolved) ?? field ?? key : key" /></dd>
     </div>
   </dl>
   <ul v-else-if="Array.isArray(resolved) && resolved.length" class="ux-value-list">
@@ -69,7 +70,7 @@ const fieldNames: Record<string, string> = {
             ? '未填写'
             : resolved === ''
               ? '空文本'
-              : resolved
+              : businessValueLabel(field, resolved)
   }}</span>
 </template>
 <style scoped>

@@ -84,7 +84,6 @@ test('real published input → queued run → report → evidence → version co
   expect(report.run.manifest.dataset.version).toBe(1)
   expect(report.release_gate.outcome).toBe('fail')
   expect(report.results.some((r: { outcome: string }) => r.outcome === 'fail')).toBeTruthy()
-  await page.screenshot({ path: testInfo.outputPath('report.png'), fullPage: true })
   await page.getByRole('button', { name: '评估结果与用例', exact: true }).click()
   await page.getByRole('combobox', { name: '结果状态' }).press('ArrowDown')
   await page.getByRole('option', { name: '不通过', exact: true }).click()
@@ -104,7 +103,6 @@ test('real published input → queued run → report → evidence → version co
   await expect(
     page.getByRole('heading', { name: '高风险申请应进入人工审核', exact: true }),
   ).toBeVisible()
-  await page.screenshot({ path: testInfo.outputPath('evidence.png'), fullPage: true })
   await page.getByRole('link', { name: '查看用例与修订版本' }).click()
   await expect(page.getByTestId('version-published-1')).toHaveClass(/active/)
   await page.getByTestId('create-draft').click()

@@ -285,7 +285,7 @@ test('LLM and composite single-sample outcomes separate NA, resource errors and 
   ).toBeVisible()
   await expect(page.locator('.prep-result')).toContainText('分数无分数')
   await page.getByRole('button', { name: '编辑并发布新版本', exact: true }).click()
-  await select(page, 'LLM 评分资源', '已失效的专用资源')
+  await select(page, '大模型评分资源', '已失效的专用资源')
   await page.getByRole('button', { name: '运行单样本试评', exact: true }).click()
   await expect(
     page.locator('.prep-result').getByRole('heading', { name: '执行错误', exact: true }),

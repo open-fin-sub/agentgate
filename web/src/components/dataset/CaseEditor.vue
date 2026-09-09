@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import type { EvaluationCase, ValidationIssue } from '../../types/dataset'
 import ExpectationEditor from './ExpectationEditor.vue'
 import MessageInput from '../MessageInput.vue'
@@ -40,14 +40,25 @@ function addTurn() {
     notes: '',
   })
 }
-function removeTurn(index: number) {
+async function removeTurn(index: number) {
   if (!form.value) return
   if (form.value.turns.length === 1) {
     ElMessage.warning('至少保留一轮对话。')
     return
   }
-  delete invalid.value[form.value.turns[index]!.id]
-  form.value.turns.splice(index, 1)
+  const selected = form.value
+  const turn = selected.turns[index]
+  if (!turn || !props.editable) return
+  const confirmed = await ElMessageBox.confirm(
+    `将从当前用例草稿移除第 ${index + 1} 轮的消息和检查项；其他轮次与已发布版本不受影响。`,
+    '移除对话轮次',
+    { confirmButtonText: '确认移除', cancelButtonText: '保留此轮', type: 'warning' },
+  ).then(() => true, () => false)
+  if (!confirmed || !props.editable || selected !== form.value || selected.turns.length === 1) return
+  const position = selected.turns.indexOf(turn)
+  if (position < 0) return
+  delete invalid.value[turn.id]
+  selected.turns.splice(position, 1)
 }
 function save() {
   if (!form.value?.name.trim()) {

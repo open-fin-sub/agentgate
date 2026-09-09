@@ -13,11 +13,18 @@ test('editing a real case preserves all six expectation types, identities and ty
   ]
   const response = await request.post(`/api/datasets/${dataset.id}/drafts/cases`, { data: {
     id: 'complete-case', name: '复杂预期', category: 'boundary', difficulty: 'hard', tags: [], notes: '', initial_state: {},
-    turns: [{ id: 'turn-1', input: { message: '请核对申请' }, expectations, notes: '' }],
+    turns: [{ id: 'turn-1', input: { message: '请核对申请' }, expectations, notes: '' },
+      { id: 'turn-2', input: { message: '补充说明' }, expectations: [], notes: '' }],
   } })
   expect(response.ok()).toBeTruthy()
   await page.goto(`/datasets?dataset=${dataset.id}&case=complete-case`)
   await expect(page.getByTestId('case-name')).toHaveValue('复杂预期')
+  await page.getByRole('button', { name: '移除第 2 轮', exact: true }).click()
+  await page.getByRole('button', { name: '保留此轮', exact: true }).click()
+  await expect(page.locator('.turn-form')).toHaveCount(2)
+  await page.getByRole('button', { name: '移除第 2 轮', exact: true }).click()
+  await page.getByRole('button', { name: '确认移除', exact: true }).click()
+  await expect(page.locator('.turn-form')).toHaveCount(1)
   await page.getByTestId('case-name').fill('复杂预期（仅修改名称）')
   await page.getByTestId('save-case').click()
   await expect(page.getByText('用例已保存到草稿', { exact: true })).toBeVisible()

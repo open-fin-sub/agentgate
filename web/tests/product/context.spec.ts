@@ -120,10 +120,6 @@ test('report evidence keeps its filtered parent, switches in order and restores 
   await expect(version.getByTestId('case-name')).toHaveValue(fixedVersion.cases[0].name)
   await expect(version.getByRole('button', { name: '上一条', exact: true })).toBeDisabled()
   await expect(version.getByRole('button', { name: '下一条', exact: true })).toBeDisabled()
-  await page.screenshot({
-    path: testInfo.outputPath('lineage-version-drawer.png'),
-    animations: 'disabled',
-  })
   const bounds = await version.boundingBox()
   expect(bounds?.y).toBeCloseTo(0)
   expect(bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width)

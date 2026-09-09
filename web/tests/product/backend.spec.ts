@@ -188,7 +188,7 @@ test('Judge response rendering distinguishes missing usage and sanitized executi
   }
   await page.route(`**/api/runs/${baseline}`, (route) => route.fulfill({ json: sample }))
   await page.goto(`/runs/${baseline}/cases/${result.case_id}?evaluator=${result.evaluator_id}`)
-  const call = page.getByRole('region', { name: 'LLM 评分调用信息' })
+  const call = page.getByRole('region', { name: '大模型评分调用信息' })
   await expect(
     call.locator('dl > div').filter({ has: page.getByText('请求模型', { exact: true }) }),
   ).toHaveText('请求模型requested-test-model')

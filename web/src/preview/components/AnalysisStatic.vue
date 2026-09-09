@@ -157,8 +157,7 @@ function retry() {
         {{ version.toolDefinitions?.length ?? 0 }} 份工具 Schema；检查只使用这些版本内快照。
       </p>
       <p v-if="(version.skillDefinitions?.length ?? 0) < 2" class="muted">
-        当前版本不具备多个关联 Skill 的固定定义，不能声称发现跨 Skill 冲突；仍可查看 Prompt
-        与工具定义缺口。
+        该版本的技能定义不足以分析技能间的冲突。可继续查看提示词和工具要求，或选择包含多个技能定义的版本。
       </p>
       <label class="scenario-label"
         >静态检查体验场景<el-select v-model="scenario"

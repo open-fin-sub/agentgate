@@ -204,9 +204,9 @@ onUnmounted(() => {
       <p>选择对象、固定输入和评分标准，直接提交一次测评。</p>
     </div>
   </div>
-  <StatusNotice type="warning">
-    当前执行对象为内置信贷 Agent 演示接入，结果由真实执行产生。<RouterLink to="/capabilities"
-      >查看完整接入范围</RouterLink
+  <StatusNotice>
+    当前可选择信贷助手的版本。需要测评其他对象时，请<RouterLink to="/capabilities"
+      >查看接入要求</RouterLink
     >
   </StatusNotice>
   <StatusNotice v-if="route.query.source">
@@ -341,7 +341,7 @@ onUnmounted(() => {
           <div>
             <EntityRef
               :name="catalogLabel(item.name)"
-              :type="`${{ rule: '规则', llm_judge: 'LLM 评分', hybrid: '复合' }[item.kind]}评估器`"
+              :type="`${{ rule: '规则', llm_judge: '大模型评分', hybrid: '复合' }[item.kind]}评估器`"
               :version="item.version"
               compact
             >
@@ -375,7 +375,7 @@ onUnmounted(() => {
       <StatusNotice
         v-if="evaluators.some((item) => item.kind === 'llm_judge' && selected.includes(item.id))"
       >
-        已选择 LLM 评分。同一输入的评分可能存在差异，完成后可在用例报告查看评分理由与调用记录。
+        已选择 大模型评分。同一输入的评分可能存在差异，完成后可在用例报告查看评分理由与调用记录。
       </StatusNotice>
     </section>
     <section class="panel">

@@ -50,6 +50,12 @@ test('shared controls and teleported dialog keep readable states and keyboard fo
   await page.keyboard.press('Escape')
   await expect(target).toBeFocused()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy()
+  await page.goto('/capabilities')
+  for (const type of ['success', 'warning', 'info']) {
+    const tag = page.locator(`.el-tag--${type}`).first()
+    await expect(tag).toBeVisible()
+    expect(await textContrast(tag)).toBeGreaterThanOrEqual(4.5)
+  }
 })
 
 test('scheduled input uses local time and survives reload without submitting a task', async ({

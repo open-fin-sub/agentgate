@@ -4,7 +4,7 @@ export const outcomeLabels: Record<Outcome, string> = {
   fail: '不通过',
   review: '需复核',
   not_applicable: '不适用',
-  error: '评估器错误',
+  error: '执行错误',
 }
 export const gateLabels: Record<ReleaseGateReason, string> = {
   threshold_met: '达到本次测评门槛',
@@ -16,4 +16,4 @@ export const gateLabels: Record<ReleaseGateReason, string> = {
   no_applicable_results: '没有可用于判定的适用分数',
 }
 export const scoreText = (value: number | null | undefined) =>
-  value == null ? '—' : value.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')
+  value == null ? '无分数' : value.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')

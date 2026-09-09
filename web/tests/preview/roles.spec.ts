@@ -8,7 +8,11 @@ async function selectRole(page: Page, role: string) {
 test('evaluation users see resource status while management belongs to the administrator', async ({ page }) => {
   await page.goto('/preview/resources')
   await expect(page.getByRole('heading', { name: '资源状态', exact: true })).toBeVisible()
-  await expect(page.getByRole('columnheader', { name: '状态', exact: true })).toBeVisible()
+  const resourceStatus = page.locator('.resource-summary dt').filter({ hasText: /^状态$/ }).first()
+  await expect(resourceStatus).toBeVisible()
+  const bounds = await resourceStatus.boundingBox()
+  expect(bounds!.x).toBeGreaterThanOrEqual(0)
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width)
   for (const name of ['添加体验凭据', '保存公共限制', '导出资源记录', '测试', '停用']) {
     await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0)
   }

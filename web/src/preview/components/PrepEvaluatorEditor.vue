@@ -75,7 +75,7 @@ function resource(id: string) {
     <el-form-item label="评估器类型"
       ><el-select :model-value="value.kind" @update:model-value="set('kind', $event)"
         ><el-option label="确定性规则" value="rule" /><el-option
-          label="LLM 评分"
+          label="大模型评分"
           value="llm" /><el-option label="复合标准" value="composite" /></el-select
     ></el-form-item>
     <template v-if="value.kind === 'rule'"
@@ -98,7 +98,7 @@ function resource(id: string) {
         @update:model-value="set('rule', $event)"
     /></template>
     <template v-else-if="value.kind === 'llm'"
-      ><el-form-item label="评分 Prompt"
+      ><el-form-item label="评分提示词"
         ><el-input
           :model-value="value.prompt"
           type="textarea"
@@ -108,7 +108,7 @@ function resource(id: string) {
       <p class="muted" v-pre>
         可用变量：{{ input }}、{{ output }}（必需）、{{ expected }}。返回 0～1 分数与理由。
       </p>
-      <el-form-item label="LLM 评分资源"
+      <el-form-item label="大模型评分资源"
         ><el-select :model-value="value.resourceId" @update:model-value="resource"
           ><el-option
             v-for="entry in state.credentials"

@@ -31,7 +31,13 @@ const markdown = [
     item.id, item.pattern, item.commit, item.files.join('、'), `${item.resolution} ${item.verification}`,
   ])),
   '## Parking lot（F 处理）',
-  table(['编号', '位置', '问题', '状态', '处理'], (audit.parkingLot ?? []).map(item => [item.id, item.file, item.issue, item.status, item.resolution])),
+  table(['编号', '位置', '问题', '状态', '处理'], (audit.parkingLot ?? []).map(item => [item.id, item.file, item.issue, item.status, item.batchId ? `批次 ${item.batchId}` : item.resolution])),
+  '## 前后端联合工作项（F 接入快照）',
+  table(['编号/需求', '用户故事/场景', '当前能力与缺口', '用户影响与降级', '接口方向与验收'], (audit.jointWorkItems ?? []).map(item => [
+    `${item.id} ${item.title}；${item.status}`, `${item.stories}；${item.scenarios}`,
+    `已有：${item.current} 缺口：${item.missing}`, `${item.impact} 降级：${item.fallback}`,
+    `拟议方向（非已实现合同）：${item.proposal} 验收：${item.acceptance}`,
+  ])),
   '## 当前 assumptions 与联合工作项', ...(audit.assumptions ?? []).map(item => `- ${item}`),
   '## 复用与改动保护', audit.reuse,
 ].filter(Boolean).join('\n\n') + '\n'

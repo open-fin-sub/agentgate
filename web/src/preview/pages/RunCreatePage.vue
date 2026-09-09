@@ -94,7 +94,7 @@ const evaluatorOptions = computed(() =>
       label: `${item.name}（版本：${version.version}）`,
       name: item.name,
       version: version.version,
-      kind: { rule: '规则评估器', llm: 'LLM 评估器', composite: '复合评估器' }[version.kind],
+      kind: { rule: '规则评估器', llm: '大模型评分评估器', composite: '复合评估器' }[version.kind],
       disabled: item.archived,
     })),
   ),
@@ -115,7 +115,7 @@ const changes = computed(() => {
     caseIds: '固定样本',
     resourceId: '执行资源',
     executionResourceId: '对象执行资源',
-    scoringResourceId: 'LLM 评分资源',
+    scoringResourceId: '大模型评分资源',
     resourcePurpose: '资源用途',
     model: '模型',
     scheduledAt: '预约时间',
@@ -513,7 +513,7 @@ watch(() => route.fullPath, initialize, { immediate: true })
           ><span class="hint">执行模型：{{ config.model || '缺失' }}（由资源确定）</span></label
         >
         <label class="field"
-          >LLM 评分资源<el-select v-model="config.scoringResourceId" aria-label="LLM评分资源"
+          >大模型评分资源<el-select v-model="config.scoringResourceId" aria-label="大模型评分资源"
             ><el-option
               v-for="item in state.credentials"
               :key="item.id"
@@ -527,7 +527,7 @@ watch(() => route.fullPath, initialize, { immediate: true })
                   { label: '可用', value: item.enabled && item.healthy },
                 ]" /></el-option></el-select
           ><span class="hint"
-            >评分模型：{{ scoringResource?.model || '缺失' }}。用于所选标准中的 LLM 评分。</span
+            >评分模型：{{ scoringResource?.model || '缺失' }}。用于所选标准中的 大模型评分。</span
           ></label
         >
         <label class="field"
@@ -582,7 +582,7 @@ watch(() => route.fullPath, initialize, { immediate: true })
                 value="infrastructure"
                 label="基础设施中断" /><el-option
                 value="missing-trace"
-                label="Trace 缺失" /><el-option
+                label="执行轨迹缺失" /><el-option
                 value="missing-usage"
                 label="Token 用量未采集" /></el-select
           ></label>

@@ -74,7 +74,7 @@ const evidenceItems = computed(
         scope="本条用例"
       />
       <button class="text-button" @click="evidenceCase = result.caseId">
-        查看样本与 Trace{{ result.trace.length ? `（${result.trace.length} 节点）` : '（未采集）' }}
+        查看样本与 执行轨迹{{ result.trace.length ? `（${result.trace.length} 节点）` : '（未采集）' }}
         →
       </button>
     </template>

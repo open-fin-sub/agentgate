@@ -1,4 +1,5 @@
 import type { LocationQuery } from 'vue-router'
+import { outcomeLabels as resultOutcomeLabels } from '../../resultLabels'
 import type {
   CaseResult,
   ExecutionConfig,
@@ -16,11 +17,11 @@ export const reviewDecisionLabels: Record<HumanReview['decision'], string> = {
 }
 
 export const outcomeLabels: Record<Outcome, string> = {
-  pass: '通过',
-  fail: '不通过',
-  review: '需复核',
-  NA: '不适用',
-  error: '执行错误',
+  pass: resultOutcomeLabels.pass,
+  fail: resultOutcomeLabels.fail,
+  review: resultOutcomeLabels.review,
+  NA: resultOutcomeLabels.not_applicable,
+  error: resultOutcomeLabels.error,
 }
 export const statusLabels: Record<RunStatus, string> = {
   scheduled: '已预约',
@@ -269,7 +270,7 @@ export function qualityConclusion(run: Run) {
   const metrics = runMetrics(run)
   if (run.status !== 'completed') return '报告尚不完整，暂不判定质量达标'
   if (metrics.pending || metrics.counts.error) return '存在执行错误或缺失结果，质量证据不足'
-  if (metrics.counts.review) return '存在待复核结果，请查看证据'
+  if (metrics.counts.review) return '存在需复核结果，请查看证据'
   if (metrics.score == null) return '没有适用分数，无法判定质量'
   if (metrics.counts.fail || metrics.score < run.config.threshold) return '未达到本次质量条件'
   return '达到本次质量条件（Mock 示例）'
