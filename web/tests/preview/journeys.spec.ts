@@ -100,6 +100,11 @@ test('dataset revision publishes a new version and keeps a historical report imm
   await page.getByRole('button', { name: '应用用例修改', exact: true }).click()
   await page.getByPlaceholder('说明修订原因及主要变化').fill('验收：补充身份核验前置条件')
   await page.getByRole('button', { name: '发布新版本', exact: true }).click()
+  await page.getByRole('button', { name: '继续编辑', exact: true }).click()
+  await expect(page.getByPlaceholder('说明修订原因及主要变化')).toHaveValue('验收：补充身份核验前置条件')
+  await expect(page).not.toHaveURL(/version=3/)
+  await page.getByRole('button', { name: '发布新版本', exact: true }).click()
+  await page.getByRole('button', { name: '确认发布', exact: true }).click()
   await expect(page).toHaveURL(/version=3/)
   await page.reload()
   await expect(

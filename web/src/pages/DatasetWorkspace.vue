@@ -371,6 +371,14 @@ async function discardDraft() {
 
 async function publishDraft() {
   if (dirty.value) return ElMessage.warning('请先保存当前用例，再验证并发布测评集。')
+  if (busy.value) return
+  const datasetId = activeDatasetId.value
+  const confirmed = await ElMessageBox.confirm(
+    '将当前草稿发布为固定版本，发布后需新建版本才能修改；历史测评报告保持原样。',
+    '发布测评集版本',
+    { confirmButtonText: '确认发布', cancelButtonText: '继续编辑', type: 'warning' },
+  ).then(() => true, () => false)
+  if (!confirmed || dirty.value || datasetId !== activeDatasetId.value) return
   busy.value = true
   validationIssues.value = []
   try {

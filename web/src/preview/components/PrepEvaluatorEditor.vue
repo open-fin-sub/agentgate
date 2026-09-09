@@ -4,6 +4,7 @@ import MetadataGroup from '../../components/MetadataGroup.vue'
 import EntityLink from './EntityLink.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
 import { computed } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import type { EvaluatorVersion } from '../types'
 import { clone, usePreview } from '../workspace'
 import { ruleExamples } from './PrepEvaluation'
@@ -35,10 +36,18 @@ function ruleTemplate(type: string) {
 function addChild() {
   set('children', [...clone(value.value.children), { id: '', version: 1, weight: 1 }])
 }
-function removeChild(index: number) {
+async function removeChild(index: number) {
+  const child = value.value.children[index]
+  if (!child || props.readonly) return
+  const confirmed = await ElMessageBox.confirm(
+    `将从当前复合标准移除第 ${index + 1} 个子评估器及其权重。请重新核对剩余权重；已发布版本不受影响。`,
+    '移除子评估器',
+    { confirmButtonText: '确认移除', cancelButtonText: '保留子项', type: 'warning' },
+  ).then(() => true, () => false)
+  if (!confirmed || props.readonly || !value.value.children.includes(child)) return
   set(
     'children',
-    value.value.children.filter((_, position) => position !== index),
+    value.value.children.filter(item => item !== child),
   )
 }
 function selectChild(index: number, ref: string) {

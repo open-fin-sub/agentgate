@@ -163,7 +163,7 @@ function edit() {
 function update(value: EvaluatorVersion) {
   if (!readonly.value) draft.value = clone(value)
 }
-function publish() {
+async function publish() {
   if (readonly.value) return
   const errors = evaluatorErrors(draft.value, state, evaluator.value?.id)
   if (!name.value.trim()) errors.push('请填写评估器名称')
@@ -171,6 +171,13 @@ function publish() {
   error.value = errors.join('；')
   if (error.value) return
   const number = Math.max(0, ...(evaluator.value?.versions.map((entry) => entry.version) ?? [])) + 1
+  const evaluatorId = id.value
+  const confirmed = await ElMessageBox.confirm(
+    `将“${name.value.trim()}”发布为 v${number}。发布后需新建版本才能修改，历史任务继续使用原评估器版本。`,
+    '发布评估器版本',
+    { confirmButtonText: '确认发布', cancelButtonText: '继续编辑', type: 'warning' },
+  ).then(() => true, () => false)
+  if (!confirmed || readonly.value || evaluatorId !== id.value) return
   const nextVersion = { ...clone(draft.value), version: number }
   const item = evaluator.value
   const next: Evaluator = {

@@ -216,7 +216,7 @@ function saveDraft() {
   ElMessage.success('草稿已保存')
   return true
 }
-function publish() {
+async function publish() {
   const item = dataset.value
   if (!item || readonly.value) return
   error.value = datasetErrors(localCases.value).join('；')
@@ -224,6 +224,12 @@ function publish() {
   if (!note.value.trim()) error.value = '请填写本次发布说明。'
   if (error.value) return
   const number = Math.max(0, ...item.versions.map((entry) => entry.version)) + 1
+  const confirmed = await ElMessageBox.confirm(
+    `将“${item.name}”发布为 v${number}，包含 ${localCases.value.length} 条用例。发布后需新建版本才能修改，历史报告保持原样。`,
+    '发布测评集版本',
+    { confirmButtonText: '确认发布', cancelButtonText: '继续编辑', type: 'warning' },
+  ).then(() => true, () => false)
+  if (!confirmed || readonly.value || dataset.value !== item) return
   const newVersion = {
     version: number,
     cases: clone(localCases.value),

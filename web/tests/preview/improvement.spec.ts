@@ -68,6 +68,7 @@ test('static analysis failure is retained, retry produces evidence, and risk can
   await page.getByRole('button', { name: '保存草稿，继续发布', exact: true }).click()
   await page.getByPlaceholder('说明修订原因及主要变化').fill('补充静态风险验证场景')
   await page.getByRole('button', { name: '发布新版本', exact: true }).click()
+  await page.getByRole('button', { name: '确认发布', exact: true }).click()
   await page.getByRole('button', { name: '使用此版本并返回', exact: true }).click()
   await expect(page).toHaveURL(/\/preview\/analysis\?.*datasetVersion=1/)
   await page.getByRole('link', { name: '使用补充用例进行测评', exact: true }).click()

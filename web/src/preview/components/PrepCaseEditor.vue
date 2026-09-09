@@ -4,7 +4,7 @@ import EmptyState from '../../components/EmptyState.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import type { TestCase } from '../types'
 import { clone, usePreview } from '../workspace'
 import { caseErrors, caseTitle, emptyCase, syncCase } from './PrepCases'
@@ -95,8 +95,18 @@ function addTurn() {
         : { input: item.value.question, expected: item.value.expected },
     )
 }
-function removeTurn(index: number) {
-  item.value?.turns.splice(index, 1)
+async function removeTurn(index: number) {
+  const selected = item.value
+  const turn = selected?.turns[index]
+  if (!selected || !turn || props.readonly) return
+  const confirmed = await ElMessageBox.confirm(
+    `将从当前用例草稿移除第 ${index + 1} 轮的输入和期望，其他轮次与已发布版本不受影响。`,
+    '移除对话轮次',
+    { confirmButtonText: '确认移除', cancelButtonText: '保留此轮', type: 'warning' },
+  ).then(() => true, () => false)
+  if (!confirmed || props.readonly || item.value !== selected) return
+  const position = selected.turns.indexOf(turn)
+  if (position >= 0) selected.turns.splice(position, 1)
 }
 function save() {
   if (!item.value || props.readonly) return

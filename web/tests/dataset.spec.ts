@@ -48,6 +48,7 @@ test('creates, publishes, runs, and versions a Dataset through the real UI', asy
   await expect(page.getByText('用例已保存到草稿')).toBeVisible()
 
   await page.getByTestId('publish-draft').click()
+  await page.getByRole('button', { name: '确认发布', exact: true }).click()
   await expect(page.getByText('已发布 v1')).toBeVisible()
   await page.reload()
   await page.locator('.dataset-list-item').filter({ hasText: name }).click()
@@ -73,6 +74,7 @@ test('creates, publishes, runs, and versions a Dataset through the real UI', asy
   await page.getByTestId('case-name').fill('高风险申请必须人工复核（v2）')
   await page.getByTestId('save-case').click()
   await page.getByTestId('publish-draft').click()
+  await page.getByRole('button', { name: '确认发布', exact: true }).click()
   await expect(page.getByTestId('version-published-1')).toBeVisible()
   await expect(page.getByTestId('version-published-2')).toBeVisible()
 
@@ -86,6 +88,7 @@ test('shows structured validation when an empty draft cannot be published', asyn
   await page.goto('/datasets')
   await createDataset(page, `空测评集-${Date.now()}`)
   await page.getByTestId('publish-draft').click()
+  await page.getByRole('button', { name: '确认发布', exact: true }).click()
   await expect(page.getByText('草稿尚不能发布')).toBeVisible()
   await expect(page.getByText('测评集至少需要一个用例')).toBeVisible()
 })
