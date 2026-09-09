@@ -4,7 +4,7 @@ Last updated: 2026-09-09
 
 ## Active Web usability Goal — WEB-UX-GOAL-001
 
-最新：A/G/C/B类已本地提交（B为181a44a），D类41项已验证、1个隐藏文件选择机制核实为非缺陷。台账539条，476已验证、21非缺陷、3后续范围，剩余39项。D类typecheck/build、默认114/114通过；最后悬停色补改4/4通过。24个可达页面默认文字对比度扫描无候选，关键页面中间截图已核对。E/H/I及25页清单、场景A–G与最终截图验收继续，Goal未完成。详见 [实施记录](web/productization/usability-implementation.md)。独立Web15473/API18473；历史记录不代表本轮完成。
+最新：E类已提交d6dc813；typecheck/build、完整回归116/116通过。台账冻结539条，剩余38条（H12/I25/F1），新问题进入parking lot。按批次记账，F只报例外与最终截图。续作只读[当前状态](web/productization/usability-state.md)及必要局部明细。Goal尚未完成。
 
 用户显式授权按 A–I 模式类自主整改，完成条件以 `docs/web/productization/ux-design-rules.md` 与 Goal 请求为准。仅 Web 可用性与现有 API 映射；禁止 push、PR、合并。保留原有未提交工作，不与原评审任务协调。
 

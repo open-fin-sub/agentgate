@@ -1,6 +1,6 @@
 # A–I 整改验证范围
 
-默认命令在 `web` 目录运行 `npm run test:e2e`，覆盖 `tests/product` 与 `tests/preview` 全部测试，桌面1440×1000和Pixel 7，共114项（2026-09-09 D类；product目录30项，preview目录84项）。新增accessibility.spec中2项验证真实弹层/创建控件，另2项验证体验预约草稿；按场景为真实28项、体验86项。B类历史110项中新增来源资产固定版本、同类切换、父页保留及返回焦点2项；C类历史收口为108项。可用 `AGENTGATE_WEB_URL` 指向独立验证环境，当前默认15473。API、Celery worker、Redis需预先启动且使用同一工作树和隔离数据库；该命令不清理数据库、不启动或停止已有服务。当前环境为API18473、Redis19379数据库2、`usability-ui.db`，不得指向生产环境运行写入型旅程。
+默认命令在 `web` 目录运行 `npm run test:e2e`，覆盖 `tests/product` 与 `tests/preview` 全部测试，桌面1440×1000和Pixel 7，共116项（2026-09-09 E类；product目录30项，preview目录86项；新增角色显示边界双端2项）。新增accessibility.spec中2项验证真实弹层/创建控件，另2项验证体验预约草稿；按场景为真实28项、体验88项。B类历史110项中新增来源资产固定版本、同类切换、父页保留及返回焦点2项；C类历史收口为108项。可用 `AGENTGATE_WEB_URL` 指向独立验证环境，当前默认15473。API、Celery worker、Redis需预先启动且使用同一工作树和隔离数据库；该命令不清理数据库、不启动或停止已有服务。当前环境为API18473、Redis19379数据库2、`usability-ui.db`，不得指向生产环境运行写入型旅程。
 
 原默认配置依赖 Bash、`/tmp` 和旧Demo主页，不适用于当前Windows产品页面。保留三个旧根目录测试文件作为历史参考；其中有效行为由下列现行测试承担，而非静默跳过需求：
 

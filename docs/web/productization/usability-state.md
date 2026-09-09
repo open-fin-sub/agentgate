@@ -1,0 +1,25 @@
+# WEB-UX-GOAL-001 续作入口
+
+- 工作树：`.worktrees/web-productization`；分支 `codex/web-productization`。
+- 当前类别：E已收口，进入H词表与I反馈；最终F未验收。
+- 冻结实例539；477已验证、21非缺陷、3后续范围；剩余38（H12/I25/F1）。
+- Parking lot：PL-01手机资源状态横向滚动，F集中处理；禁止扩张原台账。
+- 最新提交：E `d6dc813`；D `67ab461`；B `181a44a`；C `6f9483d`。
+- 最新完整验证：E typecheck/build通过；默认E2E 116/116（10.2分钟）。
+- 授权：自主可用性整改、本地提交；禁止push/PR/合并/联系旧评审。
+- 已定：去掉货币成本，以输入/输出/总Token及耗时表达；业务贷款金额保留。
+- 已定：测评集自动生成延后；本轮手工/导入Dataset v1。
+- 真实页面只用现有API；缺口隐藏入口或简短原因+下一步，不使用Mock权限/判定。
+- 类内只定向测试；改文案/交互前grep web/tests同批更新；类末一次全量、F前最终全量。
+- JSON唯一源：[台账](usability-audit.json)；按模式/文件筛选读取，禁止整份载入上下文。
+- MD生成：仓库根执行 `node web/scripts/update-usability-ledger.mjs`，禁止手写生成结果。
+- 新收口写batches一次resolution与提交号，finding只写batchId；新问题写parkingLot。
+- 每批实施记录≤10行；[实施记录](usability-implementation.md)保留历史。
+- F只输出[逐页例外](usability-page-checklist.md)及场景A–G例外；通过项不逐条写。
+- F最终截图：P08/P10/P11/P12桌面/手机对照；取消中间checkpoint截图。
+- artifacts：任务可视化目录下`usability-goal/before`为不可变改前图，最终图另存。
+- 必要依据：[规则](ux-design-rules.md)、[联合决策](joint-design-resolution.md)、旅程§3.4/5/7/9。
+- 假设：JSON assumptions完整AS-01～AS-11；联合工作项J-01/J-02仍需F核对。
+- 服务：Web15473/API18473/Redis19379 DB2；独立usability-ui.db，保留旧服务与数据。
+- 他人修改：AGENTS/architecture/refactor计划/web README和未认领设计文档均勿提交。
+- 下一步：H/I grep候选清单集中审阅；复用resultLabels/RunSupport/InlineError和现有确认组件。

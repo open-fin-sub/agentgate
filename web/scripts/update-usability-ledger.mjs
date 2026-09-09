@@ -1,29 +1,39 @@
 import fs from 'node:fs'
-import path from 'node:path'
-const docs = path.resolve('../docs/web/productization')
-const jsonPath = path.join(docs, 'usability-audit.json')
-const audit = JSON.parse(fs.readFileSync(jsonPath, 'utf8'))
-const migrated = ['CaseEditor.vue', 'ExpectationEditor.vue', 'EvaluatorWorkspacePage.vue', 'CaseResultPage.vue', 'PrepEvaluatorEditor.vue', 'PrepCaseEditor.vue', 'PrepTrial.vue', 'PrepJsonImport.vue', 'AnalysisPage.vue', 'CasePage.vue', 'CompareEvidence.vue', 'TargetsPage.vue', 'AnalysisStatic.vue', 'RunPage.vue', 'RunDetailPage.vue', 'ComparePreflight.vue', 'ComparisonPage.vue']
-for (const finding of audit.findings) {
-  if (['A-INPUT', 'A-FORM'].includes(finding.pattern) && migrated.some(file => finding.file.endsWith('/' + file)) && finding.status === '待整改') {
-    finding.status = '整改中'
-    finding.resolution = '已迁移共享结构化输入或可读展示；完整页面与用户旅程验证后才关闭。'
-  }
-  if (finding.pattern === 'RC-TOKEN' && /concurrency/.test(finding.evidence ?? '') && !/\bcost\b|costDelta|Cost|\bcurrency\b|CNY|missing-cost|币种|费率|货币|成本|费用/.test(finding.evidence)) {
-    finding.status = '非缺陷'
-    finding.resolution = '原始扫描 currency 子串误命中 concurrency（并发数）；并发数是执行参数，不是货币成本，保留。'
-  }
-}
-fs.writeFileSync(jsonPath, JSON.stringify(audit, null, 2) + '\n')
-const counts = [...new Set(audit.findings.map(item => item.pattern))].map(pattern => {
-  const rows = audit.findings.filter(item => item.pattern === pattern)
-  const remaining = rows.filter(item => !['已验证', '非缺陷', '前后端联合工作项', '后续范围'].includes(item.status)).length
-  return `|${pattern}|${rows.length}|${remaining}|`
-})
+import { fileURLToPath } from 'node:url'
+
+const docs = new URL('../../docs/web/productization/', import.meta.url)
+const audit = JSON.parse(fs.readFileSync(new URL('usability-audit.json', docs), 'utf8'))
+const closed = new Set(['已验证', '非缺陷', '前后端联合工作项', '后续范围', 'parking lot'])
 const escape = value => String(value ?? '').replaceAll('|', '\\|').replaceAll('\n', ' ')
-let markdown = fs.readFileSync(path.join(docs, 'usability-audit.md'), 'utf8')
-markdown = markdown.replace(/\|模式类\|实例数\|剩余\|[\s\S]*?(?=\n\n## 缺陷明细)/, '|模式类|实例数|剩余|\n|---|---:|---:|\n' + counts.join('\n'))
-const table = '|ID|文件:原始行|规则|模式类|严重度|问题|状态与证据|\n|---|---|---|---|---|---|---|\n' + audit.findings.map(item => `|${item.id}|${item.file}:${item.line}|${item.rule}|${item.pattern}|${item.severity}|${escape(item.issue)}|${item.status}${item.resolution ? '：' + escape(item.resolution) : ''}|`).join('\n')
-markdown = markdown.replace(/\|ID\|文件:原始行\|[\s\S]*?(?=\n\n## 当前 assumptions)/, table)
-fs.writeFileSync(path.join(docs, 'usability-audit.md'), markdown)
-console.log(JSON.stringify({ total: audit.findings.length, statuses: Object.fromEntries([...new Set(audit.findings.map(x => x.status))].map(status => [status, audit.findings.filter(x => x.status === status).length])) }))
+const table = (headers, rows) => [
+  `|${headers.join('|')}|`, `|${headers.map(() => '---').join('|')}|`,
+  ...rows.map(row => `|${row.map(escape).join('|')}|`),
+].join('\n')
+const patterns = [...new Set(audit.findings.map(item => item.pattern))]
+const remaining = audit.findings.filter(item => !closed.has(item.status)).length
+const markdown = [
+  '# A–I 全站可用性整改台账 WEB-UX-GOAL-001',
+  '> 由 usability-audit.json 生成；运行 node web/scripts/update-usability-ledger.mjs，禁止手工编辑此文件。',
+  audit.introduction,
+  '## 授权与已拍板变更', ...(audit.decisions ?? []).map(item => `- ${item}`),
+  `## 模式统计\n\n冻结 ${audit.frozenTotal} 条；当前剩余 ${remaining} 条。新发现进入 parking lot，F 集中处理。`,
+  table(['模式类', '实例数', '剩余'], patterns.map(pattern => {
+    const rows = audit.findings.filter(item => item.pattern === pattern)
+    return [pattern, rows.length, rows.filter(item => !closed.has(item.status)).length]
+  })),
+  '## 缺陷明细',
+  table(['ID', '文件:原始行', '规则', '模式类', '严重度', '问题', '状态与证据'], audit.findings.map(item => [
+    item.id, `${item.file}:${item.line}`, item.rule, item.pattern, item.severity, item.issue,
+    `${item.status}${item.batchId ? `；批次 ${item.batchId}` : item.resolution ? `：${item.resolution}` : ''}`,
+  ])),
+  '## 批量收口记录',
+  table(['批次', '模式类', '提交', '文件', '处理与验证'], (audit.batches ?? []).map(item => [
+    item.id, item.pattern, item.commit, item.files.join('、'), `${item.resolution} ${item.verification}`,
+  ])),
+  '## Parking lot（F 处理）',
+  table(['编号', '位置', '问题', '状态', '处理'], (audit.parkingLot ?? []).map(item => [item.id, item.file, item.issue, item.status, item.resolution])),
+  '## 当前 assumptions 与联合工作项', ...(audit.assumptions ?? []).map(item => `- ${item}`),
+  '## 复用与改动保护', audit.reuse,
+].filter(Boolean).join('\n\n') + '\n'
+fs.writeFileSync(new URL('usability-audit.md', docs), markdown)
+console.log(JSON.stringify({ source: fileURLToPath(new URL('usability-audit.json', docs)), total: audit.findings.length, remaining, parkingLot: audit.parkingLot?.length ?? 0 }))
