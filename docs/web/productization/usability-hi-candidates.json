@@ -1,0 +1,924 @@
+[
+  {
+    "file": "web/src/components/dataset/CaseTable.vue",
+    "findings": [
+      "UX-0018"
+    ],
+    "matches": []
+  },
+  {
+    "file": "web/src/components/dataset/VersionSelector.vue",
+    "findings": [
+      "UX-0033"
+    ],
+    "matches": []
+  },
+  {
+    "file": "web/src/pages/CaseResultPage.vue",
+    "findings": [
+      "UX-0040"
+    ],
+    "matches": [
+      {
+        "line": 6,
+        "text": "import StatusNotice from '../components/StatusNotice.vue'"
+      },
+      {
+        "line": 184,
+        "text": "<StatusNotice type=\"error\" v-if=\"error\">"
+      },
+      {
+        "line": 186,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 203,
+        "text": "<StatusNotice>"
+      },
+      {
+        "line": 205,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 272,
+        "text": "<StatusNotice type=\"error\" v-if=\"selected.error_detail\">"
+      },
+      {
+        "line": 289,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 312,
+        "text": "<StatusNotice type=\"warning\" v-if=\"selected.outcome === 'review'\">"
+      },
+      {
+        "line": 314,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 363,
+        "text": "<StatusNotice type=\"error\" v-if=\"traceError\">"
+      },
+      {
+        "line": 366,
+        "text": "</StatusNotice>"
+      }
+    ]
+  },
+  {
+    "file": "web/src/pages/EvaluatorWorkspacePage.vue",
+    "findings": [
+      "UX-0062",
+      "UX-0064"
+    ],
+    "matches": [
+      {
+        "line": 6,
+        "text": "import StatusNotice from '../components/StatusNotice.vue'"
+      },
+      {
+        "line": 49,
+        "text": "<StatusNotice type=\"error\" v-if=\"error\">"
+      },
+      {
+        "line": 51,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 95,
+        "text": "<StatusNotice v-if=\"item.kind === 'llm_judge'\">"
+      },
+      {
+        "line": 97,
+        "text": "</StatusNotice>"
+      }
+    ]
+  },
+  {
+    "file": "web/src/pages/LineagePage.vue",
+    "findings": [
+      "UX-0073"
+    ],
+    "matches": [
+      {
+        "line": 5,
+        "text": "import StatusNotice from '../components/StatusNotice.vue'"
+      },
+      {
+        "line": 228,
+        "text": "<StatusNotice type=\"error\" v-if=\"error\">"
+      },
+      {
+        "line": 241,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 249,
+        "text": "<StatusNotice>"
+      },
+      {
+        "line": 251,
+        "text": "</StatusNotice>"
+      }
+    ]
+  },
+  {
+    "file": "web/src/pages/OverviewPage.vue",
+    "findings": [
+      "UX-0082",
+      "UX-0083",
+      "UX-0088"
+    ],
+    "matches": [
+      {
+        "line": 5,
+        "text": "import StatusNotice from '../components/StatusNotice.vue'"
+      },
+      {
+        "line": 54,
+        "text": "<StatusNotice type=\"error\" v-if=\"error\">"
+      },
+      {
+        "line": 56,
+        "text": "</StatusNotice>"
+      }
+    ]
+  },
+  {
+    "file": "web/src/pages/RunComparisonPage.vue",
+    "findings": [
+      "UX-0091"
+    ],
+    "matches": [
+      {
+        "line": 8,
+        "text": "import StatusNotice from '../components/StatusNotice.vue'"
+      },
+      {
+        "line": 255,
+        "text": "<StatusNotice type=\"error\" v-if=\"listError\">"
+      },
+      {
+        "line": 258,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 332,
+        "text": "<StatusNotice type=\"error\" v-if=\"error\">"
+      },
+      {
+        "line": 346,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 348,
+        "text": "<StatusNotice v-if=\"selectionDirty\">"
+      },
+      {
+        "line": 350,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 352,
+        "text": "<StatusNotice>"
+      },
+      {
+        "line": 362,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 395,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 403,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 453,
+        "text": "reviewed: '待复核',"
+      }
+    ]
+  },
+  {
+    "file": "web/src/pages/RunCreatePage.vue",
+    "findings": [
+      "UX-0104",
+      "UX-0110"
+    ],
+    "matches": [
+      {
+        "line": 5,
+        "text": "import StatusNotice from '../components/StatusNotice.vue'"
+      },
+      {
+        "line": 207,
+        "text": "<StatusNotice type=\"warning\">"
+      },
+      {
+        "line": 211,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 212,
+        "text": "<StatusNotice v-if=\"route.query.source\">"
+      },
+      {
+        "line": 214,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 215,
+        "text": "<StatusNotice type=\"error\" v-if=\"error\">"
+      },
+      {
+        "line": 217,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 303,
+        "text": "<StatusNotice type=\"error\" v-if=\"versionError\">"
+      },
+      {
+        "line": 308,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 317,
+        "text": "<StatusNotice type=\"warning\" v-if=\"reuseIssue\">"
+      },
+      {
+        "line": 322,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 375,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 379,
+        "text": "</StatusNotice>"
+      }
+    ]
+  },
+  {
+    "file": "web/src/pages/RunDetailPage.vue",
+    "findings": [
+      "UX-0119"
+    ],
+    "matches": [
+      {
+        "line": 8,
+        "text": "import StatusNotice from '../components/StatusNotice.vue'"
+      },
+      {
+        "line": 176,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 182,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 247,
+        "text": "<StatusNotice type=\"error\" v-if=\"error\">"
+      },
+      {
+        "line": 249,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 276,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 410,
+        "text": "<StatusNotice type=\"error\" v-if=\"report.release_gate.missing_results.length\">"
+      },
+      {
+        "line": 434,
+        "text": "/> </StatusNotice"
+      }
+    ]
+  },
+  {
+    "file": "web/src/pages/RunListPage.vue",
+    "findings": [
+      "UX-0134"
+    ],
+    "matches": [
+      {
+        "line": 5,
+        "text": "import StatusNotice from '../components/StatusNotice.vue'"
+      },
+      {
+        "line": 126,
+        "text": "<StatusNotice type=\"error\" v-if=\"error\"> 列表刷新失败，已保留上次记录。{{ error }} </StatusNotice>"
+      }
+    ]
+  },
+  {
+    "file": "web/src/pages/TargetListPage.vue",
+    "findings": [
+      "UX-0144"
+    ],
+    "matches": [
+      {
+        "line": 3,
+        "text": "import StatusNotice from '../components/StatusNotice.vue'"
+      },
+      {
+        "line": 31,
+        "text": "<StatusNotice type=\"warning\">"
+      },
+      {
+        "line": 35,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 36,
+        "text": "<StatusNotice type=\"error\" v-if=\"error\">"
+      },
+      {
+        "line": 38,
+        "text": "</StatusNotice>"
+      }
+    ]
+  },
+  {
+    "file": "web/src/preview/components/AnalysisStatic.vue",
+    "findings": [
+      "UX-0163"
+    ],
+    "matches": [
+      {
+        "line": 6,
+        "text": "import StatusNotice from '../../components/StatusNotice.vue'"
+      },
+      {
+        "line": 94,
+        "text": "<StatusNotice v-if=\"preparedDataset\">"
+      },
+      {
+        "line": 115,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 116,
+        "text": "<StatusNotice>"
+      },
+      {
+        "line": 118,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 209,
+        "text": "<StatusNotice v-if=\"!analysis\" type=\"error\""
+      },
+      {
+        "line": 210,
+        "text": ">找不到此版本的检查记录。请在上方选择其他记录，或重新检查当前版本。</StatusNotice"
+      },
+      {
+        "line": 217,
+        "text": "<StatusNotice type=\"warning\" v-if=\"analysis.status !== 'completed'\">"
+      },
+      {
+        "line": 223,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 230,
+        "text": "<StatusNotice v-if=\"!analysis.risks.length && analysis.status === 'completed'\">"
+      },
+      {
+        "line": 232,
+        "text": "</StatusNotice>"
+      }
+    ]
+  },
+  {
+    "file": "web/src/preview/components/AnalysisSuggestion.vue",
+    "findings": [
+      "UX-0172"
+    ],
+    "matches": [
+      {
+        "line": 5,
+        "text": "import StatusNotice from '../../components/StatusNotice.vue'"
+      },
+      {
+        "line": 308,
+        "text": "<StatusNotice>{{ verification }}</StatusNotice>"
+      },
+      {
+        "line": 312,
+        "text": "<StatusNotice type=\"error\" v-if=\"!sourceRun\">"
+      },
+      {
+        "line": 315,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 409,
+        "text": "<StatusNotice type=\"warning\">"
+      },
+      {
+        "line": 411,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 431,
+        "text": "<StatusNotice type=\"error\" v-if=\"error\">{{ error }}</StatusNotice>"
+      }
+    ]
+  },
+  {
+    "file": "web/src/preview/components/CompareCreate.vue",
+    "findings": [
+      "UX-0184"
+    ],
+    "matches": [
+      {
+        "line": 4,
+        "text": "import StatusNotice from '../../components/StatusNotice.vue'"
+      },
+      {
+        "line": 248,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 273,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 274,
+        "text": ">仅保存已有运行的比较关联；执行时间、配置差异和缺失结果会显示在报告中。</StatusNotice"
+      },
+      {
+        "line": 450,
+        "text": "<StatusNotice>"
+      },
+      {
+        "line": 454,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 489,
+        "text": "<StatusNotice type=\"error\" v-if=\"error\">{{ error }}</StatusNotice>"
+      }
+    ]
+  },
+  {
+    "file": "web/src/preview/components/CompareLineage.vue",
+    "findings": [
+      "UX-0201"
+    ],
+    "matches": []
+  },
+  {
+    "file": "web/src/preview/components/PrepCaseEditor.vue",
+    "findings": [
+      "UX-0211",
+      "UX-0212",
+      "UX-0215"
+    ],
+    "matches": [
+      {
+        "line": 4,
+        "text": "import StatusNotice from '../../components/StatusNotice.vue'"
+      },
+      {
+        "line": 98,
+        "text": "function removeTurn(index: number) {"
+      },
+      {
+        "line": 193,
+        "text": "><el-popconfirm v-if=\"!readonly\" title=\"从本页草稿移除此用例？\" @confirm=\"remove(row.id)\""
+      },
+      {
+        "line": 196,
+        "text": "></el-popconfirm"
+      },
+      {
+        "line": 209,
+        "text": "<StatusNotice v-if=\"error\" :title=\"error\" type=\"error\" />"
+      }
+    ]
+  },
+  {
+    "file": "web/src/preview/components/PrepDatasetPrepare.vue",
+    "findings": [
+      "UX-0225"
+    ],
+    "matches": [
+      {
+        "line": 4,
+        "text": "import StatusNotice from '../../components/StatusNotice.vue'"
+      },
+      {
+        "line": 7,
+        "text": "import { ElMessage, ElMessageBox } from 'element-plus'"
+      },
+      {
+        "line": 245,
+        "text": "await ElMessageBox.confirm("
+      },
+      {
+        "line": 511,
+        "text": "<StatusNotice v-if=\"sourceRisk\">"
+      },
+      {
+        "line": 515,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 528,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 534,
+        "text": "<StatusNotice v-if=\"cacheError\" :title=\"cacheError\" type=\"error\" />"
+      },
+      {
+        "line": 555,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 560,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 627,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 679,
+        "text": "<StatusNotice v-if=\"route.query.mode === 'generate'\""
+      },
+      {
+        "line": 680,
+        "text": ">请手工添加用例，或返回测评集列表导入文件。自动生成本轮范围外，后续再提供。</StatusNotice"
+      },
+      {
+        "line": 693,
+        "text": "><StatusNotice v-if=\"error\" :title=\"error\" type=\"error\" />"
+      }
+    ]
+  },
+  {
+    "file": "web/src/preview/components/PrepEvaluatorEditor.vue",
+    "findings": [
+      "UX-0228"
+    ],
+    "matches": [
+      {
+        "line": 5,
+        "text": "import StatusNotice from '../../components/StatusNotice.vue'"
+      },
+      {
+        "line": 38,
+        "text": "function removeChild(index: number) {"
+      },
+      {
+        "line": 174,
+        "text": "<StatusNotice>"
+      },
+      {
+        "line": 176,
+        "text": "</StatusNotice></FormSection"
+      }
+    ]
+  },
+  {
+    "file": "web/src/preview/components/PrepTrial.vue",
+    "findings": [
+      "UX-0234"
+    ],
+    "matches": [
+      {
+        "line": 4,
+        "text": "import StatusNotice from '../../components/StatusNotice.vue'"
+      },
+      {
+        "line": 64,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 88,
+        "text": "><StatusNotice v-if=\"error\" :title=\"error\" type=\"error\" />"
+      }
+    ]
+  },
+  {
+    "file": "web/src/preview/pages/CasePage.vue",
+    "findings": [
+      "UX-0279",
+      "UX-0280",
+      "UX-0287",
+      "UX-0288",
+      "UX-0290",
+      "UX-0291"
+    ],
+    "matches": [
+      {
+        "line": 6,
+        "text": "import StatusNotice from '../../components/StatusNotice.vue'"
+      },
+      {
+        "line": 13,
+        "text": "import { ElMessageBox } from 'element-plus'"
+      },
+      {
+        "line": 127,
+        "text": "await ElMessageBox.confirm('人工复核尚未保存，离开会丢失输入。', '未保存的复核', {"
+      },
+      {
+        "line": 377,
+        "text": "<StatusNotice type=\"warning\" v-if=\"readonly\">"
+      },
+      {
+        "line": 379,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 380,
+        "text": "<StatusNotice v-if=\"feedback\">{{ feedback }}</StatusNotice>"
+      },
+      {
+        "line": 396,
+        "text": "<StatusNotice type=\"warning\" v-if=\"result.outcome === 'NA' || result.outcome === 'error'\">"
+      },
+      {
+        "line": 402,
+        "text": "</StatusNotice></template"
+      },
+      {
+        "line": 404,
+        "text": "<StatusNotice type=\"warning\" v-else>"
+      },
+      {
+        "line": 406,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 446,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 455,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 508,
+        "text": "<StatusNotice type=\"warning\" v-if=\"absentChecks.length\">"
+      },
+      {
+        "line": 521,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 526,
+        "text": "<StatusNotice type=\"warning\" v-if=\"!result?.trace.length\">"
+      },
+      {
+        "line": 528,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 545,
+        "text": "<StatusNotice type=\"error\" v-if=\"step.error\">{{ step.error }}</StatusNotice>"
+      }
+    ]
+  },
+  {
+    "file": "web/src/preview/pages/ComparisonPage.vue",
+    "findings": [
+      "UX-0299"
+    ],
+    "matches": [
+      {
+        "line": 5,
+        "text": "import StatusNotice from '../../components/StatusNotice.vue'"
+      },
+      {
+        "line": 279,
+        "text": "<StatusNotice type=\"warning\" v-if=\"state.role === 'viewer'\">"
+      },
+      {
+        "line": 281,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 282,
+        "text": "<StatusNotice type=\"error\" v-if=\"error\">{{ error }}</StatusNotice>"
+      },
+      {
+        "line": 309,
+        "text": "<StatusNotice type=\"error\" v-else-if=\"!sameAsset\" class=\"panel\">"
+      },
+      {
+        "line": 312,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 333,
+        "text": "<StatusNotice type=\"error\" v-if=\"baseline.error\">{{ baseline.error }}</StatusNotice>"
+      },
+      {
+        "line": 351,
+        "text": "<StatusNotice type=\"error\" v-if=\"candidate.error\">{{ candidate.error }}</StatusNotice>"
+      },
+      {
+        "line": 379,
+        "text": "<StatusNotice type=\"warning\" v-if=\"!controlled\">"
+      },
+      {
+        "line": 381,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 478,
+        "text": "<StatusNotice type=\"warning\" v-if=\"!gates.length\""
+      },
+      {
+        "line": 479,
+        "text": ">未配置规则，不能形成门禁通过结论。</StatusNotice"
+      },
+      {
+        "line": 481,
+        "text": "<StatusNotice type=\"warning\">"
+      },
+      {
+        "line": 503,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 584,
+        "text": "<StatusNotice v-else-if=\"selectedCase\" type=\"error\""
+      },
+      {
+        "line": 585,
+        "text": ">所选用例不在本次对比范围内，请从上方用例列表重新选择。</StatusNotice"
+      }
+    ]
+  },
+  {
+    "file": "web/src/preview/pages/DatasetsPage.vue",
+    "findings": [
+      "UX-0334",
+      "UX-0335"
+    ],
+    "matches": [
+      {
+        "line": 8,
+        "text": "import StatusNotice from '../../components/StatusNotice.vue'"
+      },
+      {
+        "line": 11,
+        "text": "import { ElMessage, ElMessageBox } from 'element-plus'"
+      },
+      {
+        "line": 159,
+        "text": "await ElMessageBox.confirm('本页有尚未保存的用例修改。离开将丢失这些修改。', '离开编辑页', {"
+      },
+      {
+        "line": 219,
+        "text": "function publish() {"
+      },
+      {
+        "line": 327,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 332,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 338,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 343,
+        "text": "<StatusNotice v-if=\"revisionError\" :title=\"revisionError\" type=\"error\" />"
+      },
+      {
+        "line": 408,
+        "text": "><el-popconfirm"
+      },
+      {
+        "line": 417,
+        "text": "></el-popconfirm"
+      },
+      {
+        "line": 440,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 490,
+        "text": "><StatusNotice v-if=\"error\" :title=\"error\" type=\"error\" />"
+      },
+      {
+        "line": 597,
+        "text": "><el-popconfirm"
+      },
+      {
+        "line": 604,
+        "text": "></el-popconfirm"
+      }
+    ]
+  },
+  {
+    "file": "web/src/preview/pages/EvaluatorsPage.vue",
+    "findings": [
+      "UX-0343",
+      "UX-0344"
+    ],
+    "matches": [
+      {
+        "line": 7,
+        "text": "import StatusNotice from '../../components/StatusNotice.vue'"
+      },
+      {
+        "line": 10,
+        "text": "import { ElMessage, ElMessageBox } from 'element-plus'"
+      },
+      {
+        "line": 137,
+        "text": "await ElMessageBox.confirm('评估器修改尚未发布，离开将丢失本页修改。', '离开配置页', {"
+      },
+      {
+        "line": 166,
+        "text": "function publish() {"
+      },
+      {
+        "line": 260,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 265,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 271,
+        "text": "<StatusNotice"
+      },
+      {
+        "line": 307,
+        "text": "><el-popconfirm"
+      },
+      {
+        "line": 316,
+        "text": "></el-popconfirm"
+      },
+      {
+        "line": 336,
+        "text": "<StatusNotice v-if=\"error\" :title=\"error\" type=\"error\" /><el-button"
+      },
+      {
+        "line": 421,
+        "text": "><el-popconfirm"
+      },
+      {
+        "line": 428,
+        "text": "></el-popconfirm"
+      }
+    ]
+  },
+  {
+    "file": "web/src/preview/pages/RunPage.vue",
+    "findings": [
+      "UX-0387"
+    ],
+    "matches": [
+      {
+        "line": 8,
+        "text": "import StatusNotice from '../../components/StatusNotice.vue'"
+      },
+      {
+        "line": 368,
+        "text": "<StatusNotice type=\"warning\" v-if=\"readonly\">"
+      },
+      {
+        "line": 370,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 371,
+        "text": "<StatusNotice v-if=\"feedback\">{{ feedback }}</StatusNotice>"
+      },
+      {
+        "line": 391,
+        "text": "<StatusNotice v-if=\"mode === 'human'\">"
+      },
+      {
+        "line": 395,
+        "text": "</StatusNotice>"
+      },
+      {
+        "line": 472,
+        "text": "<StatusNotice type=\"error\" v-if=\"run.error\">{{ run.error }}</StatusNotice>"
+      }
+    ]
+  }
+]

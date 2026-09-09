@@ -1,31 +1,23 @@
-# 逐页检查清单
+# 逐页与场景验收例外
 
-25个页面；每页对应ux-design-rules §6的19项，必须记录证据或有理由的N/A。当前均待实测，不能用单元测试替代。
+2026-09-09，F验收。按规则§6的19项核对25个页面源文件及共享模式；24个可达页面结合实际页面内容、关键截图、键盘/抽屉/错误恢复交互和默认回归复核。仅输出例外，不重复通过项。无剩余阻断本轮可用性整改的问题，以下范围和真实接入限制保留。
 
-|页面|使用者|任务|19项状态|
-|---|---|---|---|
-|web/src/pages/CapabilityPage.vue|测评人员|待逐页记录|待核验|
-|web/src/pages/CaseResultPage.vue|测评人员|待逐页记录|待核验|
-|web/src/pages/DatasetWorkspace.vue|测评人员|待逐页记录|待核验|
-|web/src/pages/EvaluatorWorkspacePage.vue|测评人员|待逐页记录|待核验|
-|web/src/pages/LineagePage.vue|测评人员|待逐页记录|待核验|
-|web/src/pages/OverviewPage.vue|测评人员|待逐页记录|待核验|
-|web/src/pages/RunComparisonPage.vue|测评人员|待逐页记录|待核验|
-|web/src/pages/RunCreatePage.vue|测评人员|待逐页记录|待核验|
-|web/src/pages/RunDetailPage.vue|测评人员|待逐页记录|待核验|
-|web/src/pages/RunListPage.vue|测评人员|待逐页记录|待核验|
-|web/src/pages/RunWorkspacePage.vue|测评人员|待逐页记录|待核验|
-|web/src/pages/TargetListPage.vue|测评人员|待逐页记录|待核验|
-|web/src/preview/pages/AnalysisPage.vue|测评人员|待逐页记录|待核验|
-|web/src/preview/pages/CasePage.vue|测评人员|待逐页记录|待核验|
-|web/src/preview/pages/ComparisonPage.vue|测评人员|待逐页记录|待核验|
-|web/src/preview/pages/ComparisonsPage.vue|测评人员|待逐页记录|待核验|
-|web/src/preview/pages/DatasetsPage.vue|测评人员|待逐页记录|待核验|
-|web/src/preview/pages/EvaluatorsPage.vue|测评人员|待逐页记录|待核验|
-|web/src/preview/pages/NotFoundPage.vue|测评人员|待逐页记录|待核验|
-|web/src/preview/pages/OverviewPage.vue|测评人员|待逐页记录|待核验|
-|web/src/preview/pages/ResourcesPage.vue|测评人员|待逐页记录|待核验|
-|web/src/preview/pages/RunCreatePage.vue|测评人员|待逐页记录|待核验|
-|web/src/preview/pages/RunPage.vue|测评人员|待逐页记录|待核验|
-|web/src/preview/pages/RunsPage.vue|测评人员|待逐页记录|待核验|
-|web/src/preview/pages/TargetsPage.vue|测评人员|待逐页记录|待核验|
+|例外|页面/场景|结论与处理|
+|---|---|---|
+|F-ROUTE|RunWorkspacePage.vue|router未引用，只有源码模式核查，不虚构运行验收；24条可达路径见最终text-contrast.json。|
+|F-SCOPE-01|A第2步|按已拍板规则验收手工创建/导入并发布Dataset v1；自动生成延后。|
+|F-SCOPE-02|G第3步|三范围批量选择器、保存视图、快捷键缓建；按当前明确选择范围操作，不宣称具有全量筛选选择合同。|
+|F-LIVE-A|A1/3/4/5；P02/P08/P10/P11|外部目录、管理身份/试评、资源选择/队列未完整接入。现有对象与评分目录、手工/导入、发布、执行和报告证据可用；其他入口隐藏或给接入要求。JW-FR-5.1、5.9～5.13、5.5～5.7。|
+|F-LIVE-B|B1～5；对象/测评输入|固定来源组合、去重和多执行形态只完成Mock交互；真实页面保留手工/导入固定版本，不把Mock组合当真实来源。JW-FR-5.1～5.4。|
+|F-LIVE-C|C1～4；资源/任务|预约、队列位置、私有资源和恢复命令须真实服务接入；Mock验证状态与用户控制，真实入口隐藏，无虚构队列时间。JW-FR-5.5～5.7、5.13。|
+|F-LIVE-D|D1～6；分析/对比|实际Mock走查理由校验→采纳→未关联禁用→关联v2→执行回归→未通过原因→导出→建议历史回溯；真实诊断/建议写入与受控实验未完整接入，不代表上线判定交付。JW-FR-5.14～5.22、PRD-STATIC。|
+|F-LIVE-E|E1/3/4/5；P11/P12/血缘|真实用例修订v2与v1历史不变、固定版本来源已验证；人工复核写入、实验及完整复现仍为联合项。缺固定版本明确阻断，不换最新版。JW-PRD-REVIEW、FR-5.12、5.18、5.24。|
+|F-LIVE-F|F2～5；对比|真实已有结果比较使用后端差异、计数与双方证据；统计检验、描述性范围、多维判定及完整对比导出未完备，只在Mock展示样例。JW-FR-5.14～5.18。|
+|F-LIVE-G|G规模/协作；列表/图谱/建议|小数据、筛选、返回与固定引用已覆盖；千级用例/万级任务、后台合并导出、真实多用户冲突及多建议共享回归不作为已交付能力。JW-C-NONFUNCTIONAL、C-AUDIT、FR-5.23～5.24、5.22。|
+|F-CONTENT|P08/P12及外部资产|外部原始名称、工具参数键、消息正文和版本ID保留真实性；已知状态/字段显示译名，原始内容在高级区。AS-12，不通过翻译改判定或写回数据。|
+|F-EVIDENCE|P10改前图|最初图停在加载态，原图保留；用不可变整改前源码、原API18273与原报告补拍已加载基线，临时渲染服务已关闭。不同任务分数变化不作为UI效果证据。|
+|F-AA-SCOPE|全站|24页文字对比度扫描0候选、0整页溢出，双端键盘/焦点/弹层定向与完整回归通过；不覆盖所有浏览器、屏幕阅读器及任意外部内容，不等同生产全面无障碍认证。JW-C-NONFUNCTIONAL。|
+
+完整缺口、已有能力、故事、用户侧降级与接口方向维护在[JSON台账](usability-audit.json)的jointWorkItems，阅读[生成明细](usability-audit.md#前后端联合工作项f-接入快照)。PL-01～06由F批次集中处理，此处不复制resolution。
+
+证据与截图见[收尾报告](usability-final-report.md)。真实写入旅程连接隔离API/worker；契约异常使用标识清楚的测试fixture；Mock仅在preview。测试与实际使用审阅共同支持本轮结论，不替代上述真实接入工作。

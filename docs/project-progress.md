@@ -2,17 +2,15 @@
 
 Last updated: 2026-09-09
 
-## Active Web usability Goal — WEB-UX-GOAL-001
+## Completed Web usability Goal — WEB-UX-GOAL-001
 
-最新：E类已提交d6dc813；typecheck/build、完整回归116/116通过。台账冻结539条，剩余38条（H12/I25/F1），新问题进入parking lot。按批次记账，F只报例外与最终截图。续作只读[当前状态](web/productization/usability-state.md)及必要局部明细。Goal尚未完成。
+2026-09-09：本轮A–I可用性整改按授权降级口径完成。冻结539条已收口（514已验证、22非缺陷、3后续范围），6条parking lot已修复验证。真实接入仍有31条联合项，逐项列出现有能力、缺口、用户故事/影响、前端降级及拟议接口，不宣称后端需求全部实现。
 
-用户显式授权按 A–I 模式类自主整改，完成条件以 `docs/web/productization/ux-design-rules.md` 与 Goal 请求为准。仅 Web 可用性与现有 API 映射；禁止 push、PR、合并。保留原有未提交工作，不与原评审任务协调。
+F代码4e23e36；typecheck/build通过，最后完整E2E116/116（10.5分钟），F定向8/8+2/2。24可达页面最终文字对比度候选0、整页溢出0；P08/P10/P11/P12最终双端截图已核查；25源页面及A–G只记录例外，P10原始加载态截图已保留并补拍可信基线。
 
-全站初始扫描登记 441 个候选实例、25 个页面；候选必须经人工核实，不能直接等同于已确认缺陷。台账见 [usability-audit.md](web/productization/usability-audit.md)，逐页检查见 [usability-page-checklist.md](web/productization/usability-page-checklist.md)。P10/P11/P12/P08 的桌面与移动改前截图已保存。
+[当前状态](web/productization/usability-state.md) · [收尾报告与截图](web/productization/usability-final-report.md) · [JSON唯一台账](web/productization/usability-audit.json) · [例外报告](web/productization/usability-page-checklist.md)。平台货币成本移除，使用Token及耗时；自动生成测评集延后，手工/导入v1为本轮路径。
 
-已完成的 A 类覆盖共享结构化输入、规则、字段组、可读值和原始内容折叠；嵌套变量校验向父表单传递，更改非空字段类型需确认。新后端评估器目录采用摘要和精确版本接口。当前继续C类及后续模式，逐页与场景最终验收仍未完成。
-
-需求变更已拍板：货币成本全部移除，使用输入/输出/总 Token 与耗时；测评集自动生成本轮延后，只验收手工创建和导入。后续记录不得重新将这两条列为未决产品规则。
+仅本地提交，无push/PR/合并、无旧评审协调；其他人的AGENTS、架构、计划与未认领文档原样保留。当前Web15473/API18473，旧服务和数据库保留。后续真实接入按联合项另行开展，本轮Goal不自动扩张。
 
 ## Latest upstream source sync — WEB-BE-002
 
