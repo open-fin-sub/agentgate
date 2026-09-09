@@ -37,7 +37,7 @@ const groups = computed(() => [
   {
     label: '管理',
     items: [
-      ...(preview.value ? [['/resources', '资源管理', '资']] : []),
+      ...(preview.value ? [['/resources', '资源与队列', '资']] : []),
       ['/capabilities', '能力与接入', '接'],
     ],
   },

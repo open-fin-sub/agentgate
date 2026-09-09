@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import MetadataGroup from '../../components/MetadataGroup.vue'
+import RoleGate from '../../components/RoleGate.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { usePreview, uid, downloadJson } from '../workspace'
 import type { PreviewState, Credential } from '../types'
@@ -19,7 +20,14 @@ const pending = computed(() =>
 function role(value: unknown) {
   setRole(value as PreviewState['role'])
 }
+watch(
+  () => state.role,
+  () => {
+    dialog.value = false
+  },
+)
 function add() {
+  if (state.role !== 'admin') return
   if (!name.value.trim()) {
     ElMessage.warning('请填写凭据名称。')
     return
@@ -46,9 +54,14 @@ function add() {
   }
 }
 async function test(item: Credential) {
+  if (state.role !== 'admin') return
   const failThisTest = simulateFailure.value
   testing.value = item.id
   await new Promise((resolve) => setTimeout(resolve, 600))
+  if (state.role !== 'admin') {
+    testing.value = ''
+    return
+  }
   if (change(item.id, '模拟连通性测试', () => (item.healthy = !failThisTest)))
     ElMessage({
       type: item.healthy ? 'success' : 'error',
@@ -59,10 +72,7 @@ async function test(item: Credential) {
   testing.value = ''
 }
 async function toggle(item: Credential) {
-  if (item.kind === 'public' && state.role !== 'admin') {
-    ElMessage.warning('公共资源启停需要管理员角色。')
-    return
-  }
+  if (state.role !== 'admin') return
   const using = pending.value.filter((r) =>
     [r.config.executionResourceId, r.config.scoringResourceId, r.config.resourceId].includes(
       item.id,
@@ -78,7 +88,8 @@ async function toggle(item: Credential) {
     } catch {
       return
     }
-  change(item.id, item.enabled ? '停用资源' : '启用资源', () => (item.enabled = !item.enabled))
+  if (state.role === 'admin')
+    change(item.id, item.enabled ? '停用资源' : '启用资源', () => (item.enabled = !item.enabled))
 }
 function saveLimit() {
   if (state.role !== 'admin') {
@@ -106,11 +117,17 @@ function exportAudit() {
 <template>
   <div class="page-intro">
     <div>
-      <h1>资源管理</h1>
-      <p>管理资源别名、可用性与公共队列，明确每个调用阶段的使用来源。</p>
+      <h1>{{ state.role === 'admin' ? '资源管理' : '资源状态' }}</h1>
+      <p>
+        {{
+          state.role === 'admin'
+            ? '维护资源可用性与公共队列限制，查看受影响的测评任务。'
+            : '查看可用模型与排队状态，为测评选择合适的资源。'
+        }}
+      </p>
     </div>
-    <el-button type="primary" :disabled="state.role === 'viewer'" @click="dialog = true"
-      >添加体验凭据</el-button
+    <RoleGate :role="state.role"
+      ><el-button type="primary" @click="dialog = true">添加体验凭据</el-button></RoleGate
     >
   </div>
   <section class="panel">
@@ -127,7 +144,9 @@ function exportAudit() {
   <section class="panel">
     <div class="panel-title">
       <h2>可用模型资源</h2>
-      <el-checkbox v-model="simulateFailure">模拟连通性失败</el-checkbox>
+      <RoleGate :role="state.role"
+        ><el-checkbox v-model="simulateFailure">模拟连通性失败</el-checkbox></RoleGate
+      >
     </div>
     <div class="table-scroll">
       <table class="data-table">
@@ -136,13 +155,15 @@ function exportAudit() {
             <th>名称</th>
             <th>资源属性</th>
             <th>状态</th>
-            <th>凭据</th>
-            <th>操作</th>
+            <RoleGate :role="state.role"
+              ><th>凭据</th>
+              <th>操作</th></RoleGate
+            >
           </tr>
         </thead>
         <tbody>
           <tr v-for="item in state.credentials" :key="item.id">
-            <td>{{ item.name }}<small>Mock 体验凭据</small></td>
+            <td>{{ item.name }}</td>
             <td>
               <MetadataGroup
                 :items="[
@@ -156,30 +177,31 @@ function exportAudit() {
                 !item.enabled ? '已停用' : item.healthy ? '可用' : '测试失败'
               }}</span>
             </td>
-            <td>{{ item.mask }}</td>
-            <td>
-              <div class="action-row">
-                <el-button
-                  :loading="testing === item.id"
-                  :disabled="state.role === 'viewer'"
-                  @click="test(item)"
-                  >测试</el-button
-                ><el-button
-                  :disabled="
-                    state.role === 'viewer' || (item.kind === 'public' && state.role !== 'admin')
-                  "
-                  @click="toggle(item)"
-                  >{{ item.enabled ? '停用' : '启用' }}</el-button
-                >
-              </div>
-            </td>
+            <RoleGate :role="state.role"
+              ><td>{{ item.mask }}</td>
+              <td>
+                <div class="action-row">
+                  <el-button :loading="testing === item.id" @click="test(item)">测试</el-button
+                  ><el-button @click="toggle(item)">{{ item.enabled ? '停用' : '启用' }}</el-button>
+                </div>
+              </td></RoleGate
+            >
           </tr>
         </tbody>
       </table>
     </div>
-    <p class="muted small">
-      体验模式只保存虚构别名与掩码，没有真实密钥输入框；不会向模型服务发送测试请求。
-    </p>
+    <RoleGate :role="state.role"
+      ><p class="muted small">
+        体验模式只保存虚构别名与掩码，没有真实密钥输入框；不会向模型服务发送测试请求。
+      </p>
+      <template #readonly
+        ><StatusNotice message="资源不可用时，请选择其他资源，或联系管理员处理。"
+          ><RouterLink class="ag-button" to="/preview/runs/new"
+            >查看测评配置</RouterLink
+          ></StatusNotice
+        ></template
+      ></RoleGate
+    >
   </section>
   <div class="preview-columns">
     <section class="panel">
@@ -187,24 +209,19 @@ function exportAudit() {
       <p>
         仅使用公共资源的调用阶段受共享限制；私有执行、公共评分可以组合。私有资源仍可能等待执行节点。
       </p>
-      <el-form label-position="top"
-        ><el-form-item label="公共调用并发上限"
-          ><el-input-number
-            v-model="limit"
-            :min="1"
-            :max="100"
-            :disabled="state.role !== 'admin'" /></el-form-item
-        ><el-button :disabled="state.role !== 'admin'" @click="saveLimit"
-          >保存公共限制</el-button
-        ></el-form
-      >
-      <p class="muted small">Mock 限额用于体验队列说明，不构成生产调度性能承诺。</p>
+      <RoleGate :role="state.role"
+        ><el-form label-position="top"
+          ><el-form-item label="公共调用并发上限"
+            ><el-input-number v-model="limit" :min="1" :max="100" /></el-form-item
+          ><el-button @click="saveLimit">保存公共限制</el-button></el-form
+        ><template #readonly
+          ><MetadataGroup
+            :items="[{ label: '公共调用并发上限', value: state.publicConcurrency }]" /></template
+      ></RoleGate>
     </section>
     <section class="panel">
       <h2>我的等待任务</h2>
-      <p class="muted">
-        只展示当前体验用户的任务。预计时间为本地模拟进度；真实 ETA 需要调度器反馈。
-      </p>
+      <p class="muted">打开任务查看当前进度；到达预约时间后仍需等待可用执行位置。</p>
       <div v-for="run in pending" :key="run.id" class="resource-queue">
         <RouterLink :to="`/preview/runs/${run.id}`">{{ run.name }}</RouterLink>
         <MetadataGroup
@@ -235,50 +252,52 @@ function exportAudit() {
       >
     </section>
   </div>
-  <section class="panel">
-    <div class="panel-title">
-      <h2>近期操作留痕</h2>
-      <el-button @click="exportAudit">导出资源记录</el-button>
-    </div>
-    <div class="table-scroll">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>时间</th>
-            <th>对象</th>
-            <th>操作</th>
-            <th>操作者</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="item in state.audit.slice(0, 12)" :key="item.id">
-            <td>{{ new Date(item.time).toLocaleString() }}</td>
-            <td>{{ item.subject }}</td>
-            <td>{{ item.action }}</td>
-            <td>{{ item.actor }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-  <el-dialog v-model="dialog" title="添加体验凭据" width="min(520px, calc(100vw - 32px))"
-    ><StatusNotice title="请填写虚构别名体验添加过程，不要输入真实密钥。" type="info" /><el-form
-      label-position="top"
-      class="preview-form"
-      ><el-form-item label="凭据名称" required
-        ><el-input
-          v-model="name"
-          placeholder="例如：我的回归专用资源"
-          maxlength="40" /></el-form-item
-      ><el-form-item label="模型"
-        ><el-select v-model="model"
-          ><el-option value="体验模型" label="体验模型" /><el-option
-            value="体验模型 Lite"
-            label="体验模型 Lite" /></el-select></el-form-item></el-form
-    ><template #footer
-      ><el-button @click="dialog = false">取消</el-button
-      ><el-button type="primary" @click="add">添加体验凭据</el-button></template
-    ></el-dialog
+  <RoleGate :role="state.role"
+    ><section class="panel">
+      <div class="panel-title">
+        <h2>近期操作留痕</h2>
+        <el-button @click="exportAudit">导出资源记录</el-button>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>对象</th>
+              <th>操作</th>
+              <th>操作者</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in state.audit.slice(0, 12)" :key="item.id">
+              <td>{{ new Date(item.time).toLocaleString() }}</td>
+              <td>{{ item.subject }}</td>
+              <td>{{ item.action }}</td>
+              <td>{{ item.actor }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <el-dialog v-model="dialog" title="添加体验凭据" width="min(520px, calc(100vw - 32px))"
+      ><StatusNotice title="请填写虚构别名体验添加过程，不要输入真实密钥。" type="info" /><el-form
+        label-position="top"
+        class="preview-form"
+        ><el-form-item label="凭据名称" required
+          ><el-input
+            v-model="name"
+            placeholder="例如：我的回归专用资源"
+            maxlength="40" /></el-form-item
+        ><el-form-item label="模型"
+          ><el-select v-model="model"
+            ><el-option value="体验模型" label="体验模型" /><el-option
+              value="体验模型 Lite"
+              label="体验模型 Lite" /></el-select></el-form-item></el-form
+      ><template #footer
+        ><el-button @click="dialog = false">取消</el-button
+        ><el-button type="primary" @click="add">添加体验凭据</el-button></template
+      ></el-dialog
+    ></RoleGate
   >
 </template>
 <style scoped>

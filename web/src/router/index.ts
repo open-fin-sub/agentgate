@@ -95,7 +95,7 @@ const router = createRouter({
         {
           path: 'resources',
           component: () => import('../preview/pages/ResourcesPage.vue'),
-          meta: { title: '资源管理' },
+          meta: { title: '资源与队列' },
         },
         {
           path: 'capabilities',

@@ -120,7 +120,7 @@ test('resource permissions, invalid versions and failure recovery are actionable
 }) => {
   await preview(page, '/preview/resources')
   await select(page, '体验角色', '只读查看者')
-  await expect(page.getByRole('button', { name: '添加体验凭据' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: '添加体验凭据' })).toHaveCount(0)
   await page.goto('/preview/runs/new')
   await expect(page.getByRole('button', { name: '提交测评', exact: true })).toBeDisabled()
   await page.goto('/preview/resources')
