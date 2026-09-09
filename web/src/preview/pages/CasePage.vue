@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import EntityLink from '../components/EntityLink.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
 import TokenUsage from '../../components/TokenUsage.vue'
 import ValueView from '../../components/ValueView.vue'
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import DetailNavigation from '../../components/DetailNavigation.vue'
+import { previewReturn } from '../components/PrepCases'
+import { computed, reactive, ref, watch } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { usePreview, clone, uid, downloadJson } from '../workspace'
@@ -20,14 +23,17 @@ import {
   validateConfig,
 } from '../components/RunSupport'
 const { state, change } = usePreview()
+const props = defineProps<{ runId?: string; caseId?: string; embedded?: boolean }>()
 const route = useRoute()
 const router = useRouter()
-const run = computed(() => state.runs.find((item) => item.id === String(route.params.id)))
+const currentRunId = computed(() => props.runId ?? String(route.params.id ?? ''))
+const currentCaseId = computed(() => props.caseId ?? String(route.params.caseId ?? ''))
+const run = computed(() => state.runs.find((item) => item.id === currentRunId.value))
 const testCase = computed(() =>
-  run.value?.cases.find((item) => item.id === String(route.params.caseId)),
+  run.value?.cases.find((item) => item.id === currentCaseId.value),
 )
 const result = computed(() =>
-  run.value?.results.find((item) => item.caseId === String(route.params.caseId)),
+  run.value?.results.find((item) => item.caseId === currentCaseId.value),
 )
 const reviews = computed(() =>
   state.reviews
@@ -43,9 +49,6 @@ const filteredIds = computed(() => {
   const report = scoreMode.value === 'human' ? reviewedRun(current, state.reviews) : current
   return reportRows(report, reportFilters(route.query)).map((row) => row.testCase.id)
 })
-const position = computed(() => filteredIds.value.indexOf(testCase.value?.id ?? ''))
-const previous = computed(() => (position.value > 0 ? filteredIds.value[position.value - 1] : ''))
-const next = computed(() => (position.value >= 0 ? filteredIds.value[position.value + 1] : ''))
 const readonly = computed(() => state.role === 'viewer')
 const feedback = ref('')
 const busy = ref(false)
@@ -66,7 +69,7 @@ const regressionDestinations = computed(() =>
       item.targetId === run.value?.config.targetId,
   ),
 )
-const reportLink = computed(() => ({
+const reportLink = computed(() => route.query.returnTo ? previewReturn(route.query.returnTo, `/preview/runs/${currentRunId.value}`) : ({
   path: `/preview/runs/${run.value?.id ?? String(route.params.id)}`,
   query: { ...route.query },
 }))
@@ -121,6 +124,7 @@ async function guard() {
     return false
   }
 }
+defineExpose({ beforeClose: guard })
 onBeforeRouteLeave(guard)
 onBeforeRouteUpdate((to) =>
   String(to.params.caseId) !== String(route.params.caseId) ? guard() : true,
@@ -131,12 +135,6 @@ function navigate(id: string | undefined) {
       path: `/preview/runs/${run.value?.id}/cases/${id}`,
       query: { ...route.query },
     })
-}
-function navigatePrevious() {
-  navigate(previous.value)
-}
-function navigateNext() {
-  navigate(next.value)
 }
 function saveReview() {
   const current = run.value,
@@ -181,34 +179,6 @@ function updateScore(event: Event) {
     : input.value === ''
       ? undefined
       : input.valueAsNumber
-}
-function keyboard(event: KeyboardEvent) {
-  if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-    event.preventDefault()
-    saveReview()
-    return
-  }
-  const element = event.target as HTMLElement | null
-  if (
-    element?.closest(
-      'input, textarea, select, button, [contenteditable="true"], [role="combobox"], [role="dialog"]',
-    )
-  )
-    return
-  if (event.altKey || event.ctrlKey || event.metaKey) return
-  if (event.key === 'ArrowLeft' && previous.value) {
-    event.preventDefault()
-    navigatePrevious()
-  }
-  if (event.key === 'ArrowRight' && next.value) {
-    event.preventDefault()
-    navigateNext()
-  }
-  if (event.key.toLowerCase() === 'r') {
-    event.preventDefault()
-    reviewForm.value?.focus()
-    reviewForm.value?.scrollIntoView({ block: 'start' })
-  }
 }
 function sameCase(a: TestCase, b: TestCase) {
   return JSON.stringify({ ...a, sources: [] }) === JSON.stringify({ ...b, sources: [] })
@@ -341,14 +311,12 @@ function exportEvidence() {
       humanReviews: reviews.value,
     })
 }
-watch(() => `${String(route.params.id)}/${String(route.params.caseId)}`, initializeReview, {
+watch([currentRunId, currentCaseId], initializeReview, {
   immediate: true,
 })
-onMounted(() => window.addEventListener('keydown', keyboard))
-onUnmounted(() => window.removeEventListener('keydown', keyboard))
 </script>
 <template>
-  <RouterLink class="back-link" :to="reportLink">← 返回报告（保留筛选）</RouterLink>
+  <RouterLink v-if="!embedded" class="back-link" :to="reportLink">{{ route.query.returnTo ? '← 返回来源页面（保留筛选）' : '← 返回报告（保留筛选）' }}</RouterLink>
   <EmptyState
     v-if="!run || !testCase"
     title="找不到用例"
@@ -368,15 +336,9 @@ onUnmounted(() => window.removeEventListener('keydown', keyboard))
       </div>
       <el-button @click="exportEvidence">导出本条证据</el-button>
     </div>
-    <div class="case-navigation panel">
-      <div class="action-row">
-        <el-button :disabled="!previous" @click="navigatePrevious">← 上一条</el-button
-        ><span>{{
-          position >= 0 ? `${position + 1} / ${filteredIds.length}` : '本条已不在当前筛选内'
-        }}</span
-        ><el-button :disabled="!next" @click="navigateNext">下一条 →</el-button>
-      </div>
-      <span class="muted small">沿用报告筛选 · ← / → 切换，R 定位复核，Ctrl / ⌘ + Enter 保存</span>
+    <div v-if="!embedded" class="case-navigation panel">
+      <DetailNavigation :items="filteredIds.map(id => ({ key: id, label: run?.cases.find(item => item.id === id)?.question ?? '用例证据' }))" :current-key="currentCaseId" @select="navigate" />
+      <span class="muted small">按原报告筛选顺序查看用例。</span>
     </div>
     <StatusNotice type="warning" v-if="readonly">
       当前为只读角色，无权保存人工复核、修订用例、加入回归集或复跑。
@@ -484,12 +446,13 @@ onUnmounted(() => window.removeEventListener('keydown', keyboard))
           ><strong>{{ scoreText(check.score) }}</strong>
         </div>
         <p>{{ check.reason || '未返回原因，证据不足' }}</p>
-        <RouterLink
+        <EntityLink context-key="src/preview/pages/CasePage.vue:132"
+          :related="result?.checks.map(item => ({ label: item.evaluatorId, to: { path: `/preview/evaluators/${item.evaluatorId}`, query: { version: String(item.evaluatorVersion) } } }))"
           :to="{
             path: `/preview/evaluators/${check.evaluatorId}`,
             query: { version: String(check.evaluatorVersion) },
           }"
-          >{{ check.evaluatorId }} v{{ check.evaluatorVersion }}</RouterLink
+          >{{ check.evaluatorId }} v{{ check.evaluatorVersion }}</EntityLink
         ><span class="muted small"> · 维度 {{ check.dimension || '未提供' }}</span>
       </article>
       <StatusNotice type="warning" v-if="absentChecks.length">

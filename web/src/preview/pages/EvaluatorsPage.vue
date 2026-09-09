@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityLink from '../components/EntityLink.vue'
+import type { LocationQuery, LocationQueryRaw } from 'vue-router'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
 import { computed, ref, watch } from 'vue'
@@ -13,11 +15,18 @@ import PrepTrial from '../components/PrepTrial.vue'
 const { state, change } = usePreview()
 const route = useRoute(),
   router = useRouter()
-const id = computed(() => String(route.params.id ?? ''))
+const props = defineProps<{ context?: { id: string; query: LocationQuery } }>()
+const emit = defineEmits<{ 'change-query': [query: LocationQuery] }>()
+const pageQuery = computed(() => props.context?.query ?? route.query)
+const id = computed(() => props.context?.id ?? String(route.params.id ?? ''))
+function applyQuery(query: LocationQueryRaw, replace = false) {
+  if (props.context) emit('change-query', router.resolve({ path: '/preview/evaluators/' + encodeURIComponent(id.value), query }).query)
+  else void router[replace ? 'replace' : 'push']({ query })
+}
 const evaluator = computed(() => state.evaluators.find((item) => item.id === id.value))
-const creating = computed(() => id.value === 'new' || route.query.mode === 'new')
+const creating = computed(() => id.value === 'new' || pageQuery.value.mode === 'new')
 const selectedVersion = computed(() =>
-  Number(route.query.version ?? evaluator.value?.versions.slice(-1)[0]?.version ?? 1),
+  Number(pageQuery.value.version ?? evaluator.value?.versions.slice(-1)[0]?.version ?? 1),
 )
 const version = computed(() =>
   evaluator.value?.versions.find((entry) => entry.version === selectedVersion.value),
@@ -51,25 +60,25 @@ const dirty = computed(
     saved.value !== JSON.stringify([name.value, description.value, draft.value]),
 )
 const query = computed({
-  get: () => String(route.query.q ?? ''),
+  get: () => String(pageQuery.value.q ?? ''),
   set: (value: string) => setFilter('q', value),
 })
 const kind = computed({
-  get: () => String(route.query.kind ?? ''),
+  get: () => String(pageQuery.value.kind ?? ''),
   set: (value: string) => setFilter('kind', value),
 })
 const status = computed({
-  get: () => String(route.query.status ?? 'active'),
+  get: () => String(pageQuery.value.status ?? 'active'),
   set: (value: string) => setFilter('status', value),
 })
 const page = computed({
-  get: () => Math.max(1, Number(route.query.page) || 1),
+  get: () => Math.max(1, Number(pageQuery.value.page) || 1),
   set: (value: number) => {
-    void router.replace({ query: { ...route.query, page: String(value) } })
+    void router.replace({ query: { ...pageQuery.value, page: String(value) } })
   },
 })
 function setFilter(key: string, value: string) {
-  void router.replace({ query: { ...route.query, [key]: value || undefined, page: undefined } })
+  void router.replace({ query: { ...pageQuery.value, [key]: value || undefined, page: undefined } })
 }
 const kinds = { rule: '规则', llm: 'LLM', composite: '复合' }
 const rows = computed(() =>
@@ -101,8 +110,9 @@ const parents = computed(() =>
       .map((entry) => ({ id: item.id, name: item.name, version: entry.version })),
   ),
 )
+const detailItems = computed(() => rows.value.map(item => ({ label: item.name, to: `/preview/evaluators/${item.id}` })))
 watch(
-  () => [id.value, route.query.mode, route.query.version],
+  () => [id.value, pageQuery.value.mode, pageQuery.value.version],
   () => {
     editing.value = false
     error.value = ''
@@ -126,11 +136,12 @@ async function guard() {
     return false
   }
 }
+defineExpose({ beforeClose: guard })
 onBeforeRouteLeave(guard)
 onBeforeRouteUpdate((to) =>
   to.params.id !== route.params.id ||
-  to.query.version !== route.query.version ||
-  to.query.mode !== route.query.mode
+  to.query.version !== pageQuery.value.version ||
+  to.query.mode !== pageQuery.value.mode
     ? guard()
     : true,
 )
@@ -171,10 +182,9 @@ function publish() {
     saved.value = JSON.stringify([name.value, description.value, draft.value])
     editing.value = false
     ElMessage.success(`已发布 v${number}，历史引用保持不变`)
-    void router.replace({
-      path: `/preview/evaluators/${subject}`,
-      query: { version: String(number), returnTo: route.query.returnTo },
-    })
+    const query = { version: String(number), returnTo: pageQuery.value.returnTo }
+    if (props.context && subject === id.value) applyQuery(query, true)
+    else void router.replace({ path: `/preview/evaluators/${subject}`, query })
   }
 }
 function copy(item: Evaluator) {
@@ -201,8 +211,9 @@ function archive(item: Evaluator) {
     item.archived = !item.archived
   })
 }
-function selectVersion(value: string) {
-  void router.push({ query: { ...route.query, version: value } })
+async function selectVersion(value: string) {
+  if (props.context && !(await guard())) return
+  applyQuery({ ...pageQuery.value, version: value })
 }
 function exportVersion() {
   if (evaluator.value && version.value)
@@ -214,11 +225,12 @@ function exportVersion() {
 }
 function useEvaluator() {
   if (!evaluator.value || !version.value || evaluator.value.archived) return
-  const destination = router.resolve(previewReturn(route.query.returnTo))
+  const destination = router.resolve(previewReturn(pageQuery.value.returnTo))
   void router.push({
     path: destination.path,
     query: {
       ...destination.query,
+      origin: destination.query.origin ?? route.fullPath,
       evaluator: evaluator.value.id,
       evaluatorVersion: String(version.value.version),
     },
@@ -231,7 +243,7 @@ function useEvaluator() {
       <h1>{{ creating ? '新建评估器' : (evaluator?.name ?? '评估器') }}</h1>
       <p>固定评分标准、验证单个样本，再发布独立版本用于测评。</p>
     </div>
-    <RouterLink v-if="id || creating" to="/preview/evaluators">返回评估器列表</RouterLink>
+    <RouterLink v-if="!context && (id || creating)" :to="previewReturn(pageQuery.origin, '/preview/evaluators')">{{ pageQuery.origin ? '返回来源页面' : '返回评估器列表' }}</RouterLink>
   </div>
   <StatusNotice
     v-if="state.role === 'viewer'"
@@ -288,7 +300,7 @@ function useEvaluator() {
             ></el-popconfirm
           ><el-button @click="exportVersion">导出此版本</el-button
           ><el-button :disabled="evaluator.archived || editing" @click="useEvaluator">{{
-            route.query.returnTo ? '使用并返回配置' : '用于测评'
+            pageQuery.returnTo ? '使用并返回配置' : '用于测评'
           }}</el-button>
         </div></template
       >
@@ -318,9 +330,10 @@ function useEvaluator() {
       <h2>版本关系与相关任务</h2>
       <p v-if="!parents.length && !related.length" class="muted">当前版本暂无引用。</p>
       <p v-for="parent in parents" :key="`${parent.id}@${parent.version}`">
-        被复合标准引用：<RouterLink
+        被复合标准引用：<EntityLink context-key="src/preview/pages/EvaluatorsPage.vue:94"
+          :related="parents.map(item => ({ label: item.name, to: `/preview/evaluators/${item.id}?version=${item.version}` }))"
           :to="`/preview/evaluators/${parent.id}?version=${parent.version}`"
-          >{{ parent.name }} v{{ parent.version }}</RouterLink
+          >{{ parent.name }} v{{ parent.version }}</EntityLink
         >
       </p>
       <p v-for="run in related" :key="run.id">
@@ -360,7 +373,7 @@ function useEvaluator() {
     ></EmptyState>
     <article v-for="item in visible" :key="item.id" class="panel">
       <h2>
-        <RouterLink :to="`/preview/evaluators/${item.id}`">{{ item.name }}</RouterLink>
+        <EntityLink context-key="src/preview/pages/EvaluatorsPage.vue:136" :related="detailItems" :to="`/preview/evaluators/${item.id}`">{{ item.name }}</EntityLink>
       </h2>
       <p>{{ item.description }}</p>
       <p class="muted">
@@ -368,7 +381,7 @@ function useEvaluator() {
         {{ item.versions.length }} 个发布版本 · {{ item.archived ? '已归档' : '使用中' }}
       </p>
       <div class="action-row">
-        <RouterLink :to="`/preview/evaluators/${item.id}`">查看配置与试评</RouterLink
+        <EntityLink context-key="src/preview/pages/EvaluatorsPage.vue:144" :related="detailItems" :to="`/preview/evaluators/${item.id}`">查看配置与试评</EntityLink
         ><el-button :disabled="state.role === 'viewer'" @click="copy(item)">复制</el-button
         ><el-popconfirm
           :title="item.archived ? '恢复此评估器？' : '归档后保留历史引用，继续？'"

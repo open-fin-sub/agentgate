@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EntityLink from './EntityLink.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import { computed } from 'vue'
 import { usePreview } from '../workspace'
@@ -45,24 +46,25 @@ const audit = computed(() =>
           <strong>{{ index ? '候选' : '基线' }}</strong>
           <RouterLink :to="`/preview/runs/${run.id}`">{{ run.name }}</RouterLink>
           <p>
-            <RouterLink
+            <EntityLink context-key="src/preview/components/CompareLineage.vue:25"
               :to="{
                 path: `/preview/targets/${run.config.targetId}`,
                 query: { version: run.config.targetVersion },
               }"
-              >{{ run.target.name }} @ {{ run.config.targetVersion }}</RouterLink
+              >{{ run.target.name }} @ {{ run.config.targetVersion }}</EntityLink
             >
             ·
-            <RouterLink
+            <EntityLink context-key="src/preview/components/CompareLineage.vue:33"
               :to="{
                 path: `/preview/datasets/${run.config.datasetId}`,
                 query: { version: String(run.config.datasetVersion) },
               }"
-              >{{ run.config.datasetId }} @ {{ run.config.datasetVersion }}</RouterLink
+              >{{ run.config.datasetId }} @ {{ run.config.datasetVersion }}</EntityLink
             >
           </p>
           <p>
-            评分：<RouterLink
+            评分：<EntityLink context-key="src/preview/components/CompareLineage.vue:42"
+              :related="run.config.evaluatorRefs.map(item => ({ label: run.evaluators.find(entry => entry.id === item.id)?.name ?? '评分标准', to: { path: `/preview/evaluators/${item.id}`, query: { version: String(item.version) } } }))"
               v-for="ref in run.config.evaluatorRefs"
               :key="`${ref.id}@${ref.version}`"
               :to="{
@@ -70,7 +72,7 @@ const audit = computed(() =>
                 query: { version: String(ref.version) },
               }"
               >{{ ref.id }} @ {{ ref.version }}
-            </RouterLink>
+            </EntityLink>
           </p>
           <p v-if="run.sourceRunId">
             来源运行

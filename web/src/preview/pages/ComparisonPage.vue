@@ -499,11 +499,13 @@ function recover() {
             <CompareEvidence
               :run="baseline"
               :sample="selected.aCase"
+              :items="filtered.flatMap(pair => pair.aCase ? [{ key: pair.aCase.id, label: pair.aCase.question }] : [])"
               :result="selected.a"
               label="基线 A"
             /><CompareEvidence
               :run="candidate"
               :sample="selected.bCase"
+              :items="filtered.flatMap(pair => pair.bCase ? [{ key: pair.bCase.id, label: pair.bCase.question }] : [])"
               :result="selected.b"
               label="候选 B"
             /></div

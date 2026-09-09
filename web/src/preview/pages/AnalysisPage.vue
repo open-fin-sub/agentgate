@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { useDetailState } from '../../components/detailState'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
 import ValueView from '../../components/ValueView.vue'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import CaseEvidenceDrawer from '../components/CaseEvidenceDrawer.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePreview, uid } from '../workspace'
 import type { CaseResult, Suggestion, TestCase } from '../types'
@@ -13,6 +15,7 @@ import { runStatusLabels } from '../comparison'
 const route = useRoute(),
   router = useRouter()
 const { state, change } = usePreview()
+const evidenceCase = useDetailState('analysis-evidence', '')
 const tab = computed(() =>
   String(
     route.query.tab ??
@@ -380,12 +383,8 @@ function generateSuggestions() {
             <strong>实际输出</strong>
             <ValueView :value="item.result.output" />
           </details>
-          <RouterLink
-            :to="{
-              path: `/preview/runs/${run.id}/cases/${item.sample.id}`,
-              query: { returnTo: route.fullPath, from: route.fullPath },
-            }"
-            >查看样本与 Trace{{ item.result.trace.length ? '' : '（Trace 未采集）' }} →</RouterLink
+          <button class="text-button" @click="evidenceCase = item.sample.id"
+            >查看样本与 Trace{{ item.result.trace.length ? '' : '（Trace 未采集）' }} →</button
           >
         </article>
       </section>
@@ -449,6 +448,7 @@ function generateSuggestions() {
     description="请从测评任务查看问题证据，或从测评对象检查定义风险。"
     ><RouterLink class="ag-button" to="/preview/runs">查看测评任务</RouterLink></EmptyState
   >
+  <CaseEvidenceDrawer v-if="run" v-model="evidenceCase" :run-id="run.id" :items="filtered.map(item => ({ key: item.sample.id, label: item.sample.question }))" />
 </template>
 
 <style scoped>

@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import DatasetVersionLink from '../components/dataset/DatasetVersionLink.vue'
 import EmptyState from '../components/EmptyState.vue'
 import StatusNotice from '../components/StatusNotice.vue'
 import { userError } from '../apiErrors'
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, type LocationQuery } from 'vue-router'
 import { readLineage } from '../api/lineage'
 import { ApiError } from '../api/client'
 import type { LineageGraph, LineageKind, LineageNode, LineageSubject } from '../types/lineage'
@@ -11,6 +12,9 @@ import { catalogLabel } from '../catalogLabels'
 
 const route = useRoute(),
   router = useRouter()
+const props = defineProps<{ context?: LocationQuery; embedded?: boolean }>()
+const emit = defineEmits<{ navigate: [query: LocationQuery, siblings: { label: string; query: LocationQuery }[]] }>()
+const context = computed(() => props.context ?? route.query)
 const graph = ref<LineageGraph | null>(null),
   loading = ref(false),
   error = ref(''),
@@ -32,16 +36,16 @@ const relations: Record<LineageGraph['edges'][number]['relation'], string> = {
   uses_evaluator: '使用评估器',
 }
 const subject = computed<LineageSubject>(() => ({
-  kind: String(route.query.kind ?? 'run') as LineageSubject['kind'],
-  id: String(route.query.id ?? ''),
-  version: route.query.version ? String(route.query.version) : undefined,
-  caseId: route.query.case ? String(route.query.case) : undefined,
-  sourceId: route.query.source ? String(route.query.source) : undefined,
-  targetType: route.query.targetType as 'agent' | 'skill' | undefined,
-  hash: route.query.hash ? String(route.query.hash) : undefined,
+  kind: String(context.value.kind ?? 'run') as LineageSubject['kind'],
+  id: String(context.value.id ?? ''),
+  version: context.value.version ? String(context.value.version) : undefined,
+  caseId: context.value.case ? String(context.value.case) : undefined,
+  sourceId: context.value.source ? String(context.value.source) : undefined,
+  targetType: context.value.targetType as 'agent' | 'skill' | undefined,
+  hash: context.value.hash ? String(context.value.hash) : undefined,
 }))
 const limit = computed(() =>
-  [50, 100, 200].includes(Number(route.query.limit)) ? Number(route.query.limit) : 50,
+  [50, 100, 200].includes(Number(context.value.limit)) ? Number(context.value.limit) : 50,
 )
 const nodes = computed(() => new Map(graph.value?.nodes.map((node) => [node.id, node]) ?? []))
 const root = computed(() => (graph.value ? nodes.value.get(graph.value.root_node_id) : undefined))
@@ -63,7 +67,7 @@ const assetGroups = computed(() =>
     .filter((group) => group.nodes.length),
 )
 const returnPath = computed(() => {
-  const path = String(route.query.returnTo ?? '')
+  const path = String(context.value.returnTo ?? '')
   return /^\/(runs|datasets|evaluators|comparisons|targets)(\/|\?|$)/.test(path) ? path : '/runs'
 })
 const label = (node?: LineageNode) =>
@@ -161,18 +165,29 @@ function linkedSubject(node: LineageNode) {
   return null
 }
 function setLimit(event: Event) {
-  router.replace({ query: { ...route.query, limit: (event.target as HTMLSelectElement).value } })
+  const query = { ...context.value, limit: (event.target as HTMLSelectElement).value }
+  if (props.embedded) emit('navigate', query, [])
+  else void router.replace({ query })
+}
+function openSubject(node: LineageNode, siblings: LineageNode[]) {
+  const location = linkedSubject(node)
+  if (!location) return
+  if (!props.embedded) { void router.push(location); return }
+  emit('navigate', router.resolve(location).query, siblings.flatMap(item => {
+    const target = linkedSubject(item)
+    return target ? [{ label: label(item), query: router.resolve(target).query }] : []
+  }))
 }
 watch(
   () => [
-    route.query.kind,
-    route.query.id,
-    route.query.version,
-    route.query.case,
-    route.query.source,
-    route.query.targetType,
-    route.query.hash,
-    route.query.limit,
+    context.value.kind,
+    context.value.id,
+    context.value.version,
+    context.value.case,
+    context.value.source,
+    context.value.targetType,
+    context.value.hash,
+    context.value.limit,
   ],
   load,
   { immediate: true },
@@ -181,7 +196,7 @@ onUnmounted(() => controller?.abort())
 </script>
 
 <template>
-  <RouterLink class="back-link" :to="returnPath">← 返回来源页面</RouterLink>
+  <RouterLink v-if="!embedded" class="back-link" :to="returnPath">← 返回来源页面</RouterLink>
   <div class="page-intro">
     <div>
       <h1>来源与关联任务</h1>
@@ -285,15 +300,9 @@ onUnmounted(() => controller?.abort())
               <code class="hash">{{ node.content_sha256 }}</code>
             </details>
             <div class="action-row">
-              <RouterLink
-                v-if="node.kind === 'dataset'"
-                :to="{
-                  path: '/datasets',
-                  query: { dataset: node.external_id, version: node.version },
-                }"
-                >查看发布版本</RouterLink
-              ><RouterLink v-if="linkedSubject(node)" :to="linkedSubject(node)!"
-                >查看此版本关联任务</RouterLink
+              <DatasetVersionLink v-if="node.kind === 'dataset' && node.version" :dataset-id="node.external_id" :version="Number(node.version)" />
+              <button class="text-button" v-if="linkedSubject(node)" @click="openSubject(node, group.nodes)"
+                >查看此版本关联任务</button
               >
             </div>
           </article>

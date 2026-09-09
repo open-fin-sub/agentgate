@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EntityLink from './EntityLink.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
 import ValueView from '../../components/ValueView.vue'
@@ -163,10 +164,10 @@ function retry() {
       ></label>
       <el-button type="primary" :disabled="state.role === 'viewer'" @click="analyze"
         >检查此版本定义（Mock）</el-button
-      ><RouterLink
+      ><EntityLink context-key="src/preview/components/AnalysisStatic.vue:79"
         :to="{ path: `/preview/targets/${target.id}`, query: { version: version.id } }"
         class="definition-link"
-        >查看源快照</RouterLink
+        >查看源快照</EntityLink
       >
       <p v-if="state.role === 'viewer'" class="muted">只读角色无权创建分析记录。</p>
     </template>

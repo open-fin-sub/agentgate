@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import LineageLink from '../components/LineageLink.vue'
 import EmptyState from '../components/EmptyState.vue'
 import StatusNotice from '../components/StatusNotice.vue'
 import { userError } from '../apiErrors'
 import { catalogLabel } from '../catalogLabels'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { api, type Report, type Trace } from '../api/client'
 import { outcomeLabels, scoreText } from '../resultLabels'
 import ValueView from '../components/ValueView.vue'
@@ -12,7 +13,16 @@ import JsonFallback from '../components/JsonFallback.vue'
 import ExpectationSummary from '../components/dataset/ExpectationSummary.vue'
 import TokenUsage from '../components/TokenUsage.vue'
 
-const route = useRoute()
+const props = defineProps<{ runId?: string; caseId?: string; evaluatorId?: string; sourceReport?: Report; embedded?: boolean }>()
+const route = useRoute(), router = useRouter()
+const currentRunId = computed(() => props.runId ?? String(route.params.runId ?? ''))
+const currentCaseId = computed(() => props.caseId ?? String(route.params.caseId ?? ''))
+const evaluator = ref('')
+watch(() => props.evaluatorId ?? String(route.query.evaluator ?? ''), value => evaluator.value = value, { immediate: true })
+function chooseEvaluator(id: string) {
+  evaluator.value = id
+  if (!props.embedded) void router.replace({ query: { ...route.query, evaluator: id } })
+}
 const report = ref<Report | null>(null),
   trace = ref<Trace | null>(null)
 const error = ref(''),
@@ -21,13 +31,13 @@ const error = ref(''),
   traceLoading = ref(true)
 let controller: AbortController
 const currentCase = computed(() =>
-  report.value?.run.manifest.dataset.cases.find((c) => c.id === route.params.caseId),
+  report.value?.run.manifest.dataset.cases.find((c) => c.id === currentCaseId.value),
 )
 const results = computed(
-  () => report.value?.results.filter((r) => r.case_id === route.params.caseId) ?? [],
+  () => report.value?.results.filter((r) => r.case_id === currentCaseId.value) ?? [],
 )
 const selected = computed(
-  () => results.value.find((r) => r.evaluator_id === route.query.evaluator) ?? results.value[0],
+  () => results.value.find((r) => r.evaluator_id === evaluator.value) ?? results.value[0],
 )
 const spans = computed(() =>
   [...(trace.value?.spans ?? [])].sort((a, b) => a.sequence - b.sequence),
@@ -44,7 +54,7 @@ async function loadTrace(signal: AbortSignal) {
   traceLoading.value = true
   traceError.value = ''
   try {
-    const value = await api.trace(String(route.params.runId), String(route.params.caseId), signal)
+    const value = await api.trace(currentRunId.value, currentCaseId.value, signal)
     if (!signal.aborted) trace.value = value
   } catch (e) {
     if (!signal.aborted) traceError.value = userError(e)
@@ -61,7 +71,7 @@ async function load() {
   error.value = ''
   loading.value = true
   try {
-    const value = await api.report(String(route.params.runId), signal)
+    const value = props.sourceReport?.run.id === currentRunId.value ? props.sourceReport : await api.report(currentRunId.value, signal)
     if (signal.aborted) return
     report.value = value
     if (!currentCase.value) error.value = '本次任务中没有这个用例，请返回报告选择。'
@@ -81,13 +91,13 @@ async function locateSpan(id: string) {
     node.focus()
   }
 }
-watch(() => [route.params.runId, route.params.caseId], load, { immediate: true })
+watch([currentRunId, currentCaseId], load, { immediate: true })
 onUnmounted(() => controller?.abort())
 </script>
 
 <template>
   <RouterLink
-    v-if="route.query.comparisonBaseline && route.query.comparisonCandidate"
+    v-if="!embedded && route.query.comparisonBaseline && route.query.comparisonCandidate"
     class="back-link"
     :to="{
       path: '/comparisons',
@@ -101,9 +111,10 @@ onUnmounted(() => controller?.abort())
     >← 返回版本对比与筛选</RouterLink
   >
   <RouterLink
+    v-if="!embedded"
     class="back-link"
     :to="{
-      path: `/runs/${route.params.runId}`,
+      path: `/runs/${currentRunId}`,
       query: {
         tab: 'cases',
         outcome: route.query.outcome,
@@ -135,6 +146,7 @@ onUnmounted(() => controller?.abort())
           version: report.run.manifest.dataset.version,
           case: currentCase.id,
           source: report.run.id,
+          evaluator: selected?.evaluator_id,
           returnTo: 'evidence',
         },
       }"
@@ -146,7 +158,7 @@ onUnmounted(() => controller?.abort())
   </StatusNotice>
   <div v-if="loading && !report" class="skeleton">正在读取本次用例与评估证据…</div>
   <template v-if="currentCase && report">
-    <RouterLink
+    <LineageLink
       class="ag-button"
       :to="{
         path: '/lineage',
@@ -158,7 +170,7 @@ onUnmounted(() => controller?.abort())
           returnTo: route.fullPath,
         },
       }"
-      >此用例版本的关联任务</RouterLink
+      >此用例版本的关联任务</LineageLink
     >
     <StatusNotice>
       这里展示本次任务保存的输入、检查项和执行记录。修订测评集会产生新版本，不会改变这份报告。
@@ -184,14 +196,14 @@ onUnmounted(() => controller?.abort())
       <section class="panel">
         <h2>评分标准与检查项</h2>
         <nav class="action-row" aria-label="选择评分标准">
-          <RouterLink
+          <button
             v-for="item in results"
             :key="item.evaluator_id"
             class="ag-button"
             :class="{ primary: selected?.evaluator_id === item.evaluator_id }"
             :aria-current="selected?.evaluator_id === item.evaluator_id ? 'true' : undefined"
-            :to="{ path: route.path, query: { ...route.query, evaluator: item.evaluator_id } }"
-            >{{ catalogLabel(item.evaluator_name) }} · {{ outcomeLabels[item.outcome] }}</RouterLink
+            @click="chooseEvaluator(item.evaluator_id)"
+            >{{ catalogLabel(item.evaluator_name) }} · {{ outcomeLabels[item.outcome] }}</button
           >
         </nav>
         <template v-if="selected"
@@ -204,7 +216,7 @@ onUnmounted(() => controller?.abort())
           </p>
           <p>{{ selected.reason }}</p>
           <p class="muted">评分标准固定版本：{{ selected.evaluator_version }}</p>
-          <RouterLink
+          <LineageLink
             :to="{
               path: '/lineage',
               query: {
@@ -215,7 +227,7 @@ onUnmounted(() => controller?.abort())
                 returnTo: route.fullPath,
               },
             }"
-            >使用此评分版本的任务</RouterLink
+            >使用此评分版本的任务</LineageLink
           >
           <StatusNotice type="error" v-if="selected.error_detail">
             <strong

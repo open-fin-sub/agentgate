@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { useDetailState } from '../../components/detailState'
 import StatusNotice from '../../components/StatusNotice.vue'
+import CaseEvidenceDrawer from './CaseEvidenceDrawer.vue'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePreview, clone, uid } from '../workspace'
@@ -8,6 +10,7 @@ import { defaultGateRules, executionIssues, measureGates, preflight } from '../c
 import type { Comparison, Suggestion } from '../types'
 
 const props = defineProps<{ suggestion: Suggestion }>()
+const evidenceCase = useDetailState(() => `suggestion-evidence:${props.suggestion.id}`, '')
 const route = useRoute(),
   router = useRouter()
 const { state, change } = usePreview()
@@ -311,14 +314,11 @@ function startRegression() {
         · {{ suggestion.targetVersion }}
       </p>
       <div class="action-row">
-        <RouterLink
+        <button class="text-button"
           v-for="id in suggestion.caseIds"
           :key="id"
-          :to="{
-            path: `/preview/runs/${sourceRun.id}/cases/${id}`,
-            query: { returnTo: route.fullPath },
-          }"
-          >{{ id }} · 输出 / Trace →</RouterLink
+          @click="evidenceCase = id"
+          >{{ id }} · 输出 / Trace →</button
         >
       </div></template
     >
@@ -424,6 +424,7 @@ function startRegression() {
       </ul>
     </details>
   </section>
+  <CaseEvidenceDrawer v-if="sourceRun" v-model="evidenceCase" :run-id="sourceRun.id" :items="suggestion.caseIds.map(id => ({ key: id, label: sourceRun?.cases.find(item => item.id === id)?.question ?? '用例证据' }))" />
 </template>
 
 <style scoped>

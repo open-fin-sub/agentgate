@@ -191,9 +191,13 @@
   max-height: 640px;
   overflow: auto;
 }
-.dataset-layout .case-editor-panel {
+.dataset-layout .case-detail-panel {
   min-width: 0;
   border-left: 1px solid var(--ag-line);
+}
+.case-detail-panel > .ux-detail-nav {
+  padding: 16px;
+  margin-bottom: 0;
 }
 .dataset-panel-heading {
   min-height: 64px;
@@ -401,7 +405,7 @@
     display: block;
     min-height: 0;
   }
-  .dataset-layout[data-view='list'] > .case-editor-panel,
+  .dataset-layout[data-view='list'] > .case-detail-panel,
   .dataset-layout[data-view='editor'] > .case-list-panel {
     display: none;
   }
@@ -409,7 +413,7 @@
     max-height: none;
     overflow: visible;
   }
-  .dataset-layout .case-editor-panel {
+  .dataset-layout .case-detail-panel {
     border: 0;
   }
   .case-meta-grid,

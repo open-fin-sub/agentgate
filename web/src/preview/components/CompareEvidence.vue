@@ -1,12 +1,15 @@
 <script setup lang="ts">
+import { useDetailState } from '../../components/detailState'
 import EmptyState from '../../components/EmptyState.vue'
 import TokenUsage from '../../components/TokenUsage.vue'
 import ValueView from '../../components/ValueView.vue'
-import { useRoute } from 'vue-router'
+import { computed, ref } from 'vue'
+import CaseEvidenceDrawer from './CaseEvidenceDrawer.vue'
 import type { CaseResult, Run, TestCase } from '../types'
 import { formatMetric } from '../comparison'
-defineProps<{ run: Run; sample?: TestCase; result?: CaseResult; label: string }>()
-const route = useRoute()
+const props = defineProps<{ run: Run; sample?: TestCase; result?: CaseResult; label: string; items?: { key: string; label: string }[] }>()
+const evidenceCase = useDetailState(() => `comparison-evidence:${props.run.id}:${props.label}:${props.sample?.id}`, '')
+const evidenceItems = computed(() => props.items ?? props.run.cases.map(item => ({ key: item.id, label: item.question })))
 const labels = { pass: '通过', fail: '失败', review: '待复核', NA: '不适用', error: '执行错误' }
 </script>
 
@@ -43,15 +46,11 @@ const labels = { pass: '通过', fail: '失败', review: '待复核', NA: '不�
         :total="result.tokens"
         scope="本条用例"
       />
-      <RouterLink
-        :to="{
-          path: `/preview/runs/${run.id}/cases/${result.caseId}`,
-          query: { returnTo: route.fullPath, from: route.fullPath },
-        }"
+      <button class="text-button" @click="evidenceCase = result.caseId"
         >查看样本与 Trace{{
           result.trace.length ? `（${result.trace.length} 节点）` : '（未采集）'
         }}
-        →</RouterLink
+        →</button
       >
     </template>
     <EmptyState
@@ -60,6 +59,7 @@ const labels = { pass: '通过', fail: '失败', review: '待复核', NA: '不�
       description="请核对原任务进度或错误原因。缺少结果不计为零分。"
     ></EmptyState>
   </article>
+  <CaseEvidenceDrawer v-model="evidenceCase" :run-id="run.id" :items="evidenceItems" />
 </template>
 
 <style scoped>

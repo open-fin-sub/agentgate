@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EntityLink from '../components/EntityLink.vue'
+import type { LocationQuery, LocationQueryRaw } from 'vue-router'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
 import { computed, ref, watch } from 'vue'
@@ -13,14 +15,21 @@ import PrepLineage from '../components/PrepLineage.vue'
 const { state, change } = usePreview()
 const route = useRoute(),
   router = useRouter()
-const id = computed(() => String(route.params.id ?? ''))
+const props = defineProps<{ context?: { id: string; query: LocationQuery } }>()
+const emit = defineEmits<{ 'change-query': [query: LocationQuery] }>()
+const pageQuery = computed(() => props.context?.query ?? route.query)
+const id = computed(() => props.context?.id ?? String(route.params.id ?? ''))
+function applyQuery(query: LocationQueryRaw, replace = false) {
+  if (props.context) emit('change-query', router.resolve({ path: '/preview/datasets/' + encodeURIComponent(id.value), query }).query)
+  else void router[replace ? 'replace' : 'push']({ query })
+}
 const dataset = computed(() => state.datasets.find((item) => item.id === id.value))
 const sourceRun = computed(() =>
-  state.runs.find((item) => item.id === String(route.query.run ?? '')),
+  state.runs.find((item) => item.id === String(pageQuery.value.run ?? '')),
 )
 const versionNumber = computed(() =>
   Number(
-    route.query.version ??
+    pageQuery.value.version ??
       (sourceRun.value?.config.datasetId === id.value
         ? sourceRun.value.config.datasetVersion
         : dataset.value?.versions.slice(-1)[0]?.version),
@@ -30,9 +39,9 @@ const version = computed(() =>
   dataset.value?.versions.find((entry) => entry.version === versionNumber.value),
 )
 const editing = computed(
-  () => route.query.draft === '1' && !!dataset.value && dataset.value.draft !== null,
+  () => pageQuery.value.draft === '1' && !!dataset.value && dataset.value.draft !== null,
 )
-const caseId = computed(() => String(route.query.case ?? ''))
+const caseId = computed(() => String(pageQuery.value.case ?? ''))
 const localCases = ref<TestCase[]>([]),
   saved = ref(''),
   note = ref(''),
@@ -42,25 +51,25 @@ const readonly = computed(
   () => !editing.value || state.role === 'viewer' || dataset.value?.archived,
 )
 const query = computed({
-  get: () => String(route.query.q ?? ''),
+  get: () => String(pageQuery.value.q ?? ''),
   set: (value: string) => setFilter('q', value),
 })
 const status = computed({
-  get: () => String(route.query.status ?? 'active'),
+  get: () => String(pageQuery.value.status ?? 'active'),
   set: (value: string) => setFilter('status', value),
 })
 const targetFilter = computed({
-  get: () => String(route.query.target ?? ''),
+  get: () => String(pageQuery.value.target ?? ''),
   set: (value: string) => setFilter('target', value),
 })
 const page = computed({
-  get: () => Math.max(1, Number(route.query.page) || 1),
+  get: () => Math.max(1, Number(pageQuery.value.page) || 1),
   set: (value: number) => {
-    void router.replace({ query: { ...route.query, page: String(value) } })
+    void router.replace({ query: { ...pageQuery.value, page: String(value) } })
   },
 })
 function setFilter(key: string, value: string) {
-  void router.replace({ query: { ...route.query, [key]: value || undefined, page: undefined } })
+  void router.replace({ query: { ...pageQuery.value, [key]: value || undefined, page: undefined } })
 }
 const rows = computed(() =>
   state.datasets.filter(
@@ -77,6 +86,7 @@ const rows = computed(() =>
   ),
 )
 const visible = computed(() => rows.value.slice((page.value - 1) * 8, page.value * 8))
+const detailItems = computed(() => rows.value.map(item => ({ label: item.name, to: { path: `/preview/datasets/${item.id}`, query: item.versions.length ? {} : { draft: '1' } } })))
 const base = computed(() =>
   dataset.value?.versions.find(
     (entry) =>
@@ -107,7 +117,7 @@ const relatedRuns = computed(() =>
   ),
 )
 const revisionError = computed(() => {
-  if (route.query.run && !sourceRun.value) return '404：来源任务不存在。'
+  if (pageQuery.value.run && !sourceRun.value) return '404：来源任务不存在。'
   if (sourceRun.value && sourceRun.value.config.datasetId !== id.value)
     return '来源任务未使用此测评集，不能将修订错误关联。'
   if (
@@ -120,7 +130,7 @@ const revisionError = computed(() => {
   return ''
 })
 watch(
-  () => [id.value, route.query.draft, route.query.version],
+  () => [id.value, pageQuery.value.draft, pageQuery.value.version],
   () => {
     localCases.value = clone(
       editing.value ? (dataset.value?.draft ?? []) : (version.value?.cases ?? []),
@@ -144,11 +154,12 @@ async function guard() {
     return false
   }
 }
+defineExpose({ beforeClose: guard })
 onBeforeRouteLeave(guard)
 onBeforeRouteUpdate((to) =>
   to.params.id !== route.params.id ||
-  to.query.version !== route.query.version ||
-  to.query.draft !== route.query.draft
+  to.query.version !== pageQuery.value.version ||
+  to.query.draft !== pageQuery.value.draft
     ? guard()
     : true,
 )
@@ -156,7 +167,7 @@ function draft() {
   const item = dataset.value
   if (!item || item.archived || revisionError.value) return
   if (item.draft !== null) {
-    void router.push({ query: { ...route.query, draft: '1' } })
+    applyQuery({ ...pageQuery.value, draft: '1' })
     return
   }
   if (!version.value) return
@@ -176,7 +187,7 @@ function draft() {
       item.draftBase = baseVersion
     })
   )
-    void router.push({ query: { ...route.query, draft: '1' } })
+    applyQuery({ ...pageQuery.value, draft: '1' })
 }
 function saveDraft() {
   const item = dataset.value
@@ -226,7 +237,7 @@ function publish() {
   ) {
     saved.value = JSON.stringify(localCases.value)
     ElMessage.success(`已发布 v${number}，历史版本保持不变`)
-    void router.replace({ query: { ...route.query, version: String(number), draft: undefined } })
+    applyQuery({ ...pageQuery.value, version: String(number), draft: undefined }, true)
   }
 }
 function copy(item: Dataset) {
@@ -262,12 +273,13 @@ function exportVersion() {
       ...clone(version.value),
     })
 }
-function selectVersion(value: string) {
-  void router.push({ query: { ...route.query, version: value, draft: undefined } })
+async function selectVersion(value: string) {
+  if (props.context && !(await guard())) return
+  applyQuery({ ...pageQuery.value, version: value, draft: undefined })
 }
 function useDataset() {
   if (!dataset.value || !version.value || dataset.value.archived) return
-  const returnRoute = router.resolve(previewReturn(route.query.returnTo))
+  const returnRoute = router.resolve(previewReturn(pageQuery.value.returnTo))
   const destination = ['/preview/runs/new', '/preview/analysis'].includes(returnRoute.path)
     ? returnRoute
     : router.resolve('/preview/runs/new')
@@ -275,9 +287,10 @@ function useDataset() {
     path: destination.path,
     query: {
       ...destination.query,
+      origin: destination.query.origin ?? route.fullPath,
       target: dataset.value.targetId,
       version:
-        route.query.targetVersion ??
+        pageQuery.value.targetVersion ??
         sourceRun.value?.config.targetVersion ??
         destination.query.version,
       dataset: dataset.value.id,
@@ -293,7 +306,7 @@ function useDataset() {
       <h1>{{ dataset?.name ?? '测评集' }}</h1>
       <p>审阅输入、发布固定版本，保留每次任务使用的历史内容。</p>
     </div>
-    <RouterLink v-if="id || route.query.mode" to="/preview/datasets">返回测评集列表</RouterLink>
+    <RouterLink v-if="!context && (id || pageQuery.mode)" :to="previewReturn(pageQuery.origin, '/preview/datasets')">{{ pageQuery.origin ? '返回来源页面' : '返回测评集列表' }}</RouterLink>
   </div>
   <StatusNotice
     v-if="state.role === 'viewer'"
@@ -330,7 +343,7 @@ function useDataset() {
             :key="entry.version"
             :label="`v${entry.version} · ${entry.cases.length} 条 · ${entry.note}`"
             :value="String(entry.version)" /></el-select
-        ><RouterLink :to="`/preview/targets/${dataset.targetId}`">查看测评对象</RouterLink>
+        ><EntityLink context-key="src/preview/pages/DatasetsPage.vue:44" :to="`/preview/targets/${dataset.targetId}`">查看测评对象</EntityLink>
       </div>
       <p v-if="!editing" class="muted">
         已发布版本只读。{{ version?.note }} · {{ version?.createdAt }}
@@ -369,14 +382,14 @@ function useDataset() {
           type="primary"
           :disabled="dataset.archived"
           @click="useDataset"
-          >{{ route.query.returnTo ? '使用此版本并返回' : '用于测评' }}</el-button
+          >{{ pageQuery.returnTo ? '使用此版本并返回' : '用于测评' }}</el-button
         >
       </div>
       <p v-if="sourceRun">
         <RouterLink
           :to="
             previewReturn(
-              route.query.returnTo,
+              pageQuery.returnTo,
               `/preview/runs/${sourceRun.id}${caseId ? `/cases/${caseId}` : ''}`,
             )
           "
@@ -443,7 +456,7 @@ function useDataset() {
       </section>
     </div>
   </template>
-  <PrepDatasetPrepare v-else-if="route.query.mode" :key="String(route.query.mode)" />
+  <PrepDatasetPrepare v-else-if="pageQuery.mode" :key="String(pageQuery.mode)" />
   <template v-else
     ><section class="panel">
       <div class="action-row">
@@ -487,12 +500,12 @@ function useDataset() {
     <article v-for="item in visible" :key="item.id" class="panel">
       <div class="action-row">
         <h2>
-          <RouterLink
+          <EntityLink context-key="src/preview/pages/DatasetsPage.vue:201" :related="detailItems"
             :to="{
               path: `/preview/datasets/${item.id}`,
               query: item.versions.length ? {} : { draft: '1' },
             }"
-            >{{ item.name }}</RouterLink
+            >{{ item.name }}</EntityLink
           >
         </h2>
         <el-tag v-if="item.archived" type="info">已归档</el-tag
@@ -506,12 +519,12 @@ function useDataset() {
         条用例
       </p>
       <div class="action-row">
-        <RouterLink
+        <EntityLink context-key="src/preview/pages/DatasetsPage.vue:220" :related="detailItems"
           :to="{
             path: `/preview/datasets/${item.id}`,
             query: item.versions.length ? {} : { draft: '1' },
           }"
-          >查看用例与版本</RouterLink
+          >查看用例与版本</EntityLink
         ><el-button :disabled="state.role === 'viewer'" @click="copy(item)">复制</el-button
         ><el-popconfirm
           :title="item.archived ? '恢复此测评集？' : '归档后保留历史引用，继续？'"

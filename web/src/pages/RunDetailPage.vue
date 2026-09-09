@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useDetailState } from '../components/detailState'
+import LineageLink from '../components/LineageLink.vue'
+import DetailDrawer from '../components/DetailDrawer.vue'
+import CaseResultPage from './CaseResultPage.vue'
 import EmptyState from '../components/EmptyState.vue'
 import StatusNotice from '../components/StatusNotice.vue'
 import { userError } from '../apiErrors'
@@ -70,6 +74,10 @@ const statusLabels = {
   failed: '执行失败',
   cancelled: '已取消',
 }
+const evidenceKey = useDetailState('report-evidence', '')
+const evidenceItems = computed(() => results.value.map(item => ({ key: JSON.stringify([item.case_id, item.evaluator_id]), label: cases.value.get(item.case_id)?.name ?? '用例证据' })))
+const evidenceResult = computed(() => results.value.find(item => JSON.stringify([item.case_id, item.evaluator_id]) === evidenceKey.value))
+const evidencePath = computed(() => evidenceResult.value && report.value ? router.resolve({ path: `/runs/${encodeURIComponent(report.value.run.id)}/cases/${encodeURIComponent(evidenceResult.value.case_id)}`, query: { evaluator: evidenceResult.value.evaluator_id, outcome: filter.value || undefined, dimension: dimension.value || undefined, q: query.value || undefined, fromStatus: route.query.fromStatus, fromQuery: route.query.fromQuery } }).fullPath : undefined)
 async function load() {
   clearTimeout(timer)
   controller?.abort()
@@ -158,7 +166,7 @@ function showDimension(key: string) {
         :to="{ path: '/comparisons', query: { baseline: report.run.id } }"
         >作为基线对比</RouterLink
       >
-      <RouterLink
+      <LineageLink
         class="ag-button"
         :to="{
           path: '/lineage',
@@ -169,9 +177,9 @@ function showDimension(key: string) {
             returnTo: route.fullPath,
           },
         }"
-        >来源与关联任务</RouterLink
+        >来源与关联任务</LineageLink
       >
-      <RouterLink
+      <LineageLink
         class="ag-button"
         :to="{
           path: '/lineage',
@@ -185,7 +193,7 @@ function showDimension(key: string) {
             returnTo: route.fullPath,
           },
         }"
-        >此对象版本的关联任务</RouterLink
+        >此对象版本的关联任务</LineageLink
       >
     </div>
   </div>
@@ -393,19 +401,8 @@ function showDimension(key: string) {
               </td>
               <td>{{ item.reason }}</td>
               <td>
-                <RouterLink
-                  :to="{
-                    path: `/runs/${report.run.id}/cases/${item.case_id}`,
-                    query: {
-                      evaluator: item.evaluator_id,
-                      outcome: filter,
-                      dimension,
-                      q: query,
-                      fromStatus: route.query.fromStatus,
-                      fromQuery: route.query.fromQuery,
-                    },
-                  }"
-                  >查看证据</RouterLink
+                <button class="text-button" :data-detail-key="JSON.stringify([item.case_id, item.evaluator_id])" @click="evidenceKey = JSON.stringify([item.case_id, item.evaluator_id])"
+                  >查看证据</button
                 >
               </td>
             </tr>
@@ -458,4 +455,7 @@ function showDimension(key: string) {
         <JsonFallback :model-value="report.run.manifest" readonly />
       </details></section
   ></template>
+  <DetailDrawer :model-value="!!evidenceResult" title="用例证据" :items="evidenceItems" :current-key="evidenceKey" :full-path="evidencePath" @update:model-value="value => { if (!value) evidenceKey = '' }" @select="evidenceKey = $event">
+    <CaseResultPage v-if="evidenceResult && report" :run-id="report.run.id" :case-id="evidenceResult.case_id" :evaluator-id="evidenceResult.evaluator_id" :source-report="report" embedded />
+  </DetailDrawer>
 </template>

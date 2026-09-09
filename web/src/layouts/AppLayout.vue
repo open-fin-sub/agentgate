@@ -2,7 +2,9 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppSidebar from '../components/AppSidebar.vue'
+import { provideDetailState } from '../components/detailState'
 
+provideDetailState()
 const route = useRoute()
 const preview = computed(() => route.path.startsWith('/preview'))
 const switchPath = computed(() => {
@@ -62,7 +64,7 @@ watch(
     open.value = false
     document.title = `${route.meta.title ?? '测评平台'} · AgentGate`
     await nextTick()
-    document.getElementById('workspace-main')?.focus()
+    document.getElementById('workspace-main')?.focus({ preventScroll: true })
   },
   { immediate: true },
 )

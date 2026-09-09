@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { previewReturn } from '../components/PrepCases'
+import EntityLink from '../components/EntityLink.vue'
+import type { LocationQuery, LocationQueryRaw } from 'vue-router'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
 import ValueView from '../../components/ValueView.vue'
@@ -8,25 +11,32 @@ import { usePreview } from '../workspace'
 const { state } = usePreview()
 const route = useRoute(),
   router = useRouter()
-const id = computed(() => String(route.params.id ?? ''))
+const props = defineProps<{ context?: { id: string; query: LocationQuery } }>()
+const emit = defineEmits<{ 'change-query': [query: LocationQuery] }>()
+const pageQuery = computed(() => props.context?.query ?? route.query)
+const id = computed(() => props.context?.id ?? String(route.params.id ?? ''))
+function applyQuery(query: LocationQueryRaw, replace = false) {
+  if (props.context) emit('change-query', router.resolve({ path: '/preview/targets/' + encodeURIComponent(id.value), query }).query)
+  else void router[replace ? 'replace' : 'push']({ query })
+}
 const target = computed(() => state.targets.find((item) => item.id === id.value))
 const versionId = computed({
-  get: () => String(route.query.version ?? target.value?.versions[0]?.id ?? ''),
+  get: () => String(pageQuery.value.version ?? target.value?.versions[0]?.id ?? ''),
   set: (value: string) => {
-    void router.replace({ query: { ...route.query, version: value } })
+    applyQuery({ ...pageQuery.value, version: value }, true)
   },
 })
 const version = computed(() => target.value?.versions.find((item) => item.id === versionId.value))
 const query = computed({
-  get: () => String(route.query.q ?? ''),
+  get: () => String(pageQuery.value.q ?? ''),
   set: (value: string) => setFilter('q', value),
 })
 const type = computed({
-  get: () => String(route.query.type ?? ''),
+  get: () => String(pageQuery.value.type ?? ''),
   set: (value: string) => setFilter('type', value),
 })
 function setFilter(key: string, value: string) {
-  void router.replace({ query: { ...route.query, [key]: value || undefined } })
+  void router.replace({ query: { ...pageQuery.value, [key]: value || undefined } })
 }
 const rows = computed(() =>
   state.targets.filter(
@@ -45,6 +55,7 @@ const skills = computed(
       definition: version.value?.skillDefinitions?.find((item) => item.id === skill),
     })) ?? [],
 )
+const detailItems = computed(() => rows.value.map(item => ({ label: item.name, to: `/preview/targets/${item.id}` })))
 const datasets = computed(() =>
   state.datasets.filter((item) => item.targetId === id.value && !item.archived),
 )
@@ -68,7 +79,7 @@ const canAnalyze = computed(
       <h1>{{ target?.name ?? '测评对象' }}</h1>
       <p>Mock 外部版本快照 · 选择 Agent 或 Skill，固定版本后准备测评。</p>
     </div>
-    <RouterLink v-if="id" to="/preview/targets">返回对象列表</RouterLink>
+    <RouterLink v-if="id && !context" :to="previewReturn(pageQuery.origin, '/preview/targets')">{{ pageQuery.origin ? '返回来源页面' : '返回对象列表' }}</RouterLink>
   </div>
   <StatusNotice
     v-if="id && (!target || !version)"
@@ -102,7 +113,7 @@ const canAnalyze = computed(
         <RouterLink
           v-if="version.executable"
           class="ag-button primary"
-          :to="{ path: '/preview/runs/new', query: config }"
+          :to="{ path: '/preview/runs/new', query: { ...config, origin: route.fullPath } }"
           >配置测评</RouterLink
         ><RouterLink
           class="ag-button"
@@ -146,13 +157,14 @@ const canAnalyze = computed(
         <h2>关联 Skill</h2>
         <p v-if="!skills.length" class="muted">独立 Skill，无下级关联。</p>
         <article v-for="skill in skills" :key="skill.id">
-          <RouterLink
+          <EntityLink context-key="src/preview/pages/TargetsPage.vue:85"
             v-if="skill.definition"
+            :related="skills.filter(item => item.definition).map(item => ({ label: item.definition!.name, to: { path: `/preview/targets/${item.id}`, query: { version: item.definition!.version } } }))"
             :to="{
               path: `/preview/targets/${skill.id}`,
               query: { version: skill.definition.version },
             }"
-            >{{ skill.definition.name }} · {{ skill.definition.version }}</RouterLink
+            >{{ skill.definition.name }} · {{ skill.definition.version }}</EntityLink
           >
           <span v-else>{{ skill.id }}（固定版本定义未提供）</span>
           <template v-if="skill.definition"
@@ -183,7 +195,7 @@ const canAnalyze = computed(
         ><RouterLink class="ag-button" to="/preview/datasets">查看测评集</RouterLink></EmptyState
       >
       <p v-for="dataset in datasets" :key="dataset.id">
-        <RouterLink :to="`/preview/datasets/${dataset.id}`">{{ dataset.name }}</RouterLink> ·
+        <EntityLink context-key="src/preview/pages/TargetsPage.vue:122" :related="datasets.map(item => ({ label: item.name, to: `/preview/datasets/${item.id}` }))" :to="`/preview/datasets/${dataset.id}`">{{ dataset.name }}</EntityLink> ·
         {{ dataset.versions.length }} 个发布版本
       </p>
       <h2>此版本的相关任务</h2>
@@ -215,14 +227,14 @@ const canAnalyze = computed(
       <article v-for="item in rows" :key="item.id" class="panel">
         <p class="muted">{{ item.type }} · {{ item.form }}</p>
         <h2>
-          <RouterLink :to="`/preview/targets/${item.id}`">{{ item.name }}</RouterLink>
+          <EntityLink context-key="src/preview/pages/TargetsPage.vue:154" :related="detailItems" :to="`/preview/targets/${item.id}`">{{ item.name }}</EntityLink>
         </h2>
         <p>{{ item.description }}</p>
         <p class="muted">
           {{ item.platform }} ·
           {{ item.versions.filter((entry) => entry.executable).length }} 个可执行版本
         </p>
-        <RouterLink :to="`/preview/targets/${item.id}`">查看版本与定义 →</RouterLink>
+        <EntityLink context-key="src/preview/pages/TargetsPage.vue:161" :related="detailItems" :to="`/preview/targets/${item.id}`">查看版本与定义 →</EntityLink>
       </article>
     </div></template
   >

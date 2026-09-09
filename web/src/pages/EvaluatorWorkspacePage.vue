@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import LineageLink from '../components/LineageLink.vue'
 import EmptyState from '../components/EmptyState.vue'
 import StatusNotice from '../components/StatusNotice.vue'
 import { userError } from '../apiErrors'
@@ -76,7 +77,8 @@ onMounted(load)
     <StatusNotice v-if="item.kind === 'llm_judge'">
       此标准由模型评分。完成测评后，可在用例报告中查看评分理由与调用记录。
     </StatusNotice>
-    <RouterLink
+    <LineageLink
+      :related="visible.map(entry => ({ label: catalogLabel(entry.name), to: { path: '/lineage', query: { kind: 'evaluator', id: entry.id, version: entry.version, hash: entry.content_sha256, returnTo: route.fullPath } } }))"
       :to="{
         path: '/lineage',
         query: {
@@ -87,7 +89,7 @@ onMounted(load)
           returnTo: route.fullPath,
         },
       }"
-      >查看此版本的关联任务</RouterLink
+      >查看此版本的关联任务</LineageLink
     >
   </div>
   <EmptyState

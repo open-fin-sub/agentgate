@@ -1,5 +1,17 @@
 import { expect, test } from '@playwright/test'
 
+test('an empty dataset draft cannot be published and remains editable', async ({ page }) => {
+  await page.goto('/datasets')
+  await page.getByTestId('create-dataset').click()
+  await page.getByTestId('dataset-name').fill(`空测评集-${Date.now()}`)
+  await page.getByTestId('submit-dataset').click()
+  await expect(page.getByText('测评集已创建')).toBeVisible()
+  await page.getByTestId('publish-draft').click()
+  await expect(page.getByText('草稿尚不能发布')).toBeVisible()
+  await expect(page.getByText('测评集至少需要一个用例')).toBeVisible()
+  await expect(page.getByTestId('add-case')).toBeEnabled()
+})
+
 test('real published input → queued run → report → evidence → version correction', async ({
   page,
   request,
@@ -57,7 +69,10 @@ test('real published input → queued run → report → evidence → version co
   await page.getByRole('button', { name: '评估结果与用例', exact: true }).click()
   await page.getByLabel('结果状态').selectOption('fail')
   await expect(page).toHaveURL(/outcome=fail/)
-  await page.getByRole('link', { name: '查看证据', exact: true }).first().click()
+  const reportUrl = page.url()
+  await page.getByRole('button', { name: '查看证据', exact: true }).first().click()
+  await expect(page).toHaveURL(reportUrl)
+  await page.getByRole('dialog', { name: '用例证据', exact: true }).getByRole('link', { name: '全页打开', exact: true }).click()
   await expect(page).toHaveURL(/\/cases\//)
   const evidenceUrl = page.url()
   await expect(page.getByRole('heading', { name: '执行轨迹', exact: true })).toBeVisible()
@@ -91,6 +106,9 @@ test('real published input → queued run → report → evidence → version co
   await page.getByRole('link', { name: '返回原任务的用例证据' }).click()
   await expect(page).toHaveURL(evidenceUrl)
   await page.getByRole('link', { name: '返回报告与筛选结果' }).click()
+  const restoredEvidence = page.getByRole('dialog', { name: '用例证据', exact: true })
+  await expect(restoredEvidence).toBeVisible()
+  await restoredEvidence.getByRole('button', { name: '关闭此对话框' }).click()
   await expect(page.getByLabel('结果状态')).toHaveValue('fail')
   await page.reload()
   await expect(page.getByLabel('结果状态')).toHaveValue('fail')

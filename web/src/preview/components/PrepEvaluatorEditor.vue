@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EntityLink from './EntityLink.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
 import { computed } from 'vue'
 import type { EvaluatorVersion } from '../types'
@@ -130,10 +131,11 @@ function resource(id: string) {
             :step="0.1"
             :precision="2"
             @update:model-value="setWeight(index, $event)" /></el-form-item
-        ><RouterLink
+        ><EntityLink context-key="src/preview/components/PrepEvaluatorEditor.vue:75"
           v-if="child.id"
+          :related="value.children.filter(item => item.id).map(item => ({ label: state.evaluators.find(entry => entry.id === item.id)?.name ?? '子评估器', to: `/preview/evaluators/${item.id}?version=${item.version}` }))"
           :to="`/preview/evaluators/${child.id}?version=${child.version}`"
-          >查看子项版本</RouterLink
+          >查看子项版本</EntityLink
         ><el-button v-if="!readonly" @click="removeChild(index)">移除子项</el-button>
       </div>
       <el-button v-if="!readonly" @click="addChild">添加子评估器</el-button>

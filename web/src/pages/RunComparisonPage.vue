@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useDetailState } from '../components/detailState'
+import DetailDrawer from '../components/DetailDrawer.vue'
+import CaseResultPage from './CaseResultPage.vue'
 import EmptyState from '../components/EmptyState.vue'
 import StatusNotice from '../components/StatusNotice.vue'
 import { userError } from '../apiErrors'
@@ -181,6 +184,14 @@ function setQuery(event: Event) {
   router.replace({
     query: { ...route.query, q: (event.target as HTMLInputElement).value || undefined },
   })
+}
+const evidenceSelection = useDetailState<{ runId: string; key: string } | null>('comparison-evidence', null)
+const evidenceItems = computed(() => filtered.value.map(item => ({ key: JSON.stringify([item.case_id, item.evaluator_id]), label: cases.value.get(item.case_id) ?? '用例证据' })))
+const evidenceResult = computed(() => filtered.value.find(item => JSON.stringify([item.case_id, item.evaluator_id]) === evidenceSelection.value?.key))
+const evidenceReport = computed(() => reports.value.find(item => item.run.id === evidenceSelection.value?.runId))
+const evidencePath = computed(() => evidenceSelection.value && evidenceResult.value ? router.resolve(evidence(evidenceSelection.value.runId, evidenceResult.value.case_id, evidenceResult.value.evaluator_id)).fullPath : undefined)
+function openEvidence(runId: string, caseId: string, evaluator: string) {
+  evidenceSelection.value = { runId, key: JSON.stringify([caseId, evaluator]) }
 }
 function evidence(runId: string, caseId: string, evaluator: string) {
   return {
@@ -441,8 +452,8 @@ onUnmounted(() => {
                   }}
                   · {{ scoreText(item.baseline_score) }}
                 </p>
-                <RouterLink :to="evidence(result.baseline_run_id, item.case_id, item.evaluator_id)"
-                  >查看基线证据</RouterLink
+                <button class="text-button" @click="openEvidence(result.baseline_run_id, item.case_id, item.evaluator_id)"
+                  >查看基线证据</button
                 >
               </div>
               <div>
@@ -452,8 +463,8 @@ onUnmounted(() => {
                   }}
                   · {{ scoreText(item.candidate_score) }}
                 </p>
-                <RouterLink :to="evidence(result.candidate_run_id, item.case_id, item.evaluator_id)"
-                  >查看候选证据</RouterLink
+                <button class="text-button" @click="openEvidence(result.candidate_run_id, item.case_id, item.evaluator_id)"
+                  >查看候选证据</button
                 >
               </div>
             </div>
@@ -479,6 +490,9 @@ onUnmounted(() => {
     title="选择两份报告开始对比"
     description="先在上方选择基线和候选任务，再点击对比，核对指标与用例变化。"
   ></EmptyState>
+  <DetailDrawer :model-value="!!evidenceResult" :title="evidenceSelection?.runId === result?.baseline_run_id ? '基线用例证据' : '候选用例证据'" :items="evidenceItems" :current-key="evidenceSelection?.key" :full-path="evidencePath" @update:model-value="value => { if (!value) evidenceSelection = null }" @select="key => { if (evidenceSelection) evidenceSelection.key = key }">
+    <CaseResultPage v-if="evidenceSelection && evidenceResult" :run-id="evidenceSelection.runId" :case-id="evidenceResult.case_id" :evaluator-id="evidenceResult.evaluator_id" :source-report="evidenceReport" embedded />
+  </DetailDrawer>
 </template>
 
 <style scoped>

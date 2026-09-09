@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import DetailNavigation from '../components/DetailNavigation.vue'
+import LineageLink from '../components/LineageLink.vue'
 import { userError } from '../apiErrors'
 import StatusNotice from '../components/StatusNotice.vue'
 import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue'
-import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute } from 'vue-router'
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ApiError } from '../api/client'
 import { datasetApi } from '../api/datasets'
@@ -19,6 +21,7 @@ import type {
 } from '../types/dataset'
 
 const route = useRoute()
+const router = useRouter()
 const dirty = ref(false)
 const loadError = ref('')
 const copySourceId = ref('')
@@ -60,6 +63,8 @@ const createLink = computed(() => ({
     dataset: activeDatasetId.value,
     version: activeVersion.value?.version ?? undefined,
     source: typeof route.query.source === 'string' ? route.query.source : undefined,
+    resume: route.query.returnTo === 'create' ? '1' : undefined,
+    origin: route.query.returnTo === 'create' ? route.query.creationOrigin : router.resolve({ path: '/datasets', query: { ...route.query, dataset: activeDatasetId.value, version: activeVersion.value?.version ?? undefined, case: activeCaseId.value || undefined, view: caseView.value } }).fullPath,
   },
 }))
 const evidenceLink = computed(() => ({
@@ -75,10 +80,10 @@ const evidenceLink = computed(() => ({
 }))
 const returnCreateLink = computed(() =>
   activeVersion.value?.status === 'published'
-    ? createLink.value
+    ? { ...createLink.value, query: { ...createLink.value.query, resume: '1', origin: route.query.creationOrigin } }
     : {
         path: '/runs/new',
-        query: { source: route.query.source },
+        query: { source: route.query.source, resume: '1', origin: route.query.creationOrigin },
       },
 )
 async function allowDiscard(): Promise<boolean> {
@@ -480,7 +485,7 @@ async function loadRoute(query = route.query) {
       if (query.version && !requested) throw new Error('指定的测评集版本不存在，未切换为其他版本。')
       activeCaseId.value = typeof query.case === 'string' ? query.case : ''
       chooseVersion(requested?.id)
-      caseView.value = query.case ? 'editor' : 'list'
+      caseView.value = query.view === 'list' ? 'list' : query.case ? 'editor' : 'list'
       if (query.case && !activeVersion.value?.cases.some((c) => c.id === query.case))
         throw new Error('指定版本中没有这个用例。')
     }
@@ -638,6 +643,8 @@ onMounted(() => {
         @remove="performAction(() => removeCase($event))"
         @reorder="performAction(() => reorderCases($event))"
       />
+      <section class="dataset-column case-detail-panel">
+      <DetailNavigation :items="(activeVersion?.cases ?? []).map(item => ({ key: item.id, label: item.name }))" :current-key="activeCaseId" :busy="busy" @select="id => { const item = activeVersion?.cases.find(entry => entry.id === id); if (item) selectCase(item) }" />
       <CaseEditor
         :item="editedCase"
         :editable="editable"
@@ -646,6 +653,7 @@ onMounted(() => {
         @save="saveCase"
         @dirty="dirty = $event"
       />
+      </section>
     </div>
 
     <div v-if="activeDatasetId" class="dataset-run-bar">
@@ -665,7 +673,7 @@ onMounted(() => {
         >用于测评</RouterLink
       >
       <span v-else class="muted">保存并发布后可继续配置测评对象和评分标准。</span>
-      <RouterLink
+      <LineageLink
         v-if="activeVersion?.status === 'published'"
         class="ag-button"
         :to="{
@@ -674,10 +682,10 @@ onMounted(() => {
             kind: 'dataset',
             id: activeDatasetId,
             version: activeVersion.version,
-            returnTo: `/datasets?dataset=${encodeURIComponent(activeDatasetId)}&version=${activeVersion.version}`,
+            returnTo: router.resolve({ path: '/datasets', query: { ...route.query, dataset: activeDatasetId, version: activeVersion.version, case: activeCaseId || undefined, view: caseView } }).fullPath,
           },
         }"
-        >此发布版本的关联任务</RouterLink
+        >此发布版本的关联任务</LineageLink
       >
     </div>
 

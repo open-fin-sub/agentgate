@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import TaskBackLink from '../components/TaskBackLink.vue'
 import StatusNotice from '../components/StatusNotice.vue'
 import { userError } from '../apiErrors'
 import { catalogLabel } from '../catalogLabels'
@@ -94,11 +95,12 @@ async function initialize() {
     evaluators.value = es
     let saved: Record<string, unknown> = {}
     try {
-      saved = JSON.parse(sessionStorage.getItem('ag-evaluation-draft') ?? '{}')
+      const parsed = JSON.parse(sessionStorage.getItem('ag-evaluation-draft') ?? '{}')
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) saved = parsed
     } catch {
       /* Ignore an invalid browser draft. */
     }
-    target.value = String(route.query.target ?? saved.target ?? ts[0]?.id ?? '')
+    target.value = String((route.query.resume === '1' ? saved.target : route.query.target) ?? saved.target ?? ts[0]?.id ?? '')
     datasetId.value = String(
       route.query.dataset ?? saved.datasetId ?? ds.find((d) => d.version !== null)?.id ?? '',
     )
@@ -107,13 +109,15 @@ async function initialize() {
           (id): id is string => typeof id === 'string' && es.some((e) => e.id === id),
         )
       : []
+    if (route.query.resume === '1' && !Array.isArray(saved.selected))
+      reuseIssue.value = '原填写内容未能恢复，请重新核对配置并选择评分标准。'
     let preferred = route.query.version
       ? Number(route.query.version)
       : (!route.query.dataset || route.query.dataset === saved.datasetId) &&
           typeof saved.datasetVersion === 'number'
         ? saved.datasetVersion
         : null
-    if (route.query.source) {
+    if (route.query.source && route.query.resume !== '1') {
       const report = await api.report(String(route.query.source))
       if (!alive) return
       target.value = String(
@@ -181,7 +185,7 @@ onUnmounted(() => {
 })
 </script>
 <template>
-  <RouterLink class="back-link" to="/runs">← 测评任务</RouterLink>
+  <TaskBackLink :fallback="route.query.source ? `/runs/${encodeURIComponent(String(route.query.source))}` : '/runs'" :label="route.query.source ? '返回来源报告' : '返回任务列表'" />
   <div class="page-intro">
     <div>
       <h1>创建测评</h1>
@@ -239,7 +243,7 @@ onUnmounted(() => {
             <RouterLink
               :to="{
                 path: '/datasets',
-                query: { dataset: datasetId, returnTo: 'create', source: route.query.source },
+                query: { dataset: datasetId, version: datasetVersion, returnTo: 'create', source: route.query.source, creationOrigin: route.query.origin },
               }"
               >编辑测评集并返回 →</RouterLink
             >

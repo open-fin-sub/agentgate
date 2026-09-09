@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import TaskBackLink from '../../components/TaskBackLink.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
 import FormSection from '../../components/FormSection.vue'
 import { computed, reactive, ref, watch } from 'vue'
@@ -254,7 +255,7 @@ function saveDraft() {
 }
 function prepare(mode: 'manual' | 'merge') {
   if (!saveDraft()) return
-  const returnTo = router.resolve({ path: '/preview/runs/new', query: { draft: '1' } }).href
+  const returnTo = router.resolve({ path: '/preview/runs/new', query: { draft: '1', origin: route.query.origin } }).href
   void router.push({
     path: '/preview/datasets',
     query: { mode, target: config.targetId, targetVersion: config.targetVersion, returnTo },
@@ -296,7 +297,7 @@ watch(() => route.fullPath, initialize, { immediate: true })
 </script>
 
 <template>
-  <RouterLink class="back-link" to="/preview/runs">← 测评任务</RouterLink>
+  <TaskBackLink :fallback="sourceRunId ? `/preview/runs/${encodeURIComponent(sourceRunId)}` : '/preview/runs'" :label="sourceRunId ? '返回来源报告' : '返回任务列表'" />
   <div class="page-intro">
     <div>
       <h1>创建测评</h1>

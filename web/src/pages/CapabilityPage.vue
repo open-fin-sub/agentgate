@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import DetailDrawer from '../components/DetailDrawer.vue'
 import EmptyState from '../components/EmptyState.vue'
 import StatusNotice from '../components/StatusNotice.vue'
 import { computed, ref } from 'vue'
@@ -169,11 +170,13 @@ function exportMatrix() {
       description="调整需求关键词或能力状态，查看相关使用场景与接入要求。"
     ></EmptyState>
   </section>
-  <el-drawer
+  <DetailDrawer
     :model-value="!!selected"
-    :title="selected?.title"
-    size="min(640px, 100vw)"
-    @close="selected = null"
+    :title="selected?.title ?? '能力详情'"
+    :items="visible.map(item => ({ key: item.id, label: item.title }))"
+    :current-key="selected?.id"
+    @select="id => selected = visible.find(item => item.id === id) ?? null"
+    @update:model-value="value => { if (!value) selected = null }"
     ><template v-if="selected"
       ><el-tag>{{ selected.id }}</el-tag>
       <h3 class="cap-detail-heading">需求与用户故事</h3>
@@ -192,7 +195,7 @@ function exportMatrix() {
       <RouterLink :to="selected.route" @click="selected = null"
         >进入对应体验页面 →</RouterLink
       ></template
-    ></el-drawer
+    ></DetailDrawer
   >
 </template>
 <style scoped>

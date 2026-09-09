@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useDetailState } from '../../components/detailState'
+import EntityLink from '../components/EntityLink.vue'
+import CaseEvidenceDrawer from '../components/CaseEvidenceDrawer.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import StatusNotice from '../../components/StatusNotice.vue'
 import TokenUsage from '../../components/TokenUsage.vue'
@@ -215,9 +218,8 @@ function selectEvaluator(id: string) {
   filters.evaluator = id
   void sync(true)
 }
-function caseLink(caseId: string) {
-  return { path: `/preview/runs/${run.value?.id}/cases/${caseId}`, query: { ...route.query } }
-}
+const evidenceCase = useDetailState('report-evidence', '')
+const evidenceItems = computed(() => rows.value.map(row => ({ key: row.testCase.id, label: row.testCase.question })))
 function stop() {
   const current = run.value
   if (!current || !isActive(current)) return
@@ -589,8 +591,8 @@ watch(() => route.fullPath, readQuery, { immediate: true })
           <tbody>
             <tr v-for="row in pageRows" :key="row.testCase.id">
               <td>
-                <RouterLink :to="caseLink(row.testCase.id)"
-                  >{{ row.testCase.id }} · {{ row.testCase.question }}</RouterLink
+                <button class="text-button" :data-detail-key="row.testCase.id" @click="evidenceCase = row.testCase.id"
+                  >{{ row.testCase.id }} · {{ row.testCase.question }}</button
                 ><small
                   >{{
                     row.testCase.turns.length > 1 ? `${row.testCase.turns.length} 轮` : '单轮'
@@ -614,7 +616,7 @@ watch(() => route.fullPath, readQuery, { immediate: true })
                   >所选检查：{{
                     evaluatorCheck(run, row.result, filters.evaluator)?.reason || '检查缺失'
                   }}</small
-                ><RouterLink :to="caseLink(row.testCase.id)">查看证据与复核 →</RouterLink>
+                ><button class="text-button" @click="evidenceCase = row.testCase.id">查看证据与复核 →</button>
               </td>
               <td>{{ tokenText(row.result?.tokens) }}</td>
             </tr>
@@ -655,36 +657,37 @@ watch(() => route.fullPath, readQuery, { immediate: true })
             <tr>
               <td>测评对象</td>
               <td>
-                <RouterLink
+                <EntityLink context-key="src/preview/pages/RunPage.vue:342"
                   :to="{
                     path: '/preview/targets/' + run.config.targetId,
                     query: { version: run.config.targetVersion },
                   }"
-                  >{{ run.target.name }} / {{ run.config.targetVersion }}</RouterLink
+                  >{{ run.target.name }} / {{ run.config.targetVersion }}</EntityLink
                 >
               </td>
             </tr>
             <tr>
               <td>测评集</td>
               <td>
-                <RouterLink
+                <EntityLink context-key="src/preview/pages/RunPage.vue:354"
                   :to="{
                     path: '/preview/datasets/' + run.config.datasetId,
                     query: { version: String(run.config.datasetVersion) },
                   }"
-                  >{{ run.config.datasetId }} v{{ run.config.datasetVersion }}</RouterLink
+                  >{{ run.config.datasetId }} v{{ run.config.datasetVersion }}</EntityLink
                 >
               </td>
             </tr>
             <tr v-for="ref in run.config.evaluatorRefs" :key="ref.id">
               <td>评估器</td>
               <td>
-                <RouterLink
+                <EntityLink context-key="src/preview/pages/RunPage.vue:366"
+                  :related="run.config.evaluatorRefs.map(item => ({ label: run?.evaluators.find(entry => entry.id === item.id)?.name ?? '评分标准', to: { path: '/preview/evaluators/' + item.id, query: { version: String(item.version) } } }))"
                   :to="{
                     path: '/preview/evaluators/' + ref.id,
                     query: { version: String(ref.version) },
                   }"
-                  >{{ ref.id }} v{{ ref.version }}</RouterLink
+                  >{{ ref.id }} v{{ ref.version }}</EntityLink
                 >
               </td>
             </tr>
@@ -747,6 +750,7 @@ watch(() => route.fullPath, readQuery, { immediate: true })
       <p v-if="!audits.length" class="muted small">暂无该运行的本地操作留痕。</p>
     </section>
   </template>
+  <CaseEvidenceDrawer v-if="run" v-model="evidenceCase" :run-id="run.id" :items="evidenceItems" />
 </template>
 <style scoped>
 .quality-panel {

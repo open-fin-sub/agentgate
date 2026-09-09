@@ -1,30 +1,43 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref, watch } from 'vue'
+import DetailNavigation from './DetailNavigation.vue'
 const props = defineProps<{
   modelValue: boolean
   title: string
   items?: { key: string; label: string }[]
   currentKey?: string
+  returnFocusKey?: string
   fullPath?: string
   beforeClose?: () => boolean | Promise<boolean>
 }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean]; select: [key: string] }>()
-const index = computed(() => props.items?.findIndex((item) => item.key === props.currentKey) ?? -1)
 let origin: HTMLElement | null = null
+let lastKey = props.currentKey
+watch(() => props.currentKey, key => { if (key) lastKey = key }, { flush: 'sync' })
 const busy = ref(false)
-function opened() {
-  origin = document.activeElement instanceof HTMLElement ? document.activeElement : null
-}
+watch(() => props.modelValue, (open) => {
+  if (open) origin = document.activeElement instanceof HTMLElement ? document.activeElement : null
+}, { flush: 'sync' })
 function closed() {
-  origin?.focus()
+  const explicit = props.returnFocusKey ? document.querySelector<HTMLElement>(`[data-detail-key="${CSS.escape(props.returnFocusKey)}"]`) : null
+  const trigger = explicit ?? (origin?.isConnected ? origin : lastKey ? document.querySelector<HTMLElement>(`[data-detail-key="${CSS.escape(lastKey)}"]`) : null)
+  trigger?.focus({ preventScroll: true })
 }
 async function close(done: () => void) {
+  if (busy.value) return
   busy.value = true
   try {
     if (!props.beforeClose || (await props.beforeClose())) done()
   } finally {
     busy.value = false
   }
+}
+async function select(key: string) {
+  if (busy.value) return
+  busy.value = true
+  try {
+    if (!props.beforeClose || await props.beforeClose()) emit('select', key)
+  } finally { busy.value = false }
 }
 </script>
 <template>
@@ -36,30 +49,13 @@ async function close(done: () => void) {
     :before-close="close"
     :close-on-click-modal="false"
     @update:model-value="emit('update:modelValue', $event)"
-    @open="opened"
     @closed="closed"
-    ><nav v-if="items?.length" class="ux-detail-nav" aria-label="详情切换">
-      <el-button :disabled="index <= 0 || busy" @click="emit('select', items[index - 1]!.key)"
-        >上一条</el-button
-      ><span>{{ index + 1 }} / {{ items.length }}</span
-      ><el-button
-        :disabled="index < 0 || index >= items.length - 1 || busy"
-        @click="emit('select', items[index + 1]!.key)"
-        >下一条</el-button
-      >
-    </nav>
+    ><DetailNavigation v-if="items" :items="items" :current-key="currentKey" :busy="busy" @select="select" />
     <RouterLink v-if="fullPath" :to="fullPath" class="ux-full-link">全页打开</RouterLink>
     <div class="ux-drawer-content"><slot /></div
   ></el-drawer>
 </template>
 <style scoped>
-.ux-detail-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-}
 .ux-full-link {
   display: inline-flex;
   min-height: 32px;

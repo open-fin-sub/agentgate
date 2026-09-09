@@ -45,7 +45,10 @@ test('run creation survives refresh, preserves original result during human revi
     timeout: 25000,
   })
   await page.getByRole('button', { name: /^不通过 \d/ }).click()
-  await page.locator('a[href*="/cases/case-02"]').first().click()
+  const reportUrl = page.url()
+  await page.getByRole('button', { name: /^case-02 ·/ }).click()
+  await expect(page).toHaveURL(reportUrl)
+  await page.getByRole('dialog', { name: '用例证据与复核', exact: true }).getByRole('link', { name: '全页打开', exact: true }).click()
   await expect(page).toHaveURL(/case-02/)
   await expect(page.getByRole('spinbutton', { name: '人工分数', exact: true })).toHaveValue('')
   await select(page, '人工结论', '非 Badcase / 机器误判')

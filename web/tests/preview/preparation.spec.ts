@@ -122,10 +122,16 @@ test('fixed Skill versions are visible while dataset versions remain independent
 }) => {
   await seedPage(page)
   await page.goto('/preview/targets/agent-service?version=v2')
-  await expect(page.getByRole('link', { name: '贷款办理 · v2', exact: true })).toHaveAttribute(
+  const parentUrl = page.url()
+  await page.getByRole('button', { name: '贷款办理 · v2', exact: true }).click()
+  const detail = page.getByRole('dialog', { name: '测评对象详情' })
+  await expect(detail.getByRole('heading', { name: '贷款办理', exact: true })).toBeVisible()
+  await expect(detail.getByRole('link', { name: '全页打开', exact: true })).toHaveAttribute(
     'href',
-    '/preview/targets/skill-loan?version=v2',
+    /^\/preview\/targets\/skill-loan\?version=v2&origin=/,
   )
+  await expect(page).toHaveURL(parentUrl)
+  await detail.getByRole('button', { name: '关闭此对话框' }).click()
   await page.getByRole('link', { name: '合并关联 Skill 用例', exact: true }).click()
   await page.getByRole('combobox', { name: '来源测评集固定版本', exact: true }).press('Enter')
   await expect(page.getByRole('option', { name: /贷款办理.*v1.*尚无 v2 单测记录/ })).toBeVisible()

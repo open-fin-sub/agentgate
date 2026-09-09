@@ -22,7 +22,7 @@
 |I-FEEDBACK|25|25|
 |RC-TOKEN|56|0|
 |H-TERMS|12|12|
-|C-CONTEXT|5|5|
+|C-CONTEXT|40|0|
 |E-ROLE|1|1|
 |RC-GENERATION|1|0|
 |D-SYSTEM|1|1|
@@ -159,7 +159,7 @@
 |UX-0125|web/src/pages/RunDetailPage.vue:329|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0126|web/src/pages/RunDetailPage.vue:336|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
 |UX-0127|web/src/pages/RunDetailPage.vue:343|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0128|web/src/pages/RunDetailPage.vue:370|C1/C2/C3|C-CONTEXT|P1|工作流下钻应复用抽屉并支持按当前过滤顺序前后查看|待整改|
+|UX-0128|web/src/pages/RunDetailPage.vue:370|C1/C2/C3|C-CONTEXT|P1|工作流下钻应复用抽屉并支持按当前过滤顺序前后查看|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
 |UX-0129|web/src/pages/RunDetailPage.vue:387|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0130|web/src/pages/RunDetailPage.vue:426|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
 |UX-0131|web/src/pages/RunDetailPage.vue:423|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
@@ -198,7 +198,7 @@
 |UX-0164|web/src/preview/components/AnalysisSuggestion.vue:296|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0165|web/src/preview/components/AnalysisSuggestion.vue:305|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0166|web/src/preview/components/AnalysisSuggestion.vue:310|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0167|web/src/preview/components/AnalysisSuggestion.vue:317|C1/C2/C3|C-CONTEXT|P1|工作流下钻应复用抽屉并支持按当前过滤顺序前后查看|待整改|
+|UX-0167|web/src/preview/components/AnalysisSuggestion.vue:317|C1/C2/C3|C-CONTEXT|P1|工作流下钻应复用抽屉并支持按当前过滤顺序前后查看|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
 |UX-0168|web/src/preview/components/AnalysisSuggestion.vue:320|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0169|web/src/preview/components/AnalysisSuggestion.vue:372|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0170|web/src/preview/components/AnalysisSuggestion.vue:385|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
@@ -228,7 +228,7 @@
 |UX-0194|web/src/preview/components/CompareEvidence.vue:24|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0195|web/src/preview/components/CompareEvidence.vue:31|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0196|web/src/preview/components/CompareEvidence.vue:32|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0197|web/src/preview/components/CompareEvidence.vue:36|C1/C2/C3|C-CONTEXT|P1|工作流下钻应复用抽屉并支持按当前过滤顺序前后查看|待整改|
+|UX-0197|web/src/preview/components/CompareEvidence.vue:36|C1/C2/C3|C-CONTEXT|P1|工作流下钻应复用抽屉并支持按当前过滤顺序前后查看|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
 |UX-0198|web/src/preview/components/CompareEvidence.vue:45|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0199|web/src/preview/components/CompareEvidence.vue:32|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
 |UX-0200|web/src/preview/components/CompareLineage.vue:54|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
@@ -293,7 +293,7 @@
 |UX-0259|web/src/preview/pages/AnalysisPage.vue:341|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0260|web/src/preview/pages/AnalysisPage.vue:355|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0261|web/src/preview/pages/AnalysisPage.vue:356|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
-|UX-0262|web/src/preview/pages/AnalysisPage.vue:375|C1/C2/C3|C-CONTEXT|P1|工作流下钻应复用抽屉并支持按当前过滤顺序前后查看|待整改|
+|UX-0262|web/src/preview/pages/AnalysisPage.vue:375|C1/C2/C3|C-CONTEXT|P1|工作流下钻应复用抽屉并支持按当前过滤顺序前后查看|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
 |UX-0263|web/src/preview/pages/AnalysisPage.vue:395|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0264|web/src/preview/pages/AnalysisPage.vue:396|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0265|web/src/preview/pages/AnalysisPage.vue:406|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
@@ -358,7 +358,7 @@
 |UX-0324|web/src/preview/pages/DatasetsPage.vue:320|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0325|web/src/preview/pages/DatasetsPage.vue:332|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0326|web/src/preview/pages/DatasetsPage.vue:337|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
-|UX-0327|web/src/preview/pages/DatasetsPage.vue:381|C1/C2/C3|C-CONTEXT|P1|工作流下钻应复用抽屉并支持按当前过滤顺序前后查看|待整改|
+|UX-0327|web/src/preview/pages/DatasetsPage.vue:381|C1/C2/C3|C-CONTEXT|P1|工作流下钻应复用抽屉并支持按当前过滤顺序前后查看|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
 |UX-0328|web/src/preview/pages/DatasetsPage.vue:386|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0329|web/src/preview/pages/DatasetsPage.vue:404|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
 |UX-0330|web/src/preview/pages/DatasetsPage.vue:405|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|待整改|
@@ -520,6 +520,41 @@
 |UX-0486|web/src/preview/pages/ResourcesPage.vue:251|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0487|web/src/preview/pages/AnalysisPage.vue:278|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0488|web/src/preview/pages/ComparisonPage.vue:443|G1/I3|G-COPY|P2|补查：校验或状态文案暴露字段结构、实现细节，缺少用户任务语言。|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
+|UX-0489|web/src/pages/CaseResultPage.vue:144|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0490|web/src/pages/CaseResultPage.vue:208|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0491|web/src/pages/DatasetWorkspace.vue:659|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0492|web/src/pages/EvaluatorWorkspacePage.vue:77|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0493|web/src/pages/RunComparisonPage.vue:441|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0494|web/src/pages/RunComparisonPage.vue:452|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0495|web/src/pages/RunDetailPage.vue:156|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0496|web/src/pages/RunDetailPage.vue:169|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0497|web/src/preview/components/AnalysisStatic.vue:159|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0498|web/src/preview/components/CompareLineage.vue:47|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0499|web/src/preview/components/CompareLineage.vue:55|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0500|web/src/preview/components/CompareLineage.vue:64|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0501|web/src/preview/components/PrepEvaluatorEditor.vue:138|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0502|web/src/preview/pages/CasePage.vue:481|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0503|web/src/preview/pages/DatasetsPage.vue:334|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0504|web/src/preview/pages/DatasetsPage.vue:493|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0505|web/src/preview/pages/DatasetsPage.vue:512|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0506|web/src/preview/pages/EvaluatorsPage.vue:322|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0507|web/src/preview/pages/EvaluatorsPage.vue:362|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0508|web/src/preview/pages/EvaluatorsPage.vue:370|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0509|web/src/preview/pages/RunPage.vue:578|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0510|web/src/preview/pages/RunPage.vue:603|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0511|web/src/preview/pages/RunPage.vue:644|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0512|web/src/preview/pages/RunPage.vue:656|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0513|web/src/preview/pages/RunPage.vue:668|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0514|web/src/preview/pages/TargetsPage.vue:149|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0515|web/src/preview/pages/TargetsPage.vue:184|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0516|web/src/preview/pages/TargetsPage.vue:212|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0517|web/src/preview/pages/TargetsPage.vue:219|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0518|web/src/preview/pages/CasePage.vue:71|C3/I5|C-CONTEXT|P1|补查：证据全页的返回固定指向报告，丢失分析或对比来源。|已验证：使用校验后的来源路径返回，外部地址退回原报告；context.spec.ts 来源返回测试桌面/手机2项通过。|
+|UX-0519|web/src/router/index.ts:4|C3/I5|C-CONTEXT|P1|补查：点击返回链接按新导航回到顶部，异步报告恢复时丢失阅读位置。|已验证：会话内保留最近50个路径滚动位置，等待异步内容撑开页面再恢复；用户滚动或新导航中断恢复。context.spec.ts 滚动返回桌面/手机2项通过。|
+|UX-0520|web/src/pages/LineagePage.vue:281|C1/C2/C3|C-CONTEXT|P1|补查：版本或证据下钻以整页导航为默认，父列表/报告与当前顺序不能保留。|已验证：DatasetVersionLink 在关联抽屉中只读展示真实精确版本，复用 CaseEditor；单用例边界、焦点及父报告保持通过。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0521|web/src/pages/RunCreatePage.vue:184|C3/I5|C-CONTEXT|P1|补查：从资产或历史报告进入创建任务后，返回入口固定去任务列表，未保留实际来源。|已验证：共享 TaskBackLink 恢复站内来源；创建/编辑沿用前端草稿，保留对象、评分标准、版本、用例及列表视图。真实与体验往返测试通过。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0522|web/src/preview/pages/RunCreatePage.vue:299|C3/I5|C-CONTEXT|P1|补查：体验创建任务的返回固定去任务列表，未表达原资产或报告来源。|已验证：共享 TaskBackLink 恢复站内来源；创建/编辑沿用前端草稿，保留对象、评分标准、版本、用例及列表视图。真实与体验往返测试通过。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
+|UX-0523|web/src/pages/DatasetWorkspace.vue:59|C3/I5|C-CONTEXT|P1|补查：测评集工作区进入创建任务时未携带当前用例位置；创建页编辑往返的用户配置保留仍需补齐。|已验证：共享 TaskBackLink 恢复站内来源；创建/编辑沿用前端草稿，保留对象、评分标准、版本、用例及列表视图。真实与体验往返测试通过。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
 
 ## 当前 assumptions 与联合工作项
 
