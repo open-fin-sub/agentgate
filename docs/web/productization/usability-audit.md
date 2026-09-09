@@ -15,7 +15,7 @@
 |---|---:|---:|
 |B-META|214|0|
 |G-COPY|50|0|
-|D-CONTROL|41|41|
+|D-CONTROL|41|0|
 |G-EMPTY|57|0|
 |A-INPUT|33|0|
 |A-FORM|6|0|
@@ -25,7 +25,7 @@
 |C-CONTEXT|41|0|
 |E-ROLE|1|1|
 |RC-GENERATION|1|0|
-|D-SYSTEM|1|1|
+|D-SYSTEM|1|0|
 |F-PAGES|1|1|
 
 ## 缺陷明细
@@ -34,40 +34,40 @@
 |---|---|---|---|---|---|---|
 |UX-0001|web/src/components/AppSidebar.vue:81|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。|
 |UX-0002|web/src/components/AppSidebar.vue:81|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
-|UX-0003|web/src/components/dataset/CaseEditor.vue:78|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0003|web/src/components/dataset/CaseEditor.vue:78|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0004|web/src/components/dataset/CaseEditor.vue:85|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0005|web/src/components/dataset/CaseEditor.vue:138|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
-|UX-0006|web/src/components/dataset/CaseEditor.vue:144|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0007|web/src/components/dataset/CaseEditor.vue:156|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0006|web/src/components/dataset/CaseEditor.vue:144|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0007|web/src/components/dataset/CaseEditor.vue:156|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0008|web/src/components/dataset/CaseEditor.vue:161|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
 |UX-0009|web/src/components/dataset/CaseEditor.vue:68|A3|A-FORM|P1|必填/可选及高级分区需要收敛|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
-|UX-0010|web/src/components/dataset/CaseTable.vue:44|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0011|web/src/components/dataset/CaseTable.vue:67|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0012|web/src/components/dataset/CaseTable.vue:68|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0010|web/src/components/dataset/CaseTable.vue:44|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0011|web/src/components/dataset/CaseTable.vue:67|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0012|web/src/components/dataset/CaseTable.vue:68|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0013|web/src/components/dataset/CaseTable.vue:71|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
-|UX-0014|web/src/components/dataset/CaseTable.vue:76|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0015|web/src/components/dataset/CaseTable.vue:84|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0016|web/src/components/dataset/CaseTable.vue:90|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0017|web/src/components/dataset/CaseTable.vue:91|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0014|web/src/components/dataset/CaseTable.vue:76|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0015|web/src/components/dataset/CaseTable.vue:84|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0016|web/src/components/dataset/CaseTable.vue:90|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0017|web/src/components/dataset/CaseTable.vue:91|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0018|web/src/components/dataset/CaseTable.vue:91|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
 |UX-0019|web/src/components/dataset/CaseTable.vue:94|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
-|UX-0020|web/src/components/dataset/DatasetList.vue:38|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0021|web/src/components/dataset/DatasetList.vue:59|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0022|web/src/components/dataset/DatasetList.vue:60|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0020|web/src/components/dataset/DatasetList.vue:38|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0021|web/src/components/dataset/DatasetList.vue:59|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0022|web/src/components/dataset/DatasetList.vue:60|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0023|web/src/components/dataset/DatasetList.vue:64|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
-|UX-0024|web/src/components/dataset/DatasetList.vue:67|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0025|web/src/components/dataset/DatasetList.vue:69|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0026|web/src/components/dataset/ExpectationEditor.vue:88|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0027|web/src/components/dataset/ExpectationEditor.vue:101|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0028|web/src/components/dataset/ExpectationEditor.vue:106|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0024|web/src/components/dataset/DatasetList.vue:67|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0025|web/src/components/dataset/DatasetList.vue:69|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0026|web/src/components/dataset/ExpectationEditor.vue:88|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0027|web/src/components/dataset/ExpectationEditor.vue:101|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0028|web/src/components/dataset/ExpectationEditor.vue:106|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0029|web/src/components/dataset/ExpectationEditor.vue:131|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
 |UX-0030|web/src/components/dataset/ExpectationEditor.vue:146|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
-|UX-0031|web/src/components/dataset/VersionSelector.vue:37|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0032|web/src/components/dataset/VersionSelector.vue:40|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0031|web/src/components/dataset/VersionSelector.vue:37|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0032|web/src/components/dataset/VersionSelector.vue:40|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0033|web/src/components/dataset/VersionSelector.vue:43|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
-|UX-0034|web/src/components/dataset/VersionSelector.vue:49|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0035|web/src/components/dataset/VersionSelector.vue:59|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0036|web/src/components/dataset/VersionSelector.vue:65|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0034|web/src/components/dataset/VersionSelector.vue:49|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0035|web/src/components/dataset/VersionSelector.vue:59|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0036|web/src/components/dataset/VersionSelector.vue:65|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0037|web/src/layouts/AppLayout.vue:128|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。|
 |UX-0038|web/src/pages/CaseResultPage.vue:117|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0039|web/src/pages/CaseResultPage.vue:118|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
@@ -91,12 +91,12 @@
 |UX-0057|web/src/pages/DatasetWorkspace.vue:612|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0058|web/src/pages/DatasetWorkspace.vue:618|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0059|web/src/pages/DatasetWorkspace.vue:646|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
-|UX-0060|web/src/pages/DatasetWorkspace.vue:675|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0060|web/src/pages/DatasetWorkspace.vue:675|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|非缺陷：仅为导入按钮触发的隐藏文件选择机制（display:none），不是可见原生表单；真实JSON/Excel导入回归通过。|
 |UX-0061|web/src/pages/EvaluatorWorkspacePage.vue:42|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0062|web/src/pages/EvaluatorWorkspacePage.vue:42|H1/H2/H3|H-TERMS|P2|统一业务词汇与状态含义，源码标识不改业务合同|待整改|
 |UX-0063|web/src/pages/EvaluatorWorkspacePage.vue:43|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0064|web/src/pages/EvaluatorWorkspacePage.vue:45|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
-|UX-0065|web/src/pages/EvaluatorWorkspacePage.vue:50|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0065|web/src/pages/EvaluatorWorkspacePage.vue:50|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0066|web/src/pages/EvaluatorWorkspacePage.vue:57|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0067|web/src/pages/EvaluatorWorkspacePage.vue:60|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0068|web/src/pages/EvaluatorWorkspacePage.vue:69|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
@@ -108,7 +108,7 @@
 |UX-0074|web/src/pages/LineagePage.vue:207|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0075|web/src/pages/LineagePage.vue:216|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0076|web/src/pages/LineagePage.vue:220|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
-|UX-0077|web/src/pages/LineagePage.vue:228|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0077|web/src/pages/LineagePage.vue:228|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0078|web/src/pages/LineagePage.vue:239|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0079|web/src/pages/LineagePage.vue:270|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0080|web/src/pages/LineagePage.vue:277|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
@@ -120,14 +120,14 @@
 |UX-0086|web/src/pages/OverviewPage.vue:124|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0087|web/src/pages/OverviewPage.vue:141|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：复用A/G/C已完成的成本移除、用户文案或上下文整改；本轮逐项核对原位置，无旧拼接呈现。默认110/110及补改46/46通过。|
 |UX-0088|web/src/pages/OverviewPage.vue:141|H1/H2/H3|H-TERMS|P2|统一业务词汇与状态含义，源码标识不改业务合同|待整改|
-|UX-0089|web/src/pages/RunComparisonPage.vue:224|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0090|web/src/pages/RunComparisonPage.vue:235|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0089|web/src/pages/RunComparisonPage.vue:224|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0090|web/src/pages/RunComparisonPage.vue:235|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0091|web/src/pages/RunComparisonPage.vue:263|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
 |UX-0092|web/src/pages/RunComparisonPage.vue:297|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0093|web/src/pages/RunComparisonPage.vue:301|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0094|web/src/pages/RunComparisonPage.vue:318|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0095|web/src/pages/RunComparisonPage.vue:328|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
-|UX-0096|web/src/pages/RunComparisonPage.vue:402|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0096|web/src/pages/RunComparisonPage.vue:402|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0097|web/src/pages/RunComparisonPage.vue:410|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0098|web/src/pages/RunComparisonPage.vue:439|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0099|web/src/pages/RunComparisonPage.vue:450|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
@@ -136,13 +136,13 @@
 |UX-0102|web/src/pages/RunComparisonPage.vue:470|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0103|web/src/pages/RunCreatePage.vue:202|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0104|web/src/pages/RunCreatePage.vue:204|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
-|UX-0105|web/src/pages/RunCreatePage.vue:213|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0105|web/src/pages/RunCreatePage.vue:213|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0106|web/src/pages/RunCreatePage.vue:216|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
-|UX-0107|web/src/pages/RunCreatePage.vue:220|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0108|web/src/pages/RunCreatePage.vue:227|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0107|web/src/pages/RunCreatePage.vue:220|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0108|web/src/pages/RunCreatePage.vue:227|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0109|web/src/pages/RunCreatePage.vue:237|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0110|web/src/pages/RunCreatePage.vue:270|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
-|UX-0111|web/src/pages/RunCreatePage.vue:292|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0111|web/src/pages/RunCreatePage.vue:292|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0112|web/src/pages/RunCreatePage.vue:295|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0113|web/src/pages/RunCreatePage.vue:296|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0114|web/src/pages/RunCreatePage.vue:308|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
@@ -157,14 +157,14 @@
 |UX-0123|web/src/pages/RunDetailPage.vue:268|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0124|web/src/pages/RunDetailPage.vue:323|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
 |UX-0125|web/src/pages/RunDetailPage.vue:329|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
-|UX-0126|web/src/pages/RunDetailPage.vue:336|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0127|web/src/pages/RunDetailPage.vue:343|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0126|web/src/pages/RunDetailPage.vue:336|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0127|web/src/pages/RunDetailPage.vue:343|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0128|web/src/pages/RunDetailPage.vue:370|C1/C2/C3|C-CONTEXT|P1|工作流下钻应复用抽屉并支持按当前过滤顺序前后查看|已验证：复用 DetailDrawer、DetailNavigation 与共享引用入口；当前同类筛选顺序切换，父页面保留，关闭/切换保护未保存输入；独立深链返回恢复来源与选择。 C类 typecheck/build、默认108项桌面/手机E2E通过；最终逐页与场景验收另行执行。|
 |UX-0129|web/src/pages/RunDetailPage.vue:387|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0130|web/src/pages/RunDetailPage.vue:426|A1/A4|A-INPUT|P1|默认输入或证据展示使用原始结构，改为结构化模式并保留高级入口|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
 |UX-0131|web/src/pages/RunDetailPage.vue:423|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
-|UX-0132|web/src/pages/RunListPage.vue:104|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
-|UX-0133|web/src/pages/RunListPage.vue:109|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0132|web/src/pages/RunListPage.vue:104|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
+|UX-0133|web/src/pages/RunListPage.vue:109|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0134|web/src/pages/RunListPage.vue:116|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
 |UX-0135|web/src/pages/RunListPage.vue:121|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
 |UX-0136|web/src/pages/RunListPage.vue:122|G5/I3|G-EMPTY|P2|核对空态说明、可行下一步及统一模式|已验证：改为共享空状态或有上下文引导的状态说明；真实20项、体验72项桌面/手机回归通过。逐页最终走查仍单独执行。|
@@ -212,7 +212,7 @@
 |UX-0178|web/src/preview/components/CompareCreate.vue:276|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0179|web/src/preview/components/CompareCreate.vue:284|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0180|web/src/preview/components/CompareCreate.vue:328|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
-|UX-0181|web/src/preview/components/CompareCreate.vue:392|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0181|web/src/preview/components/CompareCreate.vue:392|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0182|web/src/preview/components/CompareCreate.vue:415|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0183|web/src/preview/components/CompareCreate.vue:436|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0184|web/src/preview/components/CompareCreate.vue:456|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
@@ -262,7 +262,7 @@
 |UX-0228|web/src/preview/components/PrepEvaluatorEditor.vue:142|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
 |UX-0229|web/src/preview/components/PrepEvaluatorEditor.vue:153|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0230|web/src/preview/components/PrepEvaluatorEditor.vue:56|A3|A-FORM|P1|必填/可选及高级分区需要收敛|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
-|UX-0231|web/src/preview/components/PrepJsonImport.vue:159|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0231|web/src/preview/components/PrepJsonImport.vue:159|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0232|web/src/preview/components/PrepJsonImport.vue:175|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0233|web/src/preview/components/PrepTrial.vue:56|G1/G3/G4|G-COPY|P1|开发/实现说明改为用户任务语言，能力说明集中到能力页|已验证：改为任务文案与结构化校验提示，能力说明集中到能力清单；真实20项、体验72项回归通过。|
 |UX-0234|web/src/preview/components/PrepTrial.vue:77|I1/I2/I3/I4/I5|I-FEEDBACK|P2|危险动作确认、行内错误、操作反馈与可取消性统一检查|待整改|
@@ -320,7 +320,7 @@
 |UX-0286|web/src/preview/pages/CasePage.vue:517|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0287|web/src/preview/pages/CasePage.vue:532|H1/H2/H3|H-TERMS|P2|统一业务词汇与状态含义，源码标识不改业务合同|待整改|
 |UX-0288|web/src/preview/pages/CasePage.vue:534|H1/H2/H3|H-TERMS|P2|统一业务词汇与状态含义，源码标识不改业务合同|待整改|
-|UX-0289|web/src/preview/pages/CasePage.vue:540|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0289|web/src/preview/pages/CasePage.vue:540|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0290|web/src/preview/pages/CasePage.vue:589|H1/H2/H3|H-TERMS|P2|统一业务词汇与状态含义，源码标识不改业务合同|待整改|
 |UX-0291|web/src/preview/pages/CasePage.vue:591|H1/H2/H3|H-TERMS|P2|统一业务词汇与状态含义，源码标识不改业务合同|待整改|
 |UX-0292|web/src/preview/pages/CasePage.vue:594|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
@@ -403,7 +403,7 @@
 |UX-0369|web/src/preview/pages/RunCreatePage.vue:454|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0370|web/src/preview/pages/RunCreatePage.vue:463|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0371|web/src/preview/pages/RunCreatePage.vue:489|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
-|UX-0372|web/src/preview/pages/RunCreatePage.vue:525|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|待整改|
+|UX-0372|web/src/preview/pages/RunCreatePage.vue:525|D1/D2/D3|D-CONTROL|P2|统一控件与尺寸、可访问名称和焦点|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0373|web/src/preview/pages/RunCreatePage.vue:542|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0374|web/src/preview/pages/RunCreatePage.vue:543|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
 |UX-0375|web/src/preview/pages/RunCreatePage.vue:546|A2/B1/B2|B-META|P2|实体或异质元数据需带维度标签并统一实体引用|已验证：实体复用EntityRef按类型/名称/版本呈现，内部编号按需展开；异质属性复用MetadataGroup分维度标注，标题/数量改为有标签的语义表达。核对原实例对应代码，默认110/110及补改46/46通过。|
@@ -471,7 +471,7 @@
 |UX-0437|web/src/preview/types.ts:169|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
 |UX-0438|web/src/preview/types.ts:244|需求变更(已拍板)|RC-TOKEN|P1|去除货币成本，以Token输入/输出/总量及耗时表达|已验证：货币字段与计算移除，使用 TokenUsage 和 Token 指标；15项对比规则、真实Judge缺失/零值验证通过。Mock格式v2，旧存储保留。|
 |UX-0439|web/src/preview/components/PrepDatasetPrepare.vue:1|需求变更(已拍板)|RC-GENERATION|P1|自动生成本轮延后；隐藏入口及向导，场景A改手工/导入|已验证：自动生成入口撤下，旧链接降级手工创建；源向导保留为后续范围。手工多轮发布 v1、旧入口降级在桌面/手机通过。|
-|UX-0440|web/src/App.vue:1|D1/D3|D-SYSTEM|P1|全局ConfigProvider、状态对比度/键盘/减弱动效统一核验|待整改|
+|UX-0440|web/src/App.vue:1|D1/D3|D-SYSTEM|P1|全局ConfigProvider、状态对比度/键盘/减弱动效统一核验|已验证：共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。|
 |UX-0441|docs/web/productization/usability-page-checklist.md:1|F1/F2/F3|F-PAGES|P1|25页面的19项检查和场景A–G走查|待整改|
 |UX-0442|web/src/pages/CaseResultPage.vue:169|A1/A4|A-INPUT|P1|人工补查：展示辅助函数或多行模板中的原始结构未被首轮扫描捕获|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|
 |UX-0443|web/src/pages/CaseResultPage.vue:173|A1/A4|A-INPUT|P1|人工补查：展示辅助函数或多行模板中的原始结构未被首轮扫描捕获|已验证：复用共享输入/规则/可读展示/高级折叠；typecheck、build、准备流程16项、结构化值4项通过。真实发布修订2项、六类预期保留2项、证据与Judge4项验证通过；阶段截图 checkpoint-a。其他规则的同页缺陷仍分别保留。|

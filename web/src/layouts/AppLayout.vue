@@ -120,7 +120,8 @@ onUnmounted(() => {
           ☰
         </button>
         <span class="location-label"
-          >智能体测评平台 <span>/</span> <strong>{{ route.meta.title }}</strong></span
+          >智能体测评平台 <span aria-hidden="true">/</span>
+          <strong>{{ route.meta.title }}</strong></span
         >
         <RouterLink class="environment-link" :to="switchPath">{{
           preview ? '切换真实接入' : '进入完整 Mock 体验'

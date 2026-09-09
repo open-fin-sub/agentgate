@@ -918,7 +918,7 @@ watch(() => route.fullPath, readQuery, { immediate: true })
   overflow-wrap: anywhere;
 }
 .run-kpis small {
-  color: var(--ag-muted);
+  color: var(--ag-muted-on-tint);
 }
 .score-mode {
   width: 210px;

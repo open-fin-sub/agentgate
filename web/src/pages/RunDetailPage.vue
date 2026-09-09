@@ -443,14 +443,16 @@ function showDimension(key: string) {
       </div>
       <div class="toolbar" style="padding: 0 20px">
         <label class="field"
-          >结果状态<select v-model="filter" aria-label="结果状态">
-            <option value="">全部状态</option>
-            <option v-for="(label, key) in outcomeLabels" :key="key" :value="key">
-              {{ label }}
-            </option>
-          </select></label
+          >结果状态<el-select v-model="filter" aria-label="结果状态">
+            <el-option value="" label="全部状态" />
+            <el-option
+              v-for="(label, key) in outcomeLabels"
+              :key="key"
+              :value="key"
+              :label="label"
+            /> </el-select></label
         ><label class="field"
-          >搜索证据<input v-model="query" placeholder="用例、评估器或原因"
+          >搜索证据<el-input v-model="query" aria-label="搜索证据" placeholder="用例、评估器或原因"
         /></label>
       </div>
       <div class="table-scroll">

@@ -41,12 +41,7 @@ function move(index: number, offset: number) {
         <span class="step">CASES</span>
         <h2>用例</h2>
       </div>
-      <el-button
-        type="primary"
-        size="small"
-        :disabled="!editable"
-        data-testid="add-case"
-        @click="emit('add')"
+      <el-button type="primary" :disabled="!editable" data-testid="add-case" @click="emit('add')"
         >新增用例</el-button
       >
     </div>
@@ -79,24 +74,18 @@ function move(index: number, offset: number) {
           :items="[{ label: '标签', value: item.tags.join('、') }]"
         />
         <div v-if="editable" class="case-row-actions" @click.stop>
-          <el-button
-            link
-            size="small"
-            :disabled="index === 0"
-            aria-label="上移用例"
-            @click="move(index, -1)"
+          <el-button link :disabled="index === 0" aria-label="上移用例" @click="move(index, -1)"
             >↑</el-button
           >
           <el-button
             link
-            size="small"
             :disabled="index === items.length - 1"
             aria-label="下移用例"
             @click="move(index, 1)"
             >↓</el-button
           >
-          <el-button link size="small" @click="emit('copy', item)">复制</el-button>
-          <el-button link size="small" type="danger" @click="emit('remove', item)">删除</el-button>
+          <el-button link @click="emit('copy', item)">复制</el-button>
+          <el-button link type="danger" @click="emit('remove', item)">删除</el-button>
         </div>
       </article>
       <EmptyState

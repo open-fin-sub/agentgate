@@ -138,7 +138,7 @@ function created(id: string) {
 <style scoped>
 .filters {
   margin-bottom: 16px;
-  align-items: flex-end;
+  align-items: center;
 }
 .filters label {
   display: grid;

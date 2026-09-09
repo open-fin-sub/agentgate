@@ -103,7 +103,10 @@ async function locateSpan(id: string) {
   if (node) {
     node.open = true
     await nextTick()
-    node.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    node.scrollIntoView({
+      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'center',
+    })
     node.focus()
   }
 }

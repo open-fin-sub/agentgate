@@ -61,7 +61,7 @@ defineProps<{
 .metadata-label {
   font-size: 12px;
   line-height: 20px;
-  color: var(--ag-muted);
+  color: var(--ag-muted-on-tint);
   flex-shrink: 0;
 }
 .metadata-value {

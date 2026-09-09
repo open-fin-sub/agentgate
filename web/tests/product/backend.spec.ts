@@ -40,7 +40,8 @@ test('real comparison uses server deltas, exposes counts, and preserves both evi
   page,
 }) => {
   await page.goto(`/comparisons?baseline=${baseline}`)
-  await page.getByLabel('候选运行 B', { exact: true }).selectOption(candidate)
+  await page.getByRole('combobox', { name: '候选运行 B', exact: true }).press('ArrowDown')
+  await page.getByRole('option').filter({ hasText: candidate }).click()
   await page.getByRole('button', { name: '比较结果', exact: true }).click()
   await expect(page.getByRole('heading', { name: '指标变化', exact: true })).toBeVisible()
   await expect(page.getByText(/输入内容哈希一致/)).toBeVisible()
@@ -97,7 +98,8 @@ test('incompatible and unknown runs show real errors without stale successful co
 }) => {
   await page.goto(`/comparisons?baseline=${baseline}&candidate=${candidate}`)
   await expect(page.getByRole('heading', { name: '指标变化', exact: true })).toBeVisible()
-  await page.getByLabel('候选运行 B', { exact: true }).selectOption(incompatible)
+  await page.getByRole('combobox', { name: '候选运行 B', exact: true }).press('ArrowDown')
+  await page.getByRole('option').filter({ hasText: incompatible }).click()
   await expect(page.getByRole('heading', { name: '指标变化', exact: true })).toHaveCount(0)
   await expect(page.getByText(/运行选择已更改/)).toBeVisible()
   await page.getByRole('button', { name: '比较结果', exact: true }).click()
@@ -133,7 +135,8 @@ test('real forward and reverse lineage preserve exact content and reach reports'
   await expect(page.getByRole('link', { name: '查看任务与报告' }).first()).toBeVisible()
   await page.goto(`/lineage?kind=dataset&id=loan-risk-policy&version=1`)
   await expect(page.getByRole('heading', { name: '关联测评任务', exact: true })).toBeVisible()
-  await page.getByLabel('查询上限', { exact: true }).selectOption('200')
+  await page.getByRole('combobox', { name: '查询上限', exact: true }).press('ArrowDown')
+  await page.getByRole('option', { name: '最多 200 条', exact: true }).click()
   await expect(page).toHaveURL(/limit=200/)
   const caseId = report.run.manifest.dataset.cases[0].id
   await page.goto(`/lineage?kind=case&id=loan-risk-policy&version=1&case=${caseId}`)
@@ -223,7 +226,7 @@ test('active task polling uses light activity until lifecycle changes (contract 
     })
   })
   await page.goto('/runs')
-  await expect(page.getByText('排队中', { exact: true }).last()).toBeVisible()
+  await expect(page.locator('.data-table .badge').filter({ hasText: /^排队中$/ })).toBeVisible()
   await page.clock.fastForward(5001)
   await expect.poll(() => activityReads).toBe(1)
   expect(listReads).toBe(1)

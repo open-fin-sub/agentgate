@@ -589,9 +589,11 @@ watch(() => route.fullPath, initialize, { immediate: true })
           <div class="field">
             <el-checkbox v-model="scheduled" @change="setSchedule">预约入队</el-checkbox
             ><label v-if="scheduled" class="field"
-              >预约日期和时间<input
+              >预约日期和时间<el-date-picker
                 v-model="localTime"
-                type="datetime-local"
+                type="datetime"
+                value-format="YYYY-MM-DDTHH:mm"
+                format="YYYY-MM-DD HH:mm"
                 aria-label="预约日期和时间"
                 @change="setSchedule"
             /></label>

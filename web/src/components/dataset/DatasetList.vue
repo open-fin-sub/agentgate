@@ -34,11 +34,7 @@ const filtered = computed(() => {
         <span class="step">DATASETS</span>
         <h2>测评集</h2>
       </div>
-      <el-button
-        type="primary"
-        size="small"
-        data-testid="create-dataset-from-picker"
-        @click="emit('create')"
+      <el-button type="primary" data-testid="create-dataset-from-picker" @click="emit('create')"
         >新建</el-button
       >
     </div>
@@ -57,17 +53,21 @@ const filtered = computed(() => {
           ><small>{{ item.description || '暂无描述' }}</small></span
         >
         <span class="dataset-badges">
-          <el-tag size="small" effect="plain">v{{ item.version ?? '—' }}</el-tag>
-          <el-tag v-if="item.has_draft" size="small" type="warning">草稿</el-tag>
+          <el-tag effect="plain">v{{ item.version ?? '—' }}</el-tag>
+          <el-tag v-if="item.has_draft" type="warning">草稿</el-tag>
           <small>{{ item.case_count }} 用例</small>
         </span>
       </button>
-      <EmptyState v-if="!filtered.length" title="没有匹配的测评集" description="调整搜索词，或点击上方新建、导入，准备测评用例。" />
+      <EmptyState
+        v-if="!filtered.length"
+        title="没有匹配的测评集"
+        description="调整搜索词，或点击上方新建、导入，准备测评用例。"
+      />
     </div>
     <div class="dataset-list-actions">
-      <el-button size="small" @click="emit('import')">导入 JSON / Excel</el-button>
+      <el-button @click="emit('import')">导入 JSON / Excel</el-button>
       <el-dropdown v-if="items.find((item) => item.id === selectedId)" trigger="click">
-        <el-button size="small">更多</el-button>
+        <el-button>更多</el-button>
         <template #dropdown>
           <el-dropdown-menu>
             <el-dropdown-item

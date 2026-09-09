@@ -26,14 +26,24 @@ test('real published input → queued run → report → evidence → version co
   await expect(page.getByText('测评集已创建')).toBeVisible()
   await page.getByTestId('add-case').click()
   await page.getByTestId('case-name').fill('高风险申请应进入人工审核')
-  for (const [index, [name, value]] of Object.entries({ skill: 'loan_approval', application_id: 'PRODUCT-1', risk: 'high', amount: 80000 }).entries()) {
+  for (const [index, [name, value]] of Object.entries({
+    skill: 'loan_approval',
+    application_id: 'PRODUCT-1',
+    risk: 'high',
+    amount: 80000,
+  }).entries()) {
     if (index > 0) await page.getByRole('button', { name: '添加变量', exact: true }).click()
     await page.getByRole('textbox', { name: `变量 ${index + 1} 名称`, exact: true }).fill(name)
     if (typeof value === 'number') {
-      await page.getByRole('combobox', { name: `变量 ${index + 1} 值类型`, exact: true }).press('Enter')
+      await page
+        .getByRole('combobox', { name: `变量 ${index + 1} 值类型`, exact: true })
+        .press('Enter')
       await page.getByRole('option', { name: '数字', exact: true }).click()
-      await page.getByRole('spinbutton', { name: `变量 ${index + 1} 值`, exact: true }).fill(String(value))
-    } else await page.getByRole('textbox', { name: `变量 ${index + 1} 值`, exact: true }).fill(value)
+      await page
+        .getByRole('spinbutton', { name: `变量 ${index + 1} 值`, exact: true })
+        .fill(String(value))
+    } else
+      await page.getByRole('textbox', { name: `变量 ${index + 1} 值`, exact: true }).fill(value)
   }
   await page.getByTestId('add-expectation').click()
   await page.getByRole('menuitem', { name: '最终状态' }).click()
@@ -49,10 +59,12 @@ test('real published input → queued run → report → evidence → version co
   await page.getByTestId('run-dataset-version').click()
   await expect(page).toHaveURL(/\/runs\/new\?dataset=.*version=1/)
   const datasetId = new URL(page.url()).searchParams.get('dataset')!
-  await page.getByLabel('对象版本', { exact: true }).selectOption('loan-agent-v1-risky')
+  await page.getByRole('combobox', { name: '对象版本', exact: true }).press('ArrowDown')
+  await page.getByRole('option').filter({ hasText: 'loan-agent-v1-risky' }).click()
   const catalogs = await (await request.get('/api/evaluators')).json()
   await expect(page.getByRole('checkbox')).toHaveCount(catalogs.length)
-  for (const checkbox of await page.getByRole('checkbox').all()) await checkbox.check()
+  for (const checkbox of await page.getByRole('checkbox').all())
+    if (!(await checkbox.isChecked())) await checkbox.press('Space')
   await page.getByRole('button', { name: '提交测评', exact: true }).click()
   await expect(page).toHaveURL(/\/runs\/[\w-]+$/)
   const runId = new URL(page.url()).pathname.split('/').pop()!
@@ -67,12 +79,16 @@ test('real published input → queued run → report → evidence → version co
   expect(report.results.some((r: { outcome: string }) => r.outcome === 'fail')).toBeTruthy()
   await page.screenshot({ path: testInfo.outputPath('report.png'), fullPage: true })
   await page.getByRole('button', { name: '评估结果与用例', exact: true }).click()
-  await page.getByLabel('结果状态').selectOption('fail')
+  await page.getByRole('combobox', { name: '结果状态' }).press('ArrowDown')
+  await page.getByRole('option', { name: '不通过', exact: true }).click()
   await expect(page).toHaveURL(/outcome=fail/)
   const reportUrl = page.url()
   await page.getByRole('button', { name: '查看证据', exact: true }).first().click()
   await expect(page).toHaveURL(reportUrl)
-  await page.getByRole('dialog', { name: '用例证据', exact: true }).getByRole('link', { name: '全页打开', exact: true }).click()
+  await page
+    .getByRole('dialog', { name: '用例证据', exact: true })
+    .getByRole('link', { name: '全页打开', exact: true })
+    .click()
   await expect(page).toHaveURL(/\/cases\//)
   const evidenceUrl = page.url()
   await expect(page.getByRole('heading', { name: '执行轨迹', exact: true })).toBeVisible()
@@ -97,7 +113,11 @@ test('real published input → queued run → report → evidence → version co
   await page.getByTestId('publish-draft').click()
   await expect(page.getByText('已发布 v2', { exact: true })).toBeVisible()
   await page.getByTestId('run-dataset-version').click()
-  await expect(page.getByLabel('固定发布版本')).toHaveValue('2')
+  await expect(
+    page
+      .locator('.el-select')
+      .filter({ has: page.getByRole('combobox', { name: '固定发布版本' }) }),
+  ).toContainText('版本 2')
   await expect(page.getByRole('checkbox').first()).toBeChecked()
   await page.goto(evidenceUrl)
   await page.getByRole('link', { name: '查看用例与修订版本' }).click()
@@ -109,9 +129,13 @@ test('real published input → queued run → report → evidence → version co
   const restoredEvidence = page.getByRole('dialog', { name: '用例证据', exact: true })
   await expect(restoredEvidence).toBeVisible()
   await restoredEvidence.getByRole('button', { name: '关闭此对话框' }).click()
-  await expect(page.getByLabel('结果状态')).toHaveValue('fail')
+  await expect(
+    page.locator('.el-select').filter({ has: page.getByRole('combobox', { name: '结果状态' }) }),
+  ).toContainText('不通过')
   await page.reload()
-  await expect(page.getByLabel('结果状态')).toHaveValue('fail')
+  await expect(
+    page.locator('.el-select').filter({ has: page.getByRole('combobox', { name: '结果状态' }) }),
+  ).toContainText('不通过')
   expect(errors).toEqual([])
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth + 1,
@@ -156,7 +180,8 @@ test('navigation and list filters preserve keyboard focus', async ({ page }, tes
   await expect(page.getByRole('heading', { name: '测评任务', exact: true })).toBeVisible()
   const state = page.getByRole('combobox')
   await state.focus()
-  await state.selectOption('completed')
+  await state.press('ArrowDown')
+  await page.getByRole('option', { name: '已完成', exact: true }).click()
   await expect(page).toHaveURL(/status=completed/)
   await expect(state).toBeFocused()
   if (testInfo.project.name === 'mobile') {

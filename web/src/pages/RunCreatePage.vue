@@ -221,32 +221,64 @@ onUnmounted(() => {
       <h2>测评对象与输入</h2>
       <div class="form-grid">
         <label class="field"
-          >对象版本<select v-model="target" aria-label="对象版本" required>
-            <option value="" disabled>请选择对象版本</option>
-            <option v-for="item in targets" :key="item.id" :value="item.id">
-              {{ catalogLabel(item.label) }}（版本：{{ item.id }}）
-            </option>
-          </select></label
+          >对象版本（必选）<el-select
+            v-model="target"
+            aria-label="对象版本"
+            placeholder="请选择对象版本"
+          >
+            <el-option
+              v-for="item in targets"
+              :key="item.id"
+              :value="item.id"
+              :label="catalogLabel(item.label)"
+            >
+              <EntityRef
+                :name="catalogLabel(item.label)"
+                type="测评对象"
+                :version="item.id"
+                compact
+              />
+            </el-option> </el-select></label
         ><label class="field"
-          >测评集<select v-model="datasetId" aria-label="测评集" required @change="changeDataset">
-            <option value="" disabled>请选择测评集</option>
-            <option v-for="item in datasets" :key="item.id" :value="item.id">
-              {{ catalogLabel(item.name) }}{{ item.version === null ? '（尚未发布）' : '' }}
-            </option>
-          </select></label
+          >测评集（必选）<el-select
+            v-model="datasetId"
+            aria-label="测评集"
+            placeholder="请选择测评集"
+            @change="changeDataset"
+          >
+            <el-option
+              v-for="item in datasets"
+              :key="item.id"
+              :value="item.id"
+              :label="catalogLabel(item.name)"
+            >
+              <EntityRef
+                :name="catalogLabel(item.name)"
+                type="测评集"
+                :version="item.version === null ? '草稿' : item.version"
+                compact
+              />
+            </el-option> </el-select></label
         ><label class="field"
-          >固定发布版本<select
+          >固定发布版本（必选）<el-select
             v-model="datasetVersion"
             aria-label="固定发布版本"
             :disabled="versionLoading"
-            required
+            :loading="versionLoading"
+            placeholder="请选择已发布版本"
           >
-            <option :value="null" disabled>
-              {{ versionLoading ? '正在读取版本…' : '请选择已发布版本' }}
-            </option>
-            <option v-for="item in versions" :key="item.id" :value="item.version">
-              版本 {{ item.version }}（用例数：{{ item.cases.length }}）
-            </option></select
+            <el-option
+              v-for="item in versions"
+              :key="item.id"
+              :value="item.version"
+              :label="`版本 ${item.version}`"
+            >
+              <MetadataGroup
+                :items="[
+                  { label: '发布版本', value: item.version },
+                  { label: '用例数', value: item.cases.length },
+                ]"
+              /> </el-option></el-select
           ><span class="hint">草稿不能执行，任务不会随“最新版本”变化。</span></label
         >
         <div>
@@ -306,12 +338,6 @@ onUnmounted(() => {
       </div>
       <div class="form-grid">
         <div v-for="item in evaluators" :key="item.id" class="checkbox-card">
-          <input
-            :id="`select-evaluator-${item.id}`"
-            v-model="selected"
-            type="checkbox"
-            :value="item.id"
-          />
           <div>
             <EntityRef
               :name="catalogLabel(item.name)"
@@ -320,9 +346,17 @@ onUnmounted(() => {
               compact
             >
               <template #name
-                ><label :for="`select-evaluator-${item.id}`">{{
-                  catalogLabel(item.name)
-                }}</label></template
+                ><el-checkbox
+                  :value="item.id"
+                  :model-value="selected.includes(item.id)"
+                  @change="
+                    (checked: boolean) =>
+                      (selected = checked
+                        ? [...selected, item.id]
+                        : selected.filter((id) => id !== item.id))
+                  "
+                  >{{ catalogLabel(item.name) }}</el-checkbox
+                ></template
               >
             </EntityRef>
             <MetadataGroup

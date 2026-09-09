@@ -9,7 +9,7 @@
 }
 .workspace-heading p {
   margin-bottom: 0;
-  color: var(--ag-muted);
+  color: var(--ag-muted-on-tint);
   font-size: 14px;
 }
 .workspace-heading .step,
@@ -154,7 +154,7 @@
 }
 .version-tabs small {
   margin-top: 4px;
-  color: var(--ag-muted);
+  color: var(--ag-muted-on-tint);
   font-size: 12px;
 }
 .version-actions {

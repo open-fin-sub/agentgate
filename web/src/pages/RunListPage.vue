@@ -81,9 +81,9 @@ async function pollActivity() {
     if (!signal.aborted) error.value = `运行状态更新失败：${userError(e)}。请点击刷新重试。`
   }
 }
-function filter(event: Event) {
+function filter(value: string) {
   router.replace({
-    query: { ...route.query, status: (event.target as HTMLSelectElement).value || undefined },
+    query: { ...route.query, status: value || undefined },
   })
 }
 function searchRows() {
@@ -106,15 +106,20 @@ onUnmounted(() => {
   </div>
   <div class="toolbar">
     <label class="field"
-      >查找当前返回记录<input
+      >查找当前返回记录<el-input
         v-model="search"
+        aria-label="查找当前返回记录"
         placeholder="对象、版本、测评集或任务编号"
         @keydown.enter="searchRows" /></label
     ><label class="field"
-      >执行状态<select :value="status ?? ''" @change="filter">
-        <option value="">全部状态</option>
-        <option v-for="(label, key) in labels" :key="key" :value="key">{{ label }}</option>
-      </select></label
+      >执行状态<el-select :model-value="status ?? ''" aria-label="执行状态" @change="filter">
+        <el-option value="" label="全部状态" />
+        <el-option
+          v-for="(label, key) in labels"
+          :key="key"
+          :value="key"
+          :label="label"
+        /> </el-select></label
     ><button class="ag-button" @click="searchRows">查询</button
     ><button class="ag-button" :disabled="loading" @click="load">刷新</button>
   </div>

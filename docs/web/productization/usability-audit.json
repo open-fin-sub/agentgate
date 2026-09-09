@@ -32,8 +32,9 @@
       "line": 78,
       "evidence": "size=\"small\"",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0003"
+      "status": "已验证",
+      "id": "UX-0003",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "G-EMPTY",
@@ -67,8 +68,9 @@
       "line": 144,
       "evidence": "<el-button v-if=\"editable\" size=\"small\" data-testid=\"add-turn\" @click=\"addTurn\"",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0006"
+      "status": "已验证",
+      "id": "UX-0006",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -78,8 +80,9 @@
       "line": 156,
       "evidence": "<el-tag size=\"small\" effect=\"plain\">{{ turn.id }}</el-tag>",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0007"
+      "status": "已验证",
+      "id": "UX-0007",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "A-INPUT",
@@ -113,8 +116,9 @@
       "line": 44,
       "evidence": "size=\"small\"",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0010"
+      "status": "已验证",
+      "id": "UX-0010",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -124,8 +128,9 @@
       "line": 67,
       "evidence": "<el-tag size=\"small\" effect=\"plain\">{{ labels[item.category] }}</el-tag>",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0011"
+      "status": "已验证",
+      "id": "UX-0011",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -135,8 +140,9 @@
       "line": 68,
       "evidence": "<el-tag size=\"small\" effect=\"plain\" type=\"info\">{{ labels[item.difficulty] }}</el-tag>",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0012"
+      "status": "已验证",
+      "id": "UX-0012",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "B-META",
@@ -158,8 +164,9 @@
       "line": 76,
       "evidence": "size=\"small\"",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0014"
+      "status": "已验证",
+      "id": "UX-0014",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -169,8 +176,9 @@
       "line": 84,
       "evidence": "size=\"small\"",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0015"
+      "status": "已验证",
+      "id": "UX-0015",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -180,8 +188,9 @@
       "line": 90,
       "evidence": "<el-button link size=\"small\" @click=\"emit('copy', item)\">复制</el-button>",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0016"
+      "status": "已验证",
+      "id": "UX-0016",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -191,8 +200,9 @@
       "line": 91,
       "evidence": "<el-button link size=\"small\" type=\"danger\" @click=\"emit('remove', item)\">删除</el-button>",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0017"
+      "status": "已验证",
+      "id": "UX-0017",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -225,8 +235,9 @@
       "line": 38,
       "evidence": "size=\"small\"",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0020"
+      "status": "已验证",
+      "id": "UX-0020",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -236,8 +247,9 @@
       "line": 59,
       "evidence": "<el-tag size=\"small\" effect=\"plain\">v{{ item.version ?? '—' }}</el-tag>",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0021"
+      "status": "已验证",
+      "id": "UX-0021",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -247,8 +259,9 @@
       "line": 60,
       "evidence": "<el-tag v-if=\"item.has_draft\" size=\"small\" type=\"warning\">草稿</el-tag>",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0022"
+      "status": "已验证",
+      "id": "UX-0022",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "G-EMPTY",
@@ -270,8 +283,9 @@
       "line": 67,
       "evidence": "<el-button size=\"small\" @click=\"emit('import')\">导入 JSON / Excel</el-button>",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0024"
+      "status": "已验证",
+      "id": "UX-0024",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -281,8 +295,9 @@
       "line": 69,
       "evidence": "<el-button size=\"small\">更多</el-button>",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0025"
+      "status": "已验证",
+      "id": "UX-0025",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -292,8 +307,9 @@
       "line": 88,
       "evidence": "<el-button size=\"small\" data-testid=\"add-expectation\">添加期望</el-button>",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0026"
+      "status": "已验证",
+      "id": "UX-0026",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -303,8 +319,9 @@
       "line": 101,
       "evidence": "<el-select :model-value=\"row.kind\" :disabled=\"disabled\" size=\"small\" @update:model-value=\"changeKind(index, $event)\">",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0027"
+      "status": "已验证",
+      "id": "UX-0027",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -314,8 +331,9 @@
       "line": 106,
       "evidence": "<el-input v-model=\"row.name\" :disabled=\"disabled\" size=\"small\" placeholder=\"检查名称（可选）\" />",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0028"
+      "status": "已验证",
+      "id": "UX-0028",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "A-INPUT",
@@ -349,8 +367,9 @@
       "line": 37,
       "evidence": "<el-button size=\"small\" @click=\"emit('discard')\">放弃草稿</el-button>",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0031"
+      "status": "已验证",
+      "id": "UX-0031",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -360,8 +379,9 @@
       "line": 40,
       "evidence": "size=\"small\"",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0032"
+      "status": "已验证",
+      "id": "UX-0032",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -382,8 +402,9 @@
       "line": 49,
       "evidence": "size=\"small\"",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0034"
+      "status": "已验证",
+      "id": "UX-0034",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -393,8 +414,9 @@
       "line": 59,
       "evidence": "size=\"small\"",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0035"
+      "status": "已验证",
+      "id": "UX-0035",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -404,8 +426,9 @@
       "line": 65,
       "evidence": "size=\"small\"",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0036"
+      "status": "已验证",
+      "id": "UX-0036",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "B-META",
@@ -690,8 +713,9 @@
       "line": 675,
       "evidence": "<input",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0060"
+      "status": "非缺陷",
+      "id": "UX-0060",
+      "resolution": "仅为导入按钮触发的隐藏文件选择机制（display:none），不是可见原生表单；真实JSON/Excel导入回归通过。"
     },
     {
       "pattern": "G-COPY",
@@ -747,8 +771,9 @@
       "line": 50,
       "evidence": ">查找评分标准<input v-model=\"query\" placeholder=\"名称、指标或质量维度\"",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0065"
+      "status": "已验证",
+      "id": "UX-0065",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "B-META",
@@ -889,8 +914,9 @@
       "line": 228,
       "evidence": ">查询上限<select :value=\"limit\" aria-label=\"查询上限\" @change=\"setLimit\">",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0077"
+      "status": "已验证",
+      "id": "UX-0077",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "G-EMPTY",
@@ -1029,8 +1055,9 @@
       "line": 224,
       "evidence": ">基线运行 A<select v-model=\"baseline\" aria-label=\"基线运行 A\" required>",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0089"
+      "status": "已验证",
+      "id": "UX-0089",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -1040,8 +1067,9 @@
       "line": 235,
       "evidence": ">候选运行 B<select v-model=\"candidate\" aria-label=\"候选运行 B\" required>",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0090"
+      "status": "已验证",
+      "id": "UX-0090",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -1110,8 +1138,9 @@
       "line": 402,
       "evidence": ">查找用例或评分标准<input",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0096"
+      "status": "已验证",
+      "id": "UX-0096",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "B-META",
@@ -1216,8 +1245,9 @@
       "line": 213,
       "evidence": ">对象版本<select v-model=\"target\" aria-label=\"对象版本\" required>",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0105"
+      "status": "已验证",
+      "id": "UX-0105",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "B-META",
@@ -1239,8 +1269,9 @@
       "line": 220,
       "evidence": ">测评集<select v-model=\"datasetId\" aria-label=\"测评集\" required @change=\"changeDataset\">",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0107"
+      "status": "已验证",
+      "id": "UX-0107",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -1250,8 +1281,9 @@
       "line": 227,
       "evidence": ">固定发布版本<select",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0108"
+      "status": "已验证",
+      "id": "UX-0108",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "B-META",
@@ -1284,8 +1316,9 @@
       "line": 292,
       "evidence": "><input v-model=\"selected\" type=\"checkbox\" :value=\"item.id\" /><span",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0111"
+      "status": "已验证",
+      "id": "UX-0111",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "B-META",
@@ -1462,8 +1495,9 @@
       "line": 336,
       "evidence": ">结果状态<select v-model=\"filter\" aria-label=\"结果状态\">",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0126"
+      "status": "已验证",
+      "id": "UX-0126",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -1473,8 +1507,9 @@
       "line": 343,
       "evidence": ">搜索证据<input v-model=\"query\" placeholder=\"用例、评估器或原因\"",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0127"
+      "status": "已验证",
+      "id": "UX-0127",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "C-CONTEXT",
@@ -1532,8 +1567,9 @@
       "line": 104,
       "evidence": ">查找当前返回记录<input",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0132"
+      "status": "已验证",
+      "id": "UX-0132",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "D-CONTROL",
@@ -1543,8 +1579,9 @@
       "line": 109,
       "evidence": ">执行状态<select :value=\"status ?? ''\" @change=\"filter\">",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0133"
+      "status": "已验证",
+      "id": "UX-0133",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "I-FEEDBACK",
@@ -2114,8 +2151,9 @@
       "line": 392,
       "evidence": "><input",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0181"
+      "status": "已验证",
+      "id": "UX-0181",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "B-META",
@@ -2706,8 +2744,9 @@
       "line": 159,
       "evidence": ">选择 JSON 文件<input type=\"file\" accept=\".json,application/json\" @change=\"loadFile\"",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0231"
+      "status": "已验证",
+      "id": "UX-0231",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "G-COPY",
@@ -3396,8 +3435,9 @@
       "line": 540,
       "evidence": "<input",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0289"
+      "status": "已验证",
+      "id": "UX-0289",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "H-TERMS",
@@ -4383,8 +4423,9 @@
       "line": 525,
       "evidence": ">预约日期和时间<input",
       "issue": "统一控件与尺寸、可访问名称和焦点",
-      "status": "待整改",
-      "id": "UX-0372"
+      "status": "已验证",
+      "id": "UX-0372",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "B-META",
@@ -5195,8 +5236,9 @@
       "file": "web/src/App.vue",
       "line": 1,
       "issue": "全局ConfigProvider、状态对比度/键盘/减弱动效统一核验",
-      "status": "待整改",
-      "id": "UX-0440"
+      "status": "已验证",
+      "id": "UX-0440",
+      "resolution": "共享ConfigProvider统一40px；可见表单复用Element Plus，移除small覆盖并复用A中已迁移组件。tokens统一浅色底文字、弹层和状态色，键盘/减少动效/控件名称与尺寸已核对。默认114/114及最后悬停色补改4/4通过，24个可达页面默认文字扫描无候选。"
     },
     {
       "pattern": "F-PAGES",

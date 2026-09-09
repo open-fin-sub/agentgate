@@ -181,14 +181,6 @@ function saveReview() {
 function clearScore() {
   review.score = undefined
 }
-function updateScore(event: Event) {
-  const input = event.target as HTMLInputElement
-  review.score = input.validity.badInput
-    ? Number.NaN
-    : input.value === ''
-      ? undefined
-      : input.valueAsNumber
-}
 function sameCase(a: TestCase, b: TestCase) {
   return JSON.stringify({ ...a, sources: [] }) === JSON.stringify({ ...b, sources: [] })
 }
@@ -586,18 +578,19 @@ watch([currentRunId, currentCaseId], initializeReview, {
           ></label>
           <label class="field">
             人工分数（可选，0～1）
-            <input
-              :value="review.score ?? ''"
+            <el-input-number
+              :model-value="review.score"
               :disabled="readonly || !result"
-              type="number"
-              min="0"
-              max="1"
-              step="0.001"
-              inputmode="decimal"
+              :min="0"
+              :max="1"
+              :step="0.001"
+              :controls="false"
               placeholder="未填写"
               aria-label="人工分数"
               aria-describedby="review-score-help"
-              @input="updateScore"
+              @update:model-value="
+                (value: number | undefined | null) => (review.score = value ?? undefined)
+              "
             />
             <span id="review-score-help" class="hint">
               未填写时不调整机器分数；填写 0 会明确保存零分。

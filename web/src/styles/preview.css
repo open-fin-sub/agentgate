@@ -45,7 +45,7 @@
   font-variant-numeric: tabular-nums;
 }
 .preview-kpi small {
-  color: #6b7280;
+  color: var(--ag-muted-on-tint);
 }
 .preview-form {
   margin-top: 20px;
@@ -60,7 +60,7 @@
   text-align: left;
 }
 .preview-table th {
-  color: #6b7280;
+  color: var(--ag-muted-on-tint);
   font-size: 12px;
   background: #f9fafb;
 }
@@ -72,12 +72,12 @@
 }
 .preview-table td small {
   display: block;
-  color: #6b7280;
+  color: var(--ag-muted-on-tint);
 }
 .preview-empty {
   text-align: center;
   padding: 40px 16px;
-  color: #6b7280;
+  color: var(--ag-muted-on-tint);
 }
 .preview-code {
   white-space: pre-wrap;

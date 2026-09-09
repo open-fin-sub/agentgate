@@ -34,10 +34,9 @@ const emit = defineEmits<{
     </div>
     <div class="version-actions">
       <template v-if="versions.find((item) => item.id === activeId)?.status === 'draft'">
-        <el-button size="small" @click="emit('discard')">放弃草稿</el-button>
+        <el-button @click="emit('discard')">放弃草稿</el-button>
         <el-button
           type="success"
-          size="small"
           :loading="busy"
           data-testid="publish-draft"
           @click="emit('publish')"
@@ -46,7 +45,6 @@ const emit = defineEmits<{
       </template>
       <template v-else>
         <el-button
-          size="small"
           :disabled="versions.some((item) => item.status === 'draft')"
           data-testid="create-draft"
           @click="
@@ -56,13 +54,11 @@ const emit = defineEmits<{
         >
         <el-button
           v-if="versions.find((item) => item.id === activeId)?.version"
-          size="small"
           @click="emit('export', versions.find((item) => item.id === activeId)!.version!)"
           >导出 JSON</el-button
         >
         <el-button
           v-if="versions.find((item) => item.id === activeId)?.version"
-          size="small"
           @click="emit('exportExcel', versions.find((item) => item.id === activeId)!.version!)"
           >导出 Excel</el-button
         >

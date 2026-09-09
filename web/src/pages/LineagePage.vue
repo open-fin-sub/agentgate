@@ -177,8 +177,8 @@ function linkedSubject(node: LineageNode) {
     }
   return null
 }
-function setLimit(event: Event) {
-  const query = { ...context.value, limit: (event.target as HTMLSelectElement).value }
+function setLimit(value: number) {
+  const query = { ...context.value, limit: String(value) }
   if (props.embedded) emit('navigate', query, [])
   else void router.replace({ query })
 }
@@ -254,12 +254,11 @@ onUnmounted(() => controller?.abort())
       <div class="panel-title">
         <h2>关联测评任务</h2>
         <label class="field"
-          >查询上限<select :value="limit" aria-label="查询上限" @change="setLimit">
-            <option :value="50">最多 50 条</option>
-            <option :value="100">最多 100 条</option>
-            <option :value="200">最多 200 条</option>
-          </select></label
-        >
+          >查询上限<el-select :model-value="limit" aria-label="查询上限" @change="setLimit">
+            <el-option :value="50" label="最多 50 条" />
+            <el-option :value="100" label="最多 100 条" />
+            <el-option :value="200" label="最多 200 条" /> </el-select
+        ></label>
       </div>
       <p class="muted">
         本次返回 {{ relatedRuns.length }} 条，最多查询

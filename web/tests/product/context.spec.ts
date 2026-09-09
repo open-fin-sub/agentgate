@@ -21,15 +21,20 @@ test('editing a dataset during report reuse preserves the changed target and sel
     .toBe('completed')
   await page.goto(`/runs/new?source=${run_id}`)
   await expect(page.getByRole('button', { name: '提交测评', exact: true })).toBeEnabled()
-  await page.getByLabel('对象版本', { exact: true }).selectOption('loan-agent-v2-fixed')
+  await page.getByRole('combobox', { name: '对象版本', exact: true }).press('ArrowDown')
+  await page.getByRole('option').filter({ hasText: 'loan-agent-v2-fixed' }).click()
   const checked = page.getByRole('checkbox', { checked: true })
   await expect(checked).toHaveCount(2)
-  await checked.first().uncheck()
+  await checked.first().press('Space')
   const remaining = await page.getByRole('checkbox', { checked: true }).getAttribute('value')
   await page.getByRole('link', { name: '编辑测评集并返回 →', exact: true }).click()
   await expect(page.getByTestId('version-published-1')).toHaveClass(/active/)
   await page.getByRole('link', { name: '带此版本返回测评配置' }).click()
-  await expect(page.getByLabel('对象版本', { exact: true })).toHaveValue('loan-agent-v2-fixed')
+  await expect(
+    page
+      .locator('.el-select')
+      .filter({ has: page.getByRole('combobox', { name: '对象版本', exact: true }) }),
+  ).toContainText('修正版本')
   await expect(page.getByRole('checkbox', { checked: true })).toHaveCount(1)
   await expect(page.getByRole('checkbox', { checked: true })).toHaveAttribute('value', remaining!)
   await expect(page.getByRole('link', { name: '返回来源报告' })).toHaveAttribute(

@@ -258,37 +258,69 @@ onUnmounted(() => {
     </StatusNotice>
     <div class="split-grid">
       <label class="field"
-        >基线运行 A<select v-model="baseline" aria-label="基线运行 A" required>
-          <option value="">请选择基线运行</option>
-          <option v-for="run in options" :key="run.id" :value="run.id">
-            {{ optionLabel(run) }}
-          </option>
-          <option v-if="baseline && !options.some((run) => run.id === baseline)" :value="baseline">
-            历史运行 {{ baseline }}
-          </option>
-        </select></label
-      >
+        >基线运行 A（必选）<el-select
+          v-model="baseline"
+          aria-label="基线运行 A"
+          placeholder="请选择基线运行"
+        >
+          <el-option v-for="run in options" :key="run.id" :value="run.id" :label="optionLabel(run)">
+            <EntityRef
+              :name="run.manifest.target.display_name"
+              type="测评对象"
+              :version="run.manifest.target.ref.external_version_id"
+              compact
+            />
+            <MetadataGroup
+              :items="[
+                { label: '测评集', value: run.manifest.dataset.dataset_name },
+                { label: '发布版本', value: run.manifest.dataset.version },
+                { label: '创建时间', value: new Date(run.created_at).toLocaleString('zh-CN') },
+                { label: '任务编号', value: run.id },
+              ]"
+            />
+          </el-option>
+          <el-option
+            v-if="baseline && !options.some((run) => run.id === baseline)"
+            :value="baseline"
+            label="指定的历史任务"
+          /> </el-select
+      ></label>
       <label class="field"
-        >候选运行 B<select v-model="candidate" aria-label="候选运行 B" required>
-          <option value="">请选择候选运行</option>
-          <optgroup v-for="group in candidateGroups" :key="group.label" :label="group.label">
-            <option
+        >候选运行 B（必选）<el-select
+          v-model="candidate"
+          aria-label="候选运行 B"
+          placeholder="请选择候选运行"
+        >
+          <el-option-group v-for="group in candidateGroups" :key="group.label" :label="group.label">
+            <el-option
               v-for="run in group.runs"
               :key="run.id"
               :value="run.id"
               :disabled="run.id === baseline"
+              :label="optionLabel(run)"
             >
-              {{ optionLabel(run) }}
-            </option>
-          </optgroup>
-          <option
+              <EntityRef
+                :name="run.manifest.target.display_name"
+                type="测评对象"
+                :version="run.manifest.target.ref.external_version_id"
+                compact
+              />
+              <MetadataGroup
+                :items="[
+                  { label: '测评集', value: run.manifest.dataset.dataset_name },
+                  { label: '发布版本', value: run.manifest.dataset.version },
+                  { label: '创建时间', value: new Date(run.created_at).toLocaleString('zh-CN') },
+                  { label: '任务编号', value: run.id },
+                ]"
+              />
+            </el-option>
+          </el-option-group>
+          <el-option
             v-if="candidate && !options.some((run) => run.id === candidate)"
             :value="candidate"
-          >
-            历史运行 {{ candidate }}
-          </option>
-        </select></label
-      >
+            label="指定的历史任务"
+          /> </el-select
+      ></label>
     </div>
     <button
       class="ag-button primary"
@@ -455,7 +487,7 @@ onUnmounted(() => {
         </button>
       </nav>
       <label class="field"
-        >查找用例或评分标准<input
+        >查找用例或评分标准<el-input
           :value="query"
           @input="setQuery"
           placeholder="用例名称、编号或评分标准"

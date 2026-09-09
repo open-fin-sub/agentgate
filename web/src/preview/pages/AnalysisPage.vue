@@ -529,7 +529,7 @@ function generateSuggestions() {
   border-color: #d44f42;
 }
 .evidence-filters {
-  align-items: flex-end;
+  align-items: center;
 }
 .evidence-filters label {
   width: 250px;

@@ -412,10 +412,14 @@ function create() {
               ><el-input-number v-model="config.threshold" :min="0" :max="1" :step="0.05"
             /></el-form-item>
             <el-form-item label="预约执行（本地时间，留空立即）"
-              ><input
+              ><el-date-picker
                 v-model="schedule"
                 class="schedule-input"
-                type="datetime-local"
+                type="datetime"
+                value-format="YYYY-MM-DDTHH:mm"
+                format="YYYY-MM-DD HH:mm"
+                aria-label="预约执行时间"
+                placeholder="留空立即执行"
                 @change="changeSchedule"
             /></el-form-item>
             <el-form-item label="体验故障场景"
@@ -519,10 +523,6 @@ function create() {
 .schedule-input {
   width: 100%;
   min-width: 0;
-  min-height: 40px;
-  border: 1px solid #b9c0ca;
-  border-radius: 4px;
-  padding: 8px;
 }
 :deep(.el-select),
 :deep(.el-input-number) {

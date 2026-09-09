@@ -51,7 +51,10 @@ onMounted(load)
   </StatusNotice>
   <div class="toolbar">
     <label class="field"
-      >查找评分标准<input v-model="query" placeholder="名称、指标或质量维度"
+      >查找评分标准<el-input
+        v-model="query"
+        aria-label="查找评分标准"
+        placeholder="名称、指标或质量维度"
     /></label>
   </div>
   <div v-if="loading" class="skeleton">正在加载评分标准…</div>
