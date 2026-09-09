@@ -386,12 +386,12 @@ watch(() => route.fullPath, readQuery, { immediate: true })
         本次质量条件：平均适用分数 ≥
         {{
           run.config.threshold
-        }}，无不通过、待复核或执行错误，结果完整。运行完成与质量达标分别判断。
+        }}，无不通过、需复核或执行错误，结果完整。任务完成与质量达标分别判断。
       </p>
       <StatusNotice v-if="mode === 'human'">
-        采用每条用例最新人工复核：确认问题→不通过，非
-        Badcase→通过，待复核→需复核；填写人工分数时替代 Case 分数，未填写时沿用机器分数。NA／error
-        仍保留原判。评估器检查与原始证据不变，此口径不是生产上线门禁。
+        采用每条用例最新人工复核：确认问题记为不通过，机器误判记为通过，需复核仍待处理。
+        已填写的人工分数用于汇总，未填写时沿用机器分数。不适用和执行错误保留原判。
+        评估器检查与原始证据保持不变；人工汇总仅供复核参考。
       </StatusNotice>
       <div class="preview-grid run-kpis">
         <button class="preview-kpi" @click="selectOutcome('')">

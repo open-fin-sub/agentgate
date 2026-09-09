@@ -9,6 +9,12 @@ import type {
   RunStatus,
 } from '../types'
 
+export const reviewDecisionLabels: Record<HumanReview['decision'], string> = {
+  confirmed: '确认问题',
+  dismissed: '机器误判',
+  pending: '需复核',
+}
+
 export const outcomeLabels: Record<Outcome, string> = {
   pass: '通过',
   fail: '不通过',

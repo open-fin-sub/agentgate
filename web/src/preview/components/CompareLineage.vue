@@ -121,7 +121,7 @@ const audit = computed(() =>
             }}</RouterLink>
           </p>
         </template>
-        <span v-else>运行记录不存在。</span>
+        <span v-else>测评任务不存在。</span>
       </li>
     </ul>
     <h3>操作记录</h3>

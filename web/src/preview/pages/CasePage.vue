@@ -21,6 +21,7 @@ import {
   reportFilters,
   reportRows,
   reviewedRun,
+  reviewDecisionLabels,
   scoreText,
   validateConfig,
 } from '../components/RunSupport'
@@ -409,12 +410,7 @@ watch([currentRunId, currentCaseId], initializeReview, {
           :items="[
             {
               label: '复核结论',
-              value:
-                latestReview.decision === 'confirmed'
-                  ? '确认 Badcase'
-                  : latestReview.decision === 'dismissed'
-                    ? '非 Badcase'
-                    : '待复核',
+              value: reviewDecisionLabels[latestReview.decision],
             },
             { label: '人工分数', value: scoreText(latestReview.score) },
             { label: '复核人', value: latestReview.actor },
@@ -570,11 +566,12 @@ watch([currentRunId, currentCaseId], initializeReview, {
               v-model="review.decision"
               :disabled="readonly || !result"
               aria-label="人工结论"
-              ><el-option value="confirmed" label="确认 Badcase" /><el-option
-                value="dismissed"
-                label="非 Badcase / 机器误判" /><el-option
-                value="pending"
-                label="待复核" /></el-select
+              ><el-option
+                v-for="(label, decision) in reviewDecisionLabels"
+                :key="decision"
+                :value="decision"
+                :label="label"
+              /></el-select
           ></label>
           <label class="field">
             人工分数（可选，0～1）
@@ -627,11 +624,7 @@ watch([currentRunId, currentCaseId], initializeReview, {
         >
           <strong
             >{{
-              entry.decision === 'confirmed'
-                ? '确认 Badcase'
-                : entry.decision === 'dismissed'
-                  ? '非 Badcase'
-                  : '待复核'
+              reviewDecisionLabels[entry.decision]
             }}
           </strong>
           <p>{{ entry.reason }}</p>

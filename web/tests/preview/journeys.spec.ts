@@ -54,7 +54,7 @@ test('run creation survives refresh, preserves original result during human revi
     .click()
   await expect(page).toHaveURL(/case-02/)
   await expect(page.getByRole('spinbutton', { name: '人工分数', exact: true })).toHaveValue('')
-  await select(page, '人工结论', '非 Badcase / 机器误判')
+  await select(page, '人工结论', '机器误判')
   await page
     .getByRole('textbox', { name: '复核理由' })
     .fill('业务已确认，此处为咨询场景；保留原始路由证据。')

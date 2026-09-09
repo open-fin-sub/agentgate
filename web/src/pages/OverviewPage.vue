@@ -60,7 +60,7 @@ const labels = {
       <div class="stat-box">
         <div class="stat-label">测评任务</div>
         <div class="stat-number">{{ data.total_runs }}</div>
-        <RouterLink class="stat-note" to="/runs">查看运行记录 →</RouterLink>
+        <RouterLink class="stat-note" to="/runs">查看测评任务 →</RouterLink>
       </div>
       <div class="stat-box">
         <div class="stat-label">正在执行</div>
