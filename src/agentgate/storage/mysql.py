@@ -349,6 +349,21 @@ class MySQLRepository:
                 s.dataset_versions.delete().where(s.dataset_versions.c.id_key == _digest(draft.id))
             )
 
+    def delete_dataset_record(self, dataset_id: str, *, user_team_id: str) -> None:
+        with self._transaction() as db:
+            dataset = _one(
+                db, s.datasets, Dataset, id=dataset_id, user_team_id=user_team_id, lock=True
+            )
+            if dataset is None:
+                raise ValueError("expected Dataset does not exist")
+            db.execute(
+                s.dataset_versions.delete().where(
+                    s.dataset_versions.c.dataset_key == _digest(dataset_id),
+                    s.dataset_versions.c.user_team_key == _digest(user_team_id),
+                )
+            )
+            db.execute(s.datasets.delete().where(s.datasets.c.id_key == _digest(dataset_id)))
+
     def replace_dataset_draft(self, expected_draft_id: str, published: DatasetVersion) -> None:
         with self._transaction() as db:
             _one(db, s.datasets, Dataset, id=published.dataset_id, lock=True)

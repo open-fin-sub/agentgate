@@ -94,6 +94,28 @@ async function deleteSelectedDraft() {
     deleting.value = false;
   }
 }
+const deleteHasPublished = computed(() =>
+  deleteVersions.value.some((v) => v.status === 'published'),
+);
+async function deleteWholeRecord() {
+  if (!deleteItem.value || deleting.value || deleteHasPublished.value) return;
+  try {
+    await ElMessageBox.confirm(
+      '确认永久删除该评测集及其草稿？此操作不可恢复，也不会以归档替代删除。',
+      '删除整个评测集',
+      { type: 'warning', confirmButtonText: '永久删除', cancelButtonText: '取消' },
+    );
+    deleting.value = true;
+    await datasetApi.deleteRecord(deleteItem.value.id);
+    deleteItem.value = null;
+    datasets.value = await datasetApi.list();
+    ElMessage.success('评测集已删除');
+  } catch (e) {
+    if (e !== 'cancel' && e !== 'close') showError(e, '删除失败');
+  } finally {
+    deleting.value = false;
+  }
+}
 async function openById() {
   try {
     const { value } = await ElMessageBox.prompt('输入评测集 ID，可打开已归档资产。', '按 ID 打开', {
@@ -961,7 +983,11 @@ onMounted(async () => {
       </select></label
     >
     <p class="muted">
-      当前后端只支持删除草稿。已发布版本删除和整个评测集删除尚无接口，暂不可提交；不会用归档替代删除。
+      {{
+        deleteHasPublished
+          ? '当前后端只支持删除草稿。已发布版本删除尚无接口，暂不可提交；不会用归档替代删除。'
+          : '该评测集没有已发布版本，可永久删除整个评测集记录（不可恢复）。'
+      }}
     </p>
     <template #footer
       ><button class="secondary" :disabled="deleting" @click="deleteItem = null">取消</button
@@ -973,6 +999,14 @@ onMounted(async () => {
         @click="deleteSelectedDraft"
       >
         删除草稿
+      </button>
+      <button
+        v-if="!deleteHasPublished"
+        class="primary"
+        :disabled="deleting"
+        @click="deleteWholeRecord"
+      >
+        删除整个评测集
       </button></template
     >
   </el-dialog>

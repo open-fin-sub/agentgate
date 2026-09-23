@@ -120,6 +120,9 @@ class AgentGateRepository(Protocol):
     def delete_dataset_draft(
         self, dataset_id: str, expected_draft_id: str, *, user_team_id: str
     ) -> None: ...
+    def delete_dataset_record(
+        self, dataset_id: str, *, user_team_id: str
+    ) -> None: ...
     def replace_dataset_draft(
         self, expected_draft_id: str, published: DatasetVersion
     ) -> None: ...

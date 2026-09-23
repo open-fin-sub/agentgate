@@ -1279,6 +1279,19 @@ class SQLiteRepository:
             if cursor.rowcount != 1:
                 raise ValueError("expected Dataset draft does not exist")
 
+    def delete_dataset_record(self, dataset_id: str, *, user_team_id: str) -> None:
+        with self._connect() as db:
+            db.execute(
+                f"DELETE FROM {_T_DATASET_VERSIONS} WHERE dataset_id=? AND user_team_id=?",
+                (dataset_id, user_team_id),
+            )
+            cursor = db.execute(
+                f"DELETE FROM {_T_DATASETS} WHERE id=? AND user_team_id=?",
+                (dataset_id, user_team_id),
+            )
+            if cursor.rowcount != 1:
+                raise ValueError("expected Dataset does not exist")
+
     def replace_dataset_draft(
         self, expected_draft_id: str, published: DatasetVersion
     ) -> None:
