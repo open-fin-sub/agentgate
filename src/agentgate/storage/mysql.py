@@ -364,6 +364,29 @@ class MySQLRepository:
             )
             db.execute(s.datasets.delete().where(s.datasets.c.id_key == _digest(dataset_id)))
 
+    def delete_task_record(self, task_id: str, *, user_team_id: str) -> None:
+        with self._transaction() as db:
+            task = _one(
+                db, s.evaluation_tasks, EvaluationTask, id=task_id, lock=True
+            )
+            if task is None:
+                raise ValueError("task does not exist")
+            for run_id in task.run_ids:
+                db.execute(
+                    s.results.delete().where(s.results.c.run_key == _digest(run_id))
+                )
+                db.execute(
+                    s.traces.delete().where(s.traces.c.run_key == _digest(run_id))
+                )
+                db.execute(
+                    s.runs.delete().where(s.runs.c.id_key == _digest(run_id))
+                )
+            db.execute(
+                s.evaluation_tasks.delete().where(
+                    s.evaluation_tasks.c.id_key == _digest(task_id)
+                )
+            )
+
     def replace_dataset_draft(self, expected_draft_id: str, published: DatasetVersion) -> None:
         with self._transaction() as db:
             _one(db, s.datasets, Dataset, id=published.dataset_id, lock=True)

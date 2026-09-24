@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { shallowRef, computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   api,
   request,
@@ -24,6 +25,7 @@ const runs = shallowRef<EvaluationRun[]>([]),
   error = ref(''),
   busy = ref(false);
 const status = ref(''),
+  days = ref(7),
   taskTab = ref(''),
   query = ref(''),
   from = ref(''),
@@ -61,7 +63,14 @@ const filtered = computed(() =>
       (!kind.value || (link(r.id)?.kind ?? 'single') === kind.value) &&
       `${title(r)} ${r.id}`.toLowerCase().includes(query.value.toLowerCase()) &&
       (!from.value || Date.parse(r.created_at) >= Date.parse(from.value + 'T00:00:00')) &&
-      (!to.value || Date.parse(r.created_at) <= Date.parse(to.value + 'T23:59:59.999')),
+      (!to.value || Date.parse(r.created_at) <= Date.parse(to.value + 'T23:59:59.999')) &&
+      (!days.value ||
+        (() => {
+          const start = new Date();
+          start.setHours(0, 0, 0, 0);
+          start.setDate(start.getDate() - (days.value - 1));
+          return Date.parse(r.created_at) >= start.getTime();
+        })()),
   ),
 );
 const rows = computed(() => filtered.value.slice((page.value - 1) * 20, page.value * 20));
@@ -87,6 +96,25 @@ function strategy(r: EvaluationRun) {
     ),
   ].join(' + ');
 }
+async function deleteTask(id: string) {
+  try {
+    await ElMessageBox.confirm(
+      '删除后任务及其运行记录、Trace 和结果将不可恢复。确定删除？',
+      '删除任务',
+      { type: 'warning', confirmButtonText: '永久删除', cancelButtonText: '取消' },
+    );
+  } catch {
+    return;
+  }
+  try {
+    await request(`/evaluation-tasks/${id}`, 'DELETE');
+    ElMessage.success('任务已删除');
+    await load();
+  } catch (e) {
+    ElMessage.error('删除失败：' + String(e));
+  }
+}
+
 function exportTasks(ids?: string[]) {
   downloadCsv(
     [
@@ -143,7 +171,7 @@ async function load() {
     if (!disposed) timer = setTimeout(load, 5000);
   }
 }
-watch([status, taskTab, query, from, to, kind], () => {
+watch([status, taskTab, query, from, to, kind, days], () => {
   page.value = 1;
   checked.value = [];
 });
@@ -156,51 +184,57 @@ onUnmounted(() => {
 });
 </script>
 <template>
-  <div class="page-head"><h1 class="page-title">测评任务</h1></div>
-  <section class="card tasks-list">
-    <nav class="tabs">
-      <button
-        class="tab"
-        :class="{ active: !taskTab }"
-        @click="taskTab = ''"
-      >
-        全部
-      </button>
-      <button
-        v-for="t in [
-          ['single', '单任务'],
-          ['ab', 'A/B Test 任务'],
-        ]"
-        :key="'tt-' + t[0]"
-        class="tab"
-        :class="{ active: taskTab === t[0] }"
-        @click="
-          taskTab = t[0];
-          status = '';
-        "
-      >
-        {{ t[1] }}
-      </button>
-    </nav>
-    <div class="toolbar filters">
-      <input
-        class="input"
-        v-model="query"
-        aria-label="搜索任务名称"
-        placeholder="搜索任务名称或 ID"
-      />
-      <div class="date-range">
-        <input type="date" v-model="from" aria-label="创建开始日期" /><span>—</span
-        ><input type="date" v-model="to" :min="from" aria-label="创建结束日期" />
+  <div class="page-head">
+    <div style="display:flex;align-items:flex-end;gap:16px;">
+      <h1 class="page-title">测评任务</h1>
+      <div class="tabs">
+        <button
+          v-for="d in [1, 7, 30]"
+          :key="d"
+          :class="['tab', { active: days === d }]"
+          :aria-pressed="days === d"
+          @click="days = d"
+        >
+          {{ d === 1 ? '今日' : '近' + d + '天' }}
+        </button>
       </div>
-      <select class="input" v-model="kind" aria-label="任务类型">
-        <option value="">全部任务类型</option>
-        <option value="single">单任务</option>
-        <option value="ab">A/B 实验</option>
-        <option value="stability">稳定性测试</option></select
-      ><button class="secondary" :disabled="!checked.length" @click="exportTasks(checked)">
-        批量导出{{ checked.length ? '（' + checked.length + '）' : '' }}</button
-      ><button class="primary" @click="emit('create')">新建测评任务</button>
+    </div>
+  </div>
+  <section class="card tasks-list">
+    <div class="list-toolbar">
+      <nav class="tabs">
+        <button
+          class="tab"
+          :class="{ active: !taskTab }"
+          @click="taskTab = ''"
+        >
+          全部
+        </button>
+        <button
+          v-for="t in [
+            ['single', '单任务'],
+            ['ab', 'A/B Test 任务'],
+          ]"
+          :key="'tt-' + t[0]"
+          class="tab"
+          :class="{ active: taskTab === t[0] }"
+          @click="
+            taskTab = t[0];
+            status = '';
+          "
+        >
+          {{ t[1] }}
+        </button>
+      </nav>
+      <div class="filters-right">
+        <input
+          class="input search-input"
+          v-model="query"
+          aria-label="搜索任务名称"
+          placeholder="搜索任务名称或 ID"
+        />
+        <button class="primary" @click="emit('create')">新建测评任务</button>
+      </div>
     </div>
     <p v-if="error" class="notice error" role="alert">{{ error }}</p>
     <div class="table-wrap">
@@ -218,13 +252,11 @@ onUnmounted(() => {
               />
             </th>
             <th>任务名称</th>
-            <th>任务状态</th>
             <th>任务类型</th>
             <th>应用</th>
             <th>数据集</th>
             <th>评估方式</th>
-            <th>评分模式</th>
-            <th>进度</th>
+            <th>进度与状态</th>
             <th>得分</th>
             <th>操作</th>
           </tr>
@@ -242,18 +274,6 @@ onUnmounted(() => {
             <td class="name-cell">
               <button class="link" @click="emit('navigate', 'tasks/' + r.id)">{{ title(r) }}</button
               ><small>{{ new Date(r.created_at).toLocaleString() }}</small>
-            </td>
-            <td>
-              <span
-                class="badge"
-                :class="{
-                  success: state(r) === 'completed',
-                  error: state(r) === 'failed',
-                  info: state(r) === 'running',
-                  warn: state(r) === 'pending' || state(r) === 'scheduled',
-                }"
-                >{{ statusLabel(state(r)) }}</span
-              >
             </td>
             <td>
               <span class="badge info">{{
@@ -274,7 +294,6 @@ onUnmounted(() => {
             <td>
               <span class="badge info">{{ strategy(r) }}</span>
             </td>
-            <td><span class="badge info">整体评分</span></td>
             <td class="progress-cell">
               <template v-if="done(r)"
                 ><div>
@@ -320,6 +339,7 @@ onUnmounted(() => {
               >
                 取消
               </button>
+              <button class="link danger" @click="deleteTask(r.id)">删除</button>
             </td>
           </tr>
         </tbody>
@@ -337,6 +357,28 @@ onUnmounted(() => {
   </section>
 </template>
 <style scoped>
+.search-input {
+  width: 160px !important;
+}
+.list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.list-toolbar .tabs {
+  margin-bottom: 0;
+}
+.filters-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.filters-right .input {
+  width: 200px;
+}
 .tab-sep {
   color: var(--el-border-color);
   margin: 0 4px;
@@ -365,13 +407,14 @@ onUnmounted(() => {
   border: 1px solid #d9e2de;
   padding: 8px;
   border-radius: 7px;
-  gap: 10px;
+  gap: 4px;
 }
 .date-range input {
   border: 0;
   background: none;
   color: #687d71;
-  min-width: 125px;
+  width: 110px;
+  min-width: 0;
   font: inherit;
   font-size: 13px;
 }

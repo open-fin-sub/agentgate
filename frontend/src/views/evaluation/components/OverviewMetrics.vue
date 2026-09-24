@@ -1,10 +1,18 @@
 <script setup lang="ts">
 import { ref, watch, onUnmounted } from 'vue';
 import { api, score } from '../../../api/evaluations';
-const days = ref(7),
+const props = defineProps<{ days?: number }>();
+const emit = defineEmits<{ 'update:days': [value: number] }>();
+const days = ref(props.days ?? 7),
   data = ref<any>(null),
   error = ref(''),
   loading = ref(false);
+watch(
+  () => props.days,
+  (v) => {
+    days.value = v ?? 7;
+  },
+);
 let sequence = 0;
 async function load() {
   const ticket = ++sequence;
@@ -62,21 +70,6 @@ onUnmounted(() => sequence++);
 </script>
 <template>
   <section aria-label="总览统计">
-    <div class="toolbar">
-      <div class="tabs">
-        <button
-          v-for="d in [1, 7, 30]"
-          :key="d"
-          :class="['tab', { active: days === d }]"
-          :aria-pressed="days === d"
-          @click="days = d"
-        >
-          {{ d === 1 ? '今日' : '近' + d + '天' }}
-        </button>
-      </div>
-      <button class="link" :disabled="loading" @click="load">刷新统计</button>
-    </div>
-    <p class="muted">时间统计基于最近最多 200 条任务；未覆盖更早记录。</p>
     <p v-if="error" role="alert">{{ error }}</p>
     <div class="overview-metrics">
       <article class="card">

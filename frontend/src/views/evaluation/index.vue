@@ -130,6 +130,7 @@ onBeforeRouteUpdate((to, from) => {
 });
 const runs = shallowRef<EvaluationRun[]>([]),
   overview = ref<Overview | null>(null);
+const overviewDays = ref(7);
 const auth = useAuthStore();
 const authLabel = computed(() => auth.modeLabel);
 async function confirmLogout() {
@@ -325,10 +326,22 @@ async function taskCreated(link: TaskLink) {
     </div>
     <template v-if="page === 'overview'">
       <div class="page-head">
-        <div><h1 class="page-title">测评总览</h1></div>
-        <span class="muted">{{ loading ? '正在刷新' : '最近任务每 5 秒刷新' }}</span>
+        <div style="display:flex;align-items:flex-end;gap:16px;">
+          <h1 class="page-title">测评总览</h1>
+          <div class="tabs">
+            <button
+              v-for="d in [1, 7, 30]"
+              :key="d"
+              :class="['tab', { active: overviewDays === d }]"
+              :aria-pressed="overviewDays === d"
+              @click="overviewDays = d"
+            >
+              {{ d === 1 ? '今日' : '近' + d + '天' }}
+            </button>
+          </div>
+        </div>
       </div>
-      <OverviewMetrics />
+      <OverviewMetrics :days="overviewDays" @update:days="overviewDays = $event" />
       <div class="card">
         <div class="toolbar">
           <h2 class="section-title">最近测评任务</h2>
@@ -345,13 +358,13 @@ async function taskCreated(link: TaskLink) {
           </thead>
           <tbody>
             <tr v-for="r in runs.slice(0, 6)" :key="r.id">
-              <td>
+              <td class="nowrap">
                 {{ r.manifest.target.display_name }}
-                <div class="muted">{{ r.manifest.target.ref.external_version_id }}</div>
+                <span class="muted">· {{ r.manifest.target.ref.external_version_id }}</span>
               </td>
-              <td>{{ r.manifest.dataset.dataset_name }}</td>
-              <td>{{ statusLabel(r.status) }}</td>
-              <td><button class="link" @click="go('tasks/' + r.id)">查看</button></td>
+              <td class="nowrap">{{ r.manifest.dataset.dataset_name }}</td>
+              <td class="nowrap">{{ statusLabel(r.status) }}</td>
+              <td class="nowrap"><button class="link" @click="go('tasks/' + r.id)">查看</button></td>
             </tr>
           </tbody>
         </table>
@@ -496,6 +509,30 @@ async function taskCreated(link: TaskLink) {
 </template>
 
 <style>
+.page-head .tabs {
+  display: flex;
+  gap: 4px;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+.page-head .tab {
+  padding: 3px 12px;
+  border: 0;
+  background: #f3f4f6;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #394250;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.page-head .tab.active {
+  background: #07ac8e;
+  color: #fff;
+}
+.nowrap {
+  white-space: nowrap;
+}
 .task-identity {
   min-width: 250px;
 }

@@ -23,7 +23,6 @@ const navigation = [
     </header>
     <div class="shell">
       <aside class="sidebar">
-        <div class="nav-group">测评与资产</div>
         <RouterLink
           v-for="item in navigation"
           :key="item[0]"
