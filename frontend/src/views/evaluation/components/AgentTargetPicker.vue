@@ -56,9 +56,11 @@ const props = withDefaults(
     token: string;
     teamId: string;
     disabled?: boolean;
+    versionLabel?: string;
   }>(),
   {
     disabled: false,
+    versionLabel: '智能体版本',
   },
 );
 const emit = defineEmits<{ 'selection-change': [selection: AgentTargetSelection | null] }>();
@@ -249,7 +251,7 @@ const fields = computed(() => [
   },
   {
     key: 'version' as const,
-    label: '智能体版本',
+    label: props.versionLabel,
     placeholder:
       selectedType.value === 'abcclaw' && !selected.branch ? '请先选择分支地址' : '请选择版本',
     disabled: !agentAvailable.value || (selectedType.value === 'abcclaw' && !branchAvailable.value),
