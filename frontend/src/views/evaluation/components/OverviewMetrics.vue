@@ -99,18 +99,13 @@ onUnmounted(() => sequence++);
         <div class="metric-value">{{ data?.dataset_samples ?? '—' }}</div>
         <small>当前 {{ data?.dataset_count ?? '—' }} 个未归档集的最新发布样本，不随时间筛选</small>
       </article>
-      <article class="card">
-        <div class="metric-label">Token 消耗</div>
-        <div class="metric-value">—</div>
-        <small>当前未提供完整用量统计</small>
-      </article>
     </div>
   </section>
 </template>
 <style scoped>
 .overview-metrics {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
