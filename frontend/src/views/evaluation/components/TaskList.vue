@@ -160,25 +160,12 @@ onUnmounted(() => {
   <section class="card tasks-list">
     <nav class="tabs">
       <button
-        v-for="s in [
-          ['', '全部'],
-          ['pending', '等待中'],
-          ['running', '运行中'],
-          ['completed', '已完成'],
-          ['failed', '失败'],
-          ['cancelled', '已取消'],
-        ]"
-        :key="'st-' + s[0]"
         class="tab"
-        :class="{ active: status === s[0] && !taskTab }"
-        @click="
-          taskTab = '';
-          status = s[0];
-        "
+        :class="{ active: !taskTab }"
+        @click="taskTab = ''"
       >
-        {{ s[1] }}
+        全部
       </button>
-      <span class="tab-sep">|</span>
       <button
         v-for="t in [
           ['single', '单任务'],
