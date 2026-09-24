@@ -774,6 +774,9 @@ onMounted(() => void openCreate(props.source));
         <span>02</span>
         <div><h3>评测对象</h3></div>
       </div>
+      <p v-if="taskKind === 'ab'" class="full platform-source-badge">
+        数据源：{{ auth.modeLabel }}
+      </p>
       <AgentTargetPicker
         ref="platformPicker"
         class="full"
@@ -781,11 +784,12 @@ onMounted(() => void openCreate(props.source));
         :token="platformToken"
         :team-id="platformTeamId"
         :disabled="submitting || formLoading"
+        :version-label="taskKind === 'ab' ? '实验 A · 基线版本' : '智能体版本'"
         @selection-change="receivePlatformSelection"
       />
-      <div v-if="taskKind === 'ab'" class="full platform-ab-fields">
-        <label class="field"
-          >实验 B · 候选版本（平台目标）<select
+      <div v-if="taskKind === 'ab'" class="full platform-candidate-row">
+        <label class="field platform-candidate-field"
+          >实验 B · 候选版本<select
             v-model="platformCandidateVersion"
             class="input"
             aria-label="平台候选版本"
@@ -801,9 +805,8 @@ onMounted(() => void openCreate(props.source));
             </option>
           </select></label
         >
-        <p class="muted">
-          平台目标 A/B：上方选择基线智能体与版本，此处选择候选版本；也可使用下方内置 Demo
-          进行 A/B 实验。
+        <p class="muted platform-candidate-hint">
+          与基线版本同一目录加载；必须选择不同的版本。
         </p>
       </div>
       <p class="muted full">
@@ -811,7 +814,7 @@ onMounted(() => void openCreate(props.source));
       </p>
       <p v-if="legacyLoading" class="full" role="status">正在加载 A/B 智能体目录…</p>
       <div
-        v-if="taskKind === 'ab'"
+        v-if="taskKind === 'ab' && !platformSelection"
         class="target-choice full"
         :class="{ 'is-ab': taskKind === 'ab', 'has-git-branch': usesGitBranch }"
       >
@@ -1170,6 +1173,32 @@ onMounted(() => void openCreate(props.source));
   </el-dialog>
 </template>
 <style scoped>
+.platform-source-badge {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--el-color-primary);
+  padding: 6px 12px;
+  background: var(--el-color-primary-light-9);
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+}
+.platform-candidate-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  margin-top: 0;
+  align-items: start;
+}
+.platform-candidate-row .platform-candidate-field {
+  grid-column: 3;
+}
+.platform-candidate-row .platform-candidate-hint {
+  grid-column: 1 / 3;
+  align-self: end;
+  margin: 0 0 24px;
+}
 .dataset-selection {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
