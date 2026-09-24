@@ -24,6 +24,7 @@ const runs = shallowRef<EvaluationRun[]>([]),
   error = ref(''),
   busy = ref(false);
 const status = ref(''),
+  taskTab = ref(''),
   query = ref(''),
   from = ref(''),
   to = ref(''),
@@ -56,6 +57,7 @@ const filtered = computed(() =>
         (status.value === 'pending'
           ? ['pending', 'scheduled'].includes(state(r))
           : state(r) === status.value)) &&
+      (!taskTab.value || (link(r.id)?.kind ?? 'single') === taskTab.value) &&
       (!kind.value || (link(r.id)?.kind ?? 'single') === kind.value) &&
       `${title(r)} ${r.id}`.toLowerCase().includes(query.value.toLowerCase()) &&
       (!from.value || Date.parse(r.created_at) >= Date.parse(from.value + 'T00:00:00')) &&
@@ -141,7 +143,7 @@ async function load() {
     if (!disposed) timer = setTimeout(load, 5000);
   }
 }
-watch([status, query, from, to, kind], () => {
+watch([status, taskTab, query, from, to, kind], () => {
   page.value = 1;
   checked.value = [];
 });
@@ -166,12 +168,31 @@ onUnmounted(() => {
           ['failed', '失败'],
           ['cancelled', '已取消'],
         ]"
-        :key="s[0]"
+        :key="'st-' + s[0]"
         class="tab"
-        :class="{ active: status === s[0] }"
-        @click="status = s[0]"
+        :class="{ active: status === s[0] && !taskTab }"
+        @click="
+          taskTab = '';
+          status = s[0];
+        "
       >
         {{ s[1] }}
+      </button>
+      <span class="tab-sep">|</span>
+      <button
+        v-for="t in [
+          ['single', '单任务'],
+          ['ab', 'A/B Test 任务'],
+        ]"
+        :key="'tt-' + t[0]"
+        class="tab"
+        :class="{ active: taskTab === t[0] }"
+        @click="
+          taskTab = t[0];
+          status = '';
+        "
+      >
+        {{ t[1] }}
       </button>
     </nav>
     <div class="toolbar filters">
@@ -210,6 +231,8 @@ onUnmounted(() => {
               />
             </th>
             <th>任务名称</th>
+            <th>任务状态</th>
+            <th>任务类型</th>
             <th>应用</th>
             <th>数据集</th>
             <th>评估方式</th>
@@ -232,6 +255,27 @@ onUnmounted(() => {
             <td class="name-cell">
               <button class="link" @click="emit('navigate', 'tasks/' + r.id)">{{ title(r) }}</button
               ><small>{{ new Date(r.created_at).toLocaleString() }}</small>
+            </td>
+            <td>
+              <span
+                class="badge"
+                :class="{
+                  success: state(r) === 'completed',
+                  error: state(r) === 'failed',
+                  info: state(r) === 'running',
+                  warn: state(r) === 'pending' || state(r) === 'scheduled',
+                }"
+                >{{ statusLabel(state(r)) }}</span
+              >
+            </td>
+            <td>
+              <span class="badge info">{{
+                link(r.id)?.kind === 'ab'
+                  ? 'A/B Test 任务'
+                  : link(r.id)?.kind === 'stability'
+                    ? '稳定性测试'
+                    : '单任务'
+              }}</span>
             </td>
             <td>
               {{ r.manifest.target.display_name
@@ -306,6 +350,11 @@ onUnmounted(() => {
   </section>
 </template>
 <style scoped>
+.tab-sep {
+  color: var(--el-border-color);
+  margin: 0 4px;
+  user-select: none;
+}
 .tasks-list {
   padding: 24px;
 }
