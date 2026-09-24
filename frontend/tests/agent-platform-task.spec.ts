@@ -577,6 +577,11 @@ async function openForm(page: Page, selected = false) {
         }),
       );
     }
+    if (path === '/api/agent-platform/comparisons')
+      return reply(route, {
+        baseline: { run_id: 'ab-a', status: 'pending' },
+        candidate: { run_id: 'ab-b', status: 'pending' },
+      });
     if (path === '/api/run-comparisons')
       return reply(route, { baseline: { run_id: 'a' }, candidate: { run_id: 'b' } });
     if (path === '/api/evaluation-tasks/a') return reply(route, {});
@@ -676,6 +681,48 @@ test('form submits workflow target and selected source cases with isolated token
       storage: JSON.stringify({ ...localStorage, ...sessionStorage }),
     })),
   ).toEqual({ updates: 1, storage: '{}' });
+});
+
+test('platform A/B submits both versions to the comparison endpoint', async ({ page }) => {
+  const requests = await openForm(page);
+  await selectFormTarget(page);
+  await page.getByRole('button', { name: 'A/B 实验', exact: true }).click();
+  const candidate = page.getByLabel('平台候选版本', { exact: true });
+  await expect(candidate).toBeEnabled();
+  await candidate.selectOption('v2');
+  await page.getByRole('button', { name: '创建 A/B 实验', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => (window as any).created.length)).toBe(1);
+  const submission = requests.find((r) => r.path === '/api/agent-platform/comparisons')!;
+  expect(submission.body).toEqual({
+    target: {
+      team_id: 'team',
+      agent_id: 'workflow',
+      type_group: 'base/workflow',
+      baseline_version: 'v1',
+      candidate_version: 'v2',
+      arrange_type: 'workflow',
+    },
+    dataset_id: 'dataset',
+    dataset_version: 2,
+    evaluator_ids: ['judge'],
+    timeout_seconds: 300,
+  });
+  expect(submission.headers['x-agent-platform-token']).toBe('form-secret');
+  expect(requests.some((r) => r.path === '/api/run-comparisons')).toBe(false);
+});
+
+test('platform A/B requires a different candidate version before creating', async ({ page }) => {
+  await openForm(page);
+  await selectFormTarget(page);
+  await page.getByRole('button', { name: 'A/B 实验', exact: true }).click();
+  const create = page.getByRole('button', { name: '创建 A/B 实验', exact: true });
+  await expect(create).toBeDisabled();
+  const candidate = page.getByLabel('平台候选版本', { exact: true });
+  await expect(candidate).toBeEnabled();
+  await candidate.selectOption('v1');
+  await expect(create).toBeDisabled();
+  await candidate.selectOption('v2');
+  await expect(create).toBeEnabled();
 });
 
 test('personal space submits without a team_id field', async ({ page }) => {
@@ -800,7 +847,7 @@ test('A/B keeps legacy endpoint and association, returning to single requires fr
   page,
 }) => {
   const requests = await openForm(page);
-  await selectFormTarget(page);
+  // 不预选平台目标：内置 Demo 的 A/B 走 legacy 端点；预选平台目标会切换到平台 A/B 分支。
   await page.getByRole('button', { name: 'A/B 实验', exact: true }).click();
   await expect(page.getByRole('button', { name: '创建 A/B 实验', exact: true })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Skill 静态分析', exact: true })).toBeEnabled();

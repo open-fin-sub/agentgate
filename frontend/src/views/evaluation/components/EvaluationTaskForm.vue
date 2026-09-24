@@ -42,6 +42,25 @@ const platformTeamId = computed(() => (auth.loginMode === 'bank' ? auth.teamId :
 function receivePlatformSelection(selection: AgentTargetSelection | null) {
   platformSelection.value = selection;
 }
+const platformCandidateVersion = ref('');
+const platformCandidateVersions = ref<readonly { agentVersion: string; status?: string }[]>([]);
+watch(platformSelection, async (selection) => {
+  platformCandidateVersion.value = '';
+  platformCandidateVersions.value = [];
+  if (!selection) return;
+  try {
+    const input = { token: platformToken.value, agentId: selection.agentId };
+    platformCandidateVersions.value =
+      selection.typeGroup === 'abcclaw' && selection.branchId
+        ? await platformDirectory.value.getBranchVersions({
+            ...input,
+            branchId: selection.branchId,
+          })
+        : await platformDirectory.value.getAgentVersions(input);
+  } catch {
+    platformCandidateVersions.value = [];
+  }
+});
 const gradingMode = ref<'overall' | 'per_turn'>('overall');
 const staticDialog = ref(false),
   staticLoading = ref(false),
@@ -371,11 +390,20 @@ async function submit() {
     legacyLoading.value
   )
     return;
-  const platform =
-    taskKind.value === 'single' ? platformPicker.value?.readSubmissionSelection() : null;
+  const platform = platformPicker.value?.readSubmissionSelection() ?? null;
   if (taskKind.value === 'single' && !platform) {
     formError.value = '请完整选择被测智能体及版本。';
     return;
+  }
+  if (taskKind.value === 'ab' && platform) {
+    if (!platformCandidateVersion.value) {
+      formError.value = '请为 A/B 实验选择候选版本。';
+      return;
+    }
+    if (platformCandidateVersion.value === platform.target.agentVersion) {
+      formError.value = 'A/B 实验需要选择两个不同版本。';
+      return;
+    }
   }
   formError.value = '';
   if (gradingMode.value === 'per_turn') {
@@ -387,17 +415,18 @@ async function submit() {
     formError.value = '该 Git 分支尚未登记可运行版本，请选择已登记分支，或先部署并登记所填分支。';
     return;
   }
-  if (taskKind.value === 'ab' && selectedAgent.value !== 'demo' && !bankTarget.value) {
+  if (taskKind.value === 'ab' && !platform && selectedAgent.value !== 'demo' && !bankTarget.value) {
     formError.value = '被测智能体不可用，请重新加载。';
     return;
   }
-  if (bankTarget.value && taskKind.value === 'ab') {
+  if (bankTarget.value && taskKind.value === 'ab' && !platform) {
     formError.value =
       '当前真实智能体目录只登记一个版本，且 A/B 接口仅支持内置双版本智能体。请登记两侧真实快照并扩展后端后再运行；不会代用 Demo。';
     return;
   }
   if (
     taskKind.value === 'ab' &&
+    !platform &&
     (!candidateVersion.value || candidateVersion.value === selectedVersion.value)
   ) {
     formError.value = 'A/B 实验需要选择两个不同版本。';
@@ -513,6 +542,55 @@ async function submit() {
         { confirmButtonText: '继续评测', cancelButtonText: '返回修改' },
       );
     creating = true;
+    if (platform && taskKind.value === 'ab') {
+      const target = platform.target;
+      const created = await httpRequest<{
+        baseline: { run_id: string };
+        candidate: { run_id: string };
+      }>('/agent-platform/comparisons', {
+        method: 'POST',
+        headers: { 'X-Agent-Platform-Token': platform.token },
+        data: {
+          target: {
+            ...(target.teamId ? { team_id: target.teamId } : {}),
+            agent_id: target.agentId,
+            type_group: target.typeGroup,
+            baseline_version: target.agentVersion,
+            candidate_version: platformCandidateVersion.value,
+            ...(target.typeGroup === 'abcclaw'
+              ? { branch_id: target.branchId }
+              : {
+                  arrange_type: target.platformArrangeType ?? target.platformAgentType,
+                }),
+          },
+          dataset_id: snapshot.datasetId,
+          dataset_version: snapshot.datasetVersion,
+          ...(caseIds ? { case_ids: caseIds } : {}),
+          evaluator_ids: snapshot.evaluatorIds,
+          timeout_seconds: snapshot.timeout,
+        },
+      });
+      const link = {
+        id: created.baseline.run_id,
+        kind: 'ab' as const,
+        runIds: [created.baseline.run_id, created.candidate.run_id],
+        staticReports: [] as { version: string; descriptorHash?: string; reportId?: string }[],
+      };
+      let refreshed = true;
+      try {
+        await refreshTaskLinks();
+      } catch {
+        refreshed = false;
+      }
+      window.dispatchEvent(new Event('task-links-updated'));
+      emit('created', link);
+      if (refreshed) ElMessage.success('A/B 实验已提交');
+      else
+        ElMessage.warning(
+          `实验已创建（${link.id}），但列表刷新失败，请刷新任务列表；请勿重复提交。`,
+        );
+      return;
+    }
     if (platform) {
       const target = platform.target;
       const created = await httpRequest<unknown>('/agent-platform/evaluations', {
@@ -622,7 +700,7 @@ function platformTaskLink(value: unknown, repetitions: number): TaskLink {
 }
 
 watch(taskKind, (kind) => {
-  platformSelection.value = null;
+  // 平台选择器在单任务与 A/B 间共享，切换模式保留已选目标。
   formError.value = '';
   cancelAnalysis();
   if (kind !== 'ab') {
@@ -697,7 +775,6 @@ onMounted(() => void openCreate(props.source));
         <div><h3>评测对象</h3></div>
       </div>
       <AgentTargetPicker
-        v-if="taskKind === 'single'"
         ref="platformPicker"
         class="full"
         :directory="platformDirectory"
@@ -706,7 +783,30 @@ onMounted(() => void openCreate(props.source));
         :disabled="submitting || formLoading"
         @selection-change="receivePlatformSelection"
       />
-      <p v-if="taskKind === 'single'" class="muted full">
+      <div v-if="taskKind === 'ab'" class="full platform-ab-fields">
+        <label class="field"
+          >实验 B · 候选版本（平台目标）<select
+            v-model="platformCandidateVersion"
+            class="input"
+            aria-label="平台候选版本"
+            :disabled="!platformSelection || submitting || formLoading"
+          >
+            <option value="">请选择候选版本</option>
+            <option
+              v-for="v in platformCandidateVersions"
+              :key="v.agentVersion"
+              :value="v.agentVersion"
+            >
+              {{ v.agentVersion }}{{ v.status ? ' · ' + v.status : '' }}
+            </option>
+          </select></label
+        >
+        <p class="muted">
+          平台目标 A/B：上方选择基线智能体与版本，此处选择候选版本；也可使用下方内置 Demo
+          进行 A/B 实验。
+        </p>
+      </div>
+      <p class="muted full">
         平台目录暂未提供图谱与静态分析所需信息，当前无法展示智能体图谱或进行静态分析。
       </p>
       <p v-if="legacyLoading" class="full" role="status">正在加载 A/B 智能体目录…</p>
@@ -1022,11 +1122,13 @@ onMounted(() => void openCreate(props.source));
             submitting ||
             legacyLoading ||
             (taskKind === 'single' && !platformSelection) ||
+            (taskKind === 'ab' && !!platformSelection && !platformCandidateVersion) ||
+            (taskKind === 'ab' && !!platformSelection && platformCandidateVersion === platformSelection?.agentVersion) ||
             formLoading ||
             datasetLoading ||
             staticLoading ||
             branchMismatch ||
-            (taskKind === 'ab' && !!bankTarget)
+            (taskKind === 'ab' && !platformSelection && !!bankTarget)
           "
           @click="submit"
         >
