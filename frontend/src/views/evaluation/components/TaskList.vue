@@ -103,7 +103,7 @@ function exportTasks(ids?: string[]) {
           r.created_at,
         ]),
     ],
-    '评测任务.csv',
+    '测评任务.csv',
   );
 }
 async function details() {
@@ -156,7 +156,7 @@ onUnmounted(() => {
 });
 </script>
 <template>
-  <div class="page-head"><h1 class="page-title">评测任务</h1></div>
+  <div class="page-head"><h1 class="page-title">测评任务</h1></div>
   <section class="card tasks-list">
     <nav class="tabs">
       <button
@@ -200,7 +200,7 @@ onUnmounted(() => {
         <option value="stability">稳定性测试</option></select
       ><button class="secondary" :disabled="!checked.length" @click="exportTasks(checked)">
         批量导出{{ checked.length ? '（' + checked.length + '）' : '' }}</button
-      ><button class="primary" @click="emit('create')">新建评测任务</button>
+      ><button class="primary" @click="emit('create')">新建测评任务</button>
     </div>
     <p v-if="error" class="notice error" role="alert">{{ error }}</p>
     <div class="table-wrap">

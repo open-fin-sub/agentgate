@@ -196,7 +196,7 @@ async function confirmTarget() {
     });
   } catch {
     if (ticket === contextSequence)
-      runsError.value = '历史评测记录读取失败，不能据此判断没有会话。';
+      runsError.value = '历史测评记录读取失败，不能据此判断没有会话。';
   } finally {
     if (ticket === contextSequence) runsLoading.value = false;
   }
@@ -224,7 +224,7 @@ async function loadTrace() {
 function autoDescription() {
   if (descriptor.value)
     description.value =
-      `用于评测${modeNames[mode.value]}智能体「${descriptor.value.display_name}」的 ${descriptor.value.ref.external_version_id} 版本，核查回答质量、执行过程与工具调用。`.slice(
+      `用于测评${modeNames[mode.value]}智能体「${descriptor.value.display_name}」的 ${descriptor.value.ref.external_version_id} 版本，核查回答质量、执行过程与工具调用。`.slice(
         0,
         512,
       );
@@ -404,20 +404,20 @@ function close() {
           >
           <template v-else>
             <p class="note">
-              从最近 200 条评测中按来源、应用 ID
-              与版本匹配。这里是已有评测会话，不等同于客户平台全部在线会话；复制到新版的历史记录也不代表新版已重跑。历史运行使用当时的定义快照，同一版本名不代表与当前定义摘要相同。
+              从最近 200 条测评中按来源、应用 ID
+              与版本匹配。这里是已有测评会话，不等同于客户平台全部在线会话；复制到新版的历史记录也不代表新版已重跑。历史运行使用当时的定义快照，同一版本名不代表与当前定义摘要相同。
             </p>
             <p v-if="activeRun" class="fingerprint">
               历史目标摘要：{{ activeRun.manifest.target.descriptor_sha256 }}
             </p>
-            <p v-if="runsLoading" role="status">正在读取历史评测…</p>
+            <p v-if="runsLoading" role="status">正在读取历史测评…</p>
             <p v-else-if="runsError" role="alert">{{ runsError }}</p>
-            <p v-else-if="!runs.length">暂无匹配的历史评测会话。</p>
+            <p v-else-if="!runs.length">暂无匹配的历史测评会话。</p>
             <template v-else
               ><div class="session-selects">
                 <label
-                  >来源评测<select v-model="runId" aria-label="来源评测">
-                    <option value="">请选择评测</option>
+                  >来源测评<select v-model="runId" aria-label="来源测评">
+                    <option value="">请选择测评</option>
                     <option v-for="r in runs" :key="r.id" :value="r.id">
                       {{ r.id.slice(0, 8) }} · {{ r.status }} · {{ r.created_at }}
                     </option>
@@ -481,7 +481,7 @@ function close() {
         v-model="description"
         maxlength="512"
         rows="3"
-        placeholder="请简要说明评测内容与业务场景"
+        placeholder="请简要说明测评内容与业务场景"
       />
       <div class="counter">{{ description.length }} / 512 · 自动填写使用元数据，不调用模型</div>
       <label class="tags-label"

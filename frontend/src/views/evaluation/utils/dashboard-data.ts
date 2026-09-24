@@ -26,12 +26,12 @@ export function taskTitle(run: EvaluationRun, kind?: string) {
       : kind === 'stability'
         ? '稳定性测试'
         : kinds.has('hybrid') || kinds.size > 1
-          ? '综合评测'
+          ? '综合测评'
           : kinds.has('llm_judge')
-            ? 'LLM 评测'
+            ? 'LLM 测评'
             : kinds.has('rule')
-              ? '规则评测'
-              : '评测';
+              ? '规则测评'
+              : '测评';
   return `${app} · ${mode} · ${run.id.slice(0, 8)}`;
 }
 export function periodRuns(runs: EvaluationRun[], days: number, type: string, now = new Date()) {

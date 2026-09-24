@@ -32,7 +32,7 @@ async function writeback() {
   if (!sample.value || writing.value) return;
   try {
     await ElMessageBox.confirm(
-      '将本次样本快照写回原评测集草稿？同 ID 草稿样本将被替换，已发布版本和历史结果不变。',
+      '将本次样本快照写回原测评集草稿？同 ID 草稿样本将被替换，已发布版本和历史结果不变。',
       '回写失败样本',
       { confirmButtonText: '确认回写', cancelButtonText: '取消' },
     );
@@ -217,7 +217,7 @@ function exportRows() {
         traceSeconds(traces.value[c.id]),
       ]),
     ],
-    `评测结果-${props.id}.csv`,
+    `测评结果-${props.id}.csv`,
   );
 }
 onMounted(load);
@@ -234,7 +234,7 @@ watch(sampleId, () => {
 <template>
   <div class="task-results">
     <div class="breadcrumbs">
-      <button class="link" @click="emit('navigate', 'tasks')">评测任务</button><span>/</span
+      <button class="link" @click="emit('navigate', 'tasks')">测评任务</button><span>/</span
       ><button class="link" @click="back">任务详情</button
       ><template v-if="sampleId"><span>/</span><span>样本详情</span></template>
     </div>
@@ -385,7 +385,7 @@ watch(sampleId, () => {
                 {{ manifest.target.ref.external_version_id }}
               </p>
             </div>
-            <h3>评测数据集</h3>
+            <h3>测评数据集</h3>
             <div class="config-block">
               <a class="link" :href="'#datasets/' + manifest.dataset.dataset_id">{{
                 manifest.dataset.dataset_name
@@ -430,7 +430,7 @@ watch(sampleId, () => {
       <template v-else-if="sample">
         <header class="sample-head">
           <div>
-            <h1>样本评测详情</h1>
+            <h1>样本测评详情</h1>
             <p>{{ sample.name }} · {{ sample.turns.length }} 轮对话</p>
           </div>
           <span class="badge info">{{ statusLabel(summary(sample.id).outcome) }}</span
@@ -535,7 +535,7 @@ watch(sampleId, () => {
             </div>
           </section>
           <aside class="evaluation-panel">
-            <h2>评测结果</h2>
+            <h2>测评结果</h2>
             <section class="score-box">
               <span>综合得分</span
               ><strong>{{ score(summary(sample.id).score) }}<small>/100</small></strong

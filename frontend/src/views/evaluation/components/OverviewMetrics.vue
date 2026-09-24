@@ -80,7 +80,7 @@ onUnmounted(() => sequence++);
     <p v-if="error" role="alert">{{ error }}</p>
     <div class="overview-metrics">
       <article class="card">
-        <div class="metric-label">评测任务总数</div>
+        <div class="metric-label">测评任务总数</div>
         <div class="metric-value">{{ data?.total_runs ?? '—' }}</div>
         <small>所选区间内创建的任务</small>
       </article>
@@ -90,7 +90,7 @@ onUnmounted(() => sequence++);
         <small>{{ data?.scored_runs ?? '—' }} 个已完成且有有效评分的任务</small>
       </article>
       <article class="card">
-        <div class="metric-label">评测完成样本数</div>
+        <div class="metric-label">测评完成样本数</div>
         <div class="metric-value">{{ data?.completed_samples ?? '—' }}</div>
         <small>已完成任务的执行用例数，重跑单独计数</small>
       </article>

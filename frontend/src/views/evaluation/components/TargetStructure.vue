@@ -37,7 +37,7 @@ watch(
       );
       if (current === ticket) pinned.value = result;
     } catch {
-      if (current === ticket) error.value = '未能读取本次任务的评测对象快照。';
+      if (current === ticket) error.value = '未能读取本次任务的测评对象快照。';
     } finally {
       if (current === ticket) loading.value = false;
     }
@@ -122,8 +122,8 @@ watch(
 );
 </script>
 <template>
-  <section class="target-structure" aria-label="评测对象来源与图谱">
-    <p v-if="loading" role="status">正在读取评测对象快照…</p>
+  <section class="target-structure" aria-label="测评对象来源与图谱">
+    <p v-if="loading" role="status">正在读取测评对象快照…</p>
     <p v-if="error" role="alert">{{ error }}</p>
     <template v-if="target">
       <div v-if="!hideSource" class="source-grid">

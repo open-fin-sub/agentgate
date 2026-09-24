@@ -454,12 +454,12 @@ async function submit() {
       !Number.isFinite(new Date(scheduledAt.value).getTime()) ||
       new Date(scheduledAt.value).getTime() <= Date.now())
   ) {
-    formError.value = '预约时间必须晚于当前时间，且只支持单次普通评测。';
+    formError.value = '预约时间必须晚于当前时间，且只支持单次普通测评。';
     return;
   }
   const dataset = datasets.value.find((d) => d.id === selectedDataset.value);
   if (!dataset || selectedDatasetVersion.value === null) {
-    formError.value = '请选择已发布的评测集及版本。';
+    formError.value = '请选择已发布的测评集及版本。';
     return;
   }
   if (taskKind.value === 'ab' && !selectedVersion.value) {
@@ -520,7 +520,7 @@ async function submit() {
       );
       if (incompatible.length)
         invalid(
-          `所选评测集有 ${incompatible.length} 条用例包含业务初始状态或非纯文本输入，平台目标仅支持纯文本（txt）用例；请选择如“平台模拟验收”类评测集。`,
+          `所选测评集有 ${incompatible.length} 条用例包含业务初始状态或非纯文本输入，平台目标仅支持纯文本（txt）用例；请选择如“平台模拟验收”类测评集。`,
         );
     }
     const chosen = snapshot.chosen;
@@ -539,7 +539,7 @@ async function submit() {
       await ElMessageBox.confirm(
         `${uncovered.length} 条用例没有匹配检查，将标为不适用。是否继续？`,
         '检查覆盖范围',
-        { confirmButtonText: '继续评测', cancelButtonText: '返回修改' },
+        { confirmButtonText: '继续测评', cancelButtonText: '返回修改' },
       );
     creating = true;
     if (platform && taskKind.value === 'ab') {
@@ -628,7 +628,7 @@ async function submit() {
       }
       window.dispatchEvent(new Event('task-links-updated'));
       emit('created', link);
-      if (refreshed) ElMessage.success('评测任务已提交');
+      if (refreshed) ElMessage.success('测评任务已提交');
       else
         ElMessage.warning(
           `任务已创建（${link.id}），但列表刷新失败，请刷新任务列表；请勿重复提交。`,
@@ -663,7 +663,7 @@ async function submit() {
     ElMessage.success(
       link.staticReports.some((x) => x.error)
         ? '运行已提交，静态分析未完成，请查看任务详情'
-        : '评测任务已提交',
+        : '测评任务已提交',
     );
   } catch (e) {
     if (e !== 'cancel' && e !== 'close') {
@@ -672,7 +672,7 @@ async function submit() {
           ? String(e)
           : validationError ||
             (!creating
-              ? '读取评测配置失败，请重试。'
+              ? '读取测评配置失败，请重试。'
               : e instanceof ApiError && e.status >= 400 && e.status < 500
                 ? '任务提交被拒绝，请检查访问权限、目标及执行设置后重试。'
                 : '暂时无法确认任务是否创建成功，请先检查任务列表，勿重复提交。');
@@ -736,7 +736,7 @@ onMounted(() => void openCreate(props.source));
     @close="emit('close')"
     :show-close="!submitting"
     :close-on-press-escape="!submitting"
-    title="新建评测任务"
+    title="新建测评任务"
     width="min(1080px, 96vw)"
     class="task-create-dialog"
     top="3vh"
@@ -772,7 +772,7 @@ onMounted(() => void openCreate(props.source));
     >
       <div class="form-section-heading full">
         <span>02</span>
-        <div><h3>评测对象</h3></div>
+        <div><h3>测评对象</h3></div>
       </div>
       <p v-if="taskKind === 'ab'" class="full platform-source-badge">
         数据源：{{ auth.modeLabel }}
@@ -907,19 +907,19 @@ onMounted(() => void openCreate(props.source));
       </details>
       <div class="form-section-heading full">
         <span>03</span>
-        <div><h3>评测数据</h3></div>
+        <div><h3>测评数据</h3></div>
       </div>
       <div class="dataset-selection full">
         <label class="field"
-          >评测集<select class="input" v-model="selectedDataset" aria-label="任务评测集">
+          >测评集<select class="input" v-model="selectedDataset" aria-label="任务测评集">
             <option v-for="d in datasets" :key="d.id" :value="d.id">{{ d.name }}</option>
           </select></label
         >
         <label class="field"
-          >评测集版本<select
+          >测评集版本<select
             class="input"
             v-model="selectedDatasetVersion"
-            aria-label="任务评测集版本"
+            aria-label="任务测评集版本"
           >
             <option v-for="v in datasetVersions" :key="v.version" :value="v.version">
               v{{ v.version }} · {{ v.cases.length }} 条样本
@@ -1101,7 +1101,7 @@ onMounted(() => void openCreate(props.source));
         </p>
         <p v-else-if="formLoading || datasetLoading" role="status">正在加载任务配置…</p>
         <p v-else-if="branchMismatch" role="status">
-          Git 分支未匹配，暂不能开始评测，请修正分支地址。
+          Git 分支未匹配，暂不能开始测评，请修正分支地址。
         </p>
       </div>
       <div class="submission-actions">
@@ -1135,7 +1135,7 @@ onMounted(() => void openCreate(props.source));
           "
           @click="submit"
         >
-          {{ submitting ? '正在处理…' : taskKind === 'ab' ? '创建 A/B 实验' : '开始评测' }}
+          {{ submitting ? '正在处理…' : taskKind === 'ab' ? '创建 A/B 实验' : '开始测评' }}
         </button>
       </div>
     </template>

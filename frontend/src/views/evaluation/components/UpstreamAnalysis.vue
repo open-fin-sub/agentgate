@@ -305,9 +305,9 @@ onUnmounted(() => ticket++);
     <div>
       <div v-if="mode === 'optimizer'" class="analysis-return">
         <a v-if="initialId" class="link" :href="'#tasks/' + encodeURIComponent(initialId)"
-          >← 返回来源评测任务</a
+          >← 返回来源测评任务</a
         ><a v-else-if="selected" class="link" :href="'#tasks/' + encodeURIComponent(selected)"
-          >← 查看所选评测任务</a
+          >← 查看所选测评任务</a
         ><a class="link" href="#tasks">返回任务列表</a>
       </div>
       <h1 class="page-title">{{ mode === 'analysis' ? 'Skill 静态分析' : '调优中心' }}</h1>
@@ -322,13 +322,13 @@ onUnmounted(() => ticket++);
   </div>
   <section class="card">
     <h3 v-if="mode === 'analysis'">
-      {{ lockTarget ? '本次任务评测对象' : '第一步：选择要检查的智能体版本' }}
+      {{ lockTarget ? '本次任务测评对象' : '第一步：选择要检查的智能体版本' }}
     </h3>
     <div :class="{ 'selection-row': mode === 'analysis' }">
-      <div v-if="lockTarget" class="field task-target" aria-label="本次任务评测对象">
+      <div v-if="lockTarget" class="field task-target" aria-label="本次任务测评对象">
         <strong>{{ targetName }}</strong
         ><span>智能体版本：{{ initialId }}</span
-        ><small class="muted">来自本次评测任务的运行配置，不可更换。</small>
+        ><small class="muted">来自本次测评任务的运行配置，不可更换。</small>
       </div>
       <label v-else class="field"
         >{{ mode === 'analysis' ? '智能体版本' : '已完成任务'
@@ -350,8 +350,8 @@ onUnmounted(() => ticket++);
         mode === 'optimizer'
           ? '选择任务后自动展示分析结果。'
           : !loadingContext && hash && !skills.length
-            ? '该评测对象未声明 Skill，静态分析不适用。'
-            : '模型比较 Skill 职责关系，不运行评测用例。'
+            ? '该测评对象未声明 Skill，静态分析不适用。'
+            : '模型比较 Skill 职责关系，不运行测评用例。'
       }}
     </p>
     <button
@@ -365,7 +365,7 @@ onUnmounted(() => ticket++);
     <p v-if="busy" class="muted" role="status">
       {{
         mode === 'optimizer' && !evidenceReport
-          ? '正在读取评测报告…'
+          ? '正在读取测评报告…'
           : analyzing
             ? '正在调用服务端模型，复杂任务可能需要 1–3 分钟，请勿重复提交。'
             : '正在读取已保存的报告…'

@@ -536,8 +536,8 @@ async function openForm(page: Page, selected = false) {
     });
     if (path === '/api/datasets')
       return reply(route, [
-        { id: 'dataset', name: '测试评测集', version: 2 },
-        { id: 'other', name: '另一评测集', version: 1 },
+        { id: 'dataset', name: '测试测评集', version: 2 },
+        { id: 'other', name: '另一测评集', version: 1 },
       ]);
     if (path === '/api/evaluators')
       return reply(route, [
@@ -606,7 +606,7 @@ async function openForm(page: Page, selected = false) {
     );
   });
   await page.goto(url.replace('__directory', '__form') + (selected ? '?selected' : ''));
-  await expect(page.getByLabel('任务评测集版本', { exact: true })).toHaveValue('2');
+  await expect(page.getByLabel('任务测评集版本', { exact: true })).toHaveValue('2');
   await expect(page.getByRole('combobox', { name: '选择智能体', exact: true })).toBeEnabled();
   return requests;
 }
@@ -623,18 +623,18 @@ async function selectFormTarget(page: Page, claw = false) {
   if (claw) await choose(page, '分支地址', '分支 · branch/raw');
   await choose(page, '智能体版本', claw ? 'v2' : 'v1');
 }
-const start = (page: Page) => page.getByRole('button', { name: '开始评测', exact: true });
+const start = (page: Page) => page.getByRole('button', { name: '开始测评', exact: true });
 
 test('form preserves dataset/execution choices through target changes and logout, without legacy catalogs', async ({
   page,
 }) => {
   const requests = await openForm(page);
-  await page.getByLabel('任务评测集', { exact: true }).selectOption('other');
+  await page.getByLabel('任务测评集', { exact: true }).selectOption('other');
   await page.getByLabel('并发样本数', { exact: true }).fill('7');
   await page.getByLabel('执行超时（秒）', { exact: true }).fill('999');
   await selectFormTarget(page);
   await choose(page, '智能体版本', 'v2');
-  await expect(page.getByLabel('任务评测集', { exact: true })).toHaveValue('other');
+  await expect(page.getByLabel('任务测评集', { exact: true })).toHaveValue('other');
   await expect(page.getByLabel('并发样本数', { exact: true })).toHaveValue('7');
   await expect(page.getByLabel('执行超时（秒）', { exact: true })).toHaveValue('999');
   await expect(page.getByRole('button', { name: 'Skill 静态分析', exact: true })).toBeDisabled();
@@ -890,7 +890,7 @@ test('late A/B catalogs cannot change the single task dataset or execution setti
   await expect(page.getByRole('combobox', { name: '选择智能体', exact: true })).toBeEnabled();
   await selectFormTarget(page);
   await expect(page.getByLabel('并发样本数', { exact: true })).toHaveValue('9');
-  await expect(page.getByLabel('任务评测集', { exact: true })).toHaveValue('dataset');
+  await expect(page.getByLabel('任务测评集', { exact: true })).toHaveValue('dataset');
 });
 
 test('scheduled execution sends UTC and rejects invalid numeric limits before creating', async ({
@@ -934,7 +934,7 @@ test('cancelling uncovered-case confirmation releases the lock without a creatio
     ]),
   );
   await page.reload();
-  await expect(page.getByLabel('任务评测集版本', { exact: true })).toHaveValue('2');
+  await expect(page.getByLabel('任务测评集版本', { exact: true })).toHaveValue('2');
   await page.route('**/api/datasets/dataset/versions/2', (route) =>
     reply(route, {
       cases: [...sampleCases, { id: 'uncovered', turns: [{ input: { txt: '未覆盖' }, expectations: [] }] }],

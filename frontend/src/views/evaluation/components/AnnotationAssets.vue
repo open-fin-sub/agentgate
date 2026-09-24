@@ -91,7 +91,7 @@ function deleteTemplate(t: AnnotationTask) {
     return;
   }
   if (
-    !window.confirm(`删除“${t.name}”？模板将移入已删除列表，可恢复。已有标注和原始评测会话会保留。`)
+    !window.confirm(`删除“${t.name}”？模板将移入已删除列表，可恢复。已有标注和原始测评会话会保留。`)
   )
     return;
   t.deletedAt = new Date().toISOString();
@@ -339,7 +339,7 @@ async function openTask(task: AnnotationTask) {
       }),
     );
   } catch {
-    if (ticket === runSequence) traceError.value = '读取关联评测失败，请重试。';
+    if (ticket === runSequence) traceError.value = '读取关联测评失败，请重试。';
   } finally {
     if (ticket === runSequence) runsLoading.value = false;
   }
@@ -498,7 +498,7 @@ onMounted(async () => {
           {{
             templates
               ? '独立配置消息/工具评分维度和标签，供标注任务引用。'
-              : '关联应用与已有评测会话，依据标注模板进行人工评审。'
+              : '关联应用与已有测评会话，依据标注模板进行人工评审。'
           }}
         </p>
       </div>

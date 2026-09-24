@@ -224,7 +224,7 @@ const templateLabels2: Record<string, string> = {
         {{
           mode === 'history'
             ? '查看最近 200 个已完成任务的结果差异，不会重新运行任务。'
-            : '使用相同评测集与评估器运行两个智能体版本'
+            : '使用相同测评集与评估器运行两个智能体版本'
         }}
       </p>
     </div>
@@ -421,7 +421,7 @@ const templateLabels2: Record<string, string> = {
       class="card section-gap comparison-details"
       @toggle="showDiff = ($event.target as HTMLDetailsElement).open"
     >
-      <summary>查看方案与评测条件差异（只读）</summary>
+      <summary>查看方案与测评条件差异（只读）</summary>
       <ConfigurationDiff v-if="showDiff" :baseline="a.run.manifest" :candidate="b.run.manifest" />
     </details>
   </template>

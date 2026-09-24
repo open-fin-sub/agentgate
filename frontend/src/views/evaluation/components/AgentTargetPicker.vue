@@ -284,7 +284,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="agent-target-picker" aria-label="评测对象选择">
+  <section class="agent-target-picker" aria-label="测评对象选择">
     <div class="target-fields">
       <div v-for="field in fields" :key="field.key" class="target-field">
         <label :id="`${prefix}-${field.key}-label`" :for="`${prefix}-${field.key}`">{{
@@ -341,7 +341,7 @@ onBeforeUnmount(() => {
       {{
         selection
           ? `已选择：${selection.agentName} / ${selection.typeGroup}${selection.branchId ? ' / ' + selection.branchId : ''} / ${selection.agentVersion}`
-          : '请完成评测对象选择。'
+          : '请完成测评对象选择。'
       }}
     </p>
   </section>
