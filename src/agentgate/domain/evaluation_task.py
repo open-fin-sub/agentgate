@@ -21,6 +21,7 @@ class EvaluationTask(DomainModel):
 
     id: str = Field(default_factory=lambda: str(uuid4()))
     kind: EvaluationTaskKind
+    name: str | None = None
     created_at: datetime = Field(default_factory=utcnow)
     run_ids: tuple[str, ...]
     static_report_ids: tuple[str, ...] = ()
