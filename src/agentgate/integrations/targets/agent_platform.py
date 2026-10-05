@@ -17,6 +17,7 @@ from agentgate.integrations.targets.bank_protocol import (
     build_cloudshrimp_payload,
     parse_bank_sse,
 )
+from agentgate.integrations.targets.agent_topology import build_topology
 from agentgate.run.target_protocol import (
     CaseExecutionResult,
     CaseExecutionStatus,
@@ -212,6 +213,9 @@ def resolve_platform_target(
         "platform-mock-"
         + hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()[:24]
     )
+    topology = build_topology(
+        agent, agent.get("tools") or [], agent.get("skills") or []
+    )
     descriptor = TargetDescriptor(
         ref=TargetRef(
             source_id=source,
@@ -220,7 +224,13 @@ def resolve_platform_target(
             external_version_id=agent_version,
         ),
         display_name=agent["name"],
-        metadata={**identity, "type_group": type_group, "runtime_type": mode, "simulated": True},
+        metadata={
+            **identity,
+            "type_group": type_group,
+            "runtime_type": mode,
+            "simulated": True,
+            "topology": topology,
+        },
         input_schema={
             "type": "object",
             "required": ["txt"],

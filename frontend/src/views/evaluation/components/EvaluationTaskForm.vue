@@ -28,6 +28,7 @@ const props = defineProps<{
   };
 }>();
 const emit = defineEmits<{ close: []; created: [link: TaskLink] }>();
+const taskName = ref('');
 const taskKind = ref<'single' | 'ab'>('single'),
   candidateVersion = ref(''),
   includeStatic = ref(false);
@@ -300,7 +301,7 @@ async function loadLegacyTargets() {
       api.versions(),
       request<BankTarget[]>('/bank-targets').catch(() => {
         if (ticket === legacySequence)
-          targetError.value = '真实智能体目录暂不可用，仍可选择内置 Demo 进行 A/B 实验。';
+          targetError.value = '真实智能体目录暂不可用，仍可选择内置 Demo 进行 A/B试验。';
         return [];
       }),
     ]);
@@ -322,7 +323,7 @@ async function loadLegacyTargets() {
     legacyLoaded = true;
   } catch {
     if (ticket === legacySequence)
-      targetError.value = '被测智能体目录不可用，请切换回单任务后重试 A/B 实验。';
+      targetError.value = '被测智能体目录不可用，请切换回单任务后重试 A/B试验。';
   } finally {
     if (ticket === legacySequence) legacyLoading.value = false;
   }
@@ -390,6 +391,10 @@ async function submit() {
     legacyLoading.value
   )
     return;
+  if (!taskName.value.trim()) {
+    formError.value = '请输入任务名称。';
+    return;
+  }
   const platform = platformPicker.value?.readSubmissionSelection() ?? null;
   if (taskKind.value === 'single' && !platform) {
     formError.value = '请完整选择被测智能体及版本。';
@@ -397,11 +402,11 @@ async function submit() {
   }
   if (taskKind.value === 'ab' && platform) {
     if (!platformCandidateVersion.value) {
-      formError.value = '请为 A/B 实验选择候选版本。';
+      formError.value = '请为 A/B试验选择候选版本。';
       return;
     }
     if (platformCandidateVersion.value === platform.target.agentVersion) {
-      formError.value = 'A/B 实验需要选择两个不同版本。';
+      formError.value = 'A/B试验需要选择两个不同版本。';
       return;
     }
   }
@@ -429,7 +434,7 @@ async function submit() {
     !platform &&
     (!candidateVersion.value || candidateVersion.value === selectedVersion.value)
   ) {
-    formError.value = 'A/B 实验需要选择两个不同版本。';
+    formError.value = 'A/B试验需要选择两个不同版本。';
     return;
   }
   for (const [label, value, min, max] of [
@@ -444,7 +449,7 @@ async function submit() {
     }
   }
   if (taskKind.value === 'ab' && repetitions.value > 1) {
-    formError.value = 'A/B 实验暂不支持重复执行，请选择单任务进行稳定性测试。';
+    formError.value = 'A/B试验暂不支持重复执行，请选择单任务进行稳定性测试。';
     return;
   }
   if (
@@ -472,6 +477,7 @@ async function submit() {
     return;
   }
   const snapshot = {
+    name: taskName.value.trim(),
     kind: taskKind.value,
     datasetId: dataset.id,
     datasetVersion: selectedDatasetVersion.value,
@@ -551,6 +557,7 @@ async function submit() {
         method: 'POST',
         headers: { 'X-Agent-Platform-Token': platform.token },
         data: {
+          name: snapshot.name,
           target: {
             ...(target.teamId ? { team_id: target.teamId } : {}),
             agent_id: target.agentId,
@@ -584,7 +591,7 @@ async function submit() {
       }
       window.dispatchEvent(new Event('task-links-updated'));
       emit('created', link);
-      if (refreshed) ElMessage.success('A/B 实验已提交');
+      if (refreshed) ElMessage.success('A/B试验已提交');
       else
         ElMessage.warning(
           `实验已创建（${link.id}），但列表刷新失败，请刷新任务列表；请勿重复提交。`,
@@ -597,6 +604,7 @@ async function submit() {
         method: 'POST',
         headers: { 'X-Agent-Platform-Token': platform.token },
         data: {
+          name: snapshot.name,
           target: {
             ...(target.teamId ? { team_id: target.teamId } : {}),
             agent_id: target.agentId,
@@ -648,6 +656,7 @@ async function submit() {
     );
     const link: TaskLink = {
       id: pair.baseline.run_id,
+      name: snapshot.name,
       kind: 'ab',
       runIds: [pair.baseline.run_id, pair.candidate.run_id],
       staticReports: snapshot.staticReports,
@@ -737,7 +746,7 @@ onMounted(() => void openCreate(props.source));
     :show-close="!submitting"
     :close-on-press-escape="!submitting"
     title="新建测评任务"
-    width="min(1080px, 96vw)"
+    width="min(800px,96vw)"
     class="task-create-dialog"
     top="3vh"
     :close-on-click-modal="false"
@@ -747,6 +756,19 @@ onMounted(() => void openCreate(props.source));
 
     <div class="form-section-heading full">
       <span>01</span>
+      <div><h3>任务名称</h3></div>
+    </div>
+    <el-input
+      v-model="taskName"
+      aria-label="任务名称"
+      placeholder="请输入任务名称"
+      maxlength="128"
+      show-word-limit
+      :disabled="submitting"
+    />
+
+    <div class="form-section-heading full">
+      <span>02</span>
       <div><h3>任务类型</h3></div>
     </div>
     <div class="task-kind-choice" aria-label="任务类型">
@@ -763,7 +785,7 @@ onMounted(() => void openCreate(props.source));
         :disabled="submitting || formLoading"
         @click="taskKind = 'ab'"
       >
-        <b>A/B 实验</b>
+        <b>A/B试验</b>
       </button>
     </div>
     <fieldset
@@ -771,7 +793,7 @@ onMounted(() => void openCreate(props.source));
       class="form-grid task-create-grid"
     >
       <div class="form-section-heading full">
-        <span>02</span>
+        <span>03</span>
         <div><h3>测评对象</h3></div>
       </div>
       <p v-if="taskKind === 'ab'" class="full platform-source-badge">
@@ -805,12 +827,11 @@ onMounted(() => void openCreate(props.source));
             </option>
           </select></label
         >
-        <p class="muted platform-candidate-hint">
-          与基线版本同一目录加载；必须选择不同的版本。
-        </p>
+        <p class="muted platform-candidate-hint">与基线版本同一目录加载；必须选择不同的版本。</p>
       </div>
       <p class="muted full">
-        平台目录暂未提供图谱与静态分析所需信息，当前无法展示智能体图谱或进行静态分析。
+        平台目录的图谱数据来源于智能体描述符；行内部署如未提供拓扑信息，此处仅展示已注册的
+        Skill 与 Tool 列表。
       </p>
       <p v-if="legacyLoading" class="full" role="status">正在加载 A/B 智能体目录…</p>
       <div
@@ -906,7 +927,7 @@ onMounted(() => void openCreate(props.source));
         <TargetStructure :descriptor="targetDescriptor" hide-source />
       </details>
       <div class="form-section-heading full">
-        <span>03</span>
+        <span>04</span>
         <div><h3>测评数据</h3></div>
       </div>
       <div class="dataset-selection full">
@@ -956,7 +977,7 @@ onMounted(() => void openCreate(props.source));
         >
       </div>
       <div class="form-section-heading full">
-        <span>04</span>
+        <span>05</span>
         <div><h3>评估方式</h3></div>
       </div>
       <TaskEvaluatorPicker
@@ -999,7 +1020,7 @@ onMounted(() => void openCreate(props.source));
         </p>
       </div>
       <div class="form-section-heading full">
-        <span>05</span>
+        <span>06</span>
         <div><h3>执行设置</h3></div>
       </div>
       <div class="execution-settings full" aria-label="执行参数">
@@ -1074,11 +1095,13 @@ onMounted(() => void openCreate(props.source));
         /></label>
       </div>
 
-      <p v-if="taskKind === 'ab'" class="muted full">A/B 两侧沿用固定执行参数：并发 1，失败重试 0。</p>
+      <p v-if="taskKind === 'ab'" class="muted full">
+        A/B 两侧沿用固定执行参数：并发 1，失败重试 0。
+      </p>
     </fieldset>
     <p class="task-summary">
       本次：{{
-        taskKind === 'ab' ? 'A/B 实验 · 两个版本' : repetitions > 1 ? '稳定性测试' : '单任务'
+        taskKind === 'ab' ? 'A/B试验 · 两个版本' : repetitions > 1 ? '稳定性测试' : '单任务'
       }}
       ·
       {{
@@ -1126,7 +1149,9 @@ onMounted(() => void openCreate(props.source));
             legacyLoading ||
             (taskKind === 'single' && !platformSelection) ||
             (taskKind === 'ab' && !!platformSelection && !platformCandidateVersion) ||
-            (taskKind === 'ab' && !!platformSelection && platformCandidateVersion === platformSelection?.agentVersion) ||
+            (taskKind === 'ab' &&
+              !!platformSelection &&
+              platformCandidateVersion === platformSelection?.agentVersion) ||
             formLoading ||
             datasetLoading ||
             staticLoading ||
@@ -1135,7 +1160,7 @@ onMounted(() => void openCreate(props.source));
           "
           @click="submit"
         >
-          {{ submitting ? '正在处理…' : taskKind === 'ab' ? '创建 A/B 实验' : '开始测评' }}
+          {{ submitting ? '正在处理…' : taskKind === 'ab' ? '创建 A/B试验' : '开始测评' }}
         </button>
       </div>
     </template>
@@ -1267,7 +1292,7 @@ onMounted(() => void openCreate(props.source));
 }
 .execution-settings {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   align-items: start;
 }
@@ -1418,5 +1443,15 @@ fieldset {
   .target-choice.is-ab {
     grid-template-columns: 1fr;
   }
+}
+</style>
+<style>
+/* revision.scss 以 !important 将全部弹窗压到 min(400px,92vw)；本表单按需求取双倍宽度，
+   并放宽其 55vh 弹窗体高度上限。 */
+.el-overlay .el-dialog.task-create-dialog {
+  width: min(800px, 96vw) !important;
+}
+.el-overlay .el-dialog.task-create-dialog .el-dialog__body {
+  max-height: 68vh;
 }
 </style>
