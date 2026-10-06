@@ -178,9 +178,78 @@ const branchMismatch = computed(
     normalizedBranch(gitBranchUrl.value) !==
       normalizedBranch(bankTarget.value.git_branch_url ?? ''),
 );
-const targetDescriptor = computed(() =>
-  branchMismatch.value ? undefined : bankTarget.value?.descriptor,
-);
+const targetDescriptor = computed(() => {
+  if (branchMismatch.value) return undefined;
+  if (bankTarget.value) return bankTarget.value.descriptor;
+  if (platformSelection.value) {
+    const sel = platformSelection.value;
+    const topology = buildFrontendTopology(sel);
+    if (topology) {
+      return {
+        ref: {
+          source_id: 'platform',
+          target_type: 'agent',
+          external_target_id: sel.agentId,
+          external_version_id: sel.agentVersion,
+        },
+        display_name: sel.agentName,
+        description: null,
+        prompt: null,
+        prompt_sha256: null,
+        skills: (sel.skills ?? []).map((s) => ({
+          external_skill_id: s.id,
+          external_version_id: 'v1',
+          name: s.name ?? s.id,
+          description: s.description ?? '',
+          tools: [],
+          prompt: null,
+        })),
+        tools: (sel.tools ?? []).map((t) => ({
+          name: t?.function?.name ?? '',
+          description: t?.function?.description ?? '',
+          input_schema: {},
+        })),
+        input_schema: {},
+        output_schema: {},
+        metadata: { topology },
+        fetched_at: '',
+        content_sha256: '',
+      } as any;
+    }
+  }
+  return undefined;
+});
+
+function buildFrontendTopology(sel: NonNullable<typeof platformSelection.value>) {
+  if (!sel.tools?.length && !sel.skills?.length) return null;
+  const composition = sel.platformArrangeType ?? sel.typeGroup.split('/')[0] ?? 'base';
+  const nodes: { id: string; kind: string; label: string; description: string }[] = [
+    { id: sel.agentId, kind: 'agent', label: sel.agentName, description: `被测智能体（${composition}）` },
+  ];
+  const edges: { source: string; target: string; relation: string }[] = [];
+  for (const skill of sel.skills ?? []) {
+    const skillId = `${sel.agentId}:skill:${skill.id}`;
+    nodes.push({ id: skillId, kind: 'skill', label: skill.name ?? skill.id, description: skill.description ?? '' });
+    edges.push({ source: sel.agentId, target: skillId, relation: 'includes_skill' });
+    for (const toolName of skill.tools ?? []) {
+      const toolId = `${sel.agentId}:tool:${toolName}`;
+      if (!nodes.some((n) => n.id === toolId)) {
+        nodes.push({ id: toolId, kind: 'tool', label: toolName, description: `工具：${toolName}` });
+      }
+      edges.push({ source: skillId, target: toolId, relation: 'includes_tool' });
+    }
+  }
+  for (const tool of sel.tools ?? []) {
+    const name = tool?.function?.name ?? '';
+    if (!name) continue;
+    const toolId = `${sel.agentId}:tool:${name}`;
+    if (!nodes.some((n) => n.id === toolId)) {
+      nodes.push({ id: toolId, kind: 'tool', label: name, description: tool?.function?.description ?? '' });
+      edges.push({ source: sel.agentId, target: toolId, relation: 'includes_tool' });
+    }
+  }
+  return { composition, nodes, edges };
+}
 watch(
   bankTarget,
   (target) => {

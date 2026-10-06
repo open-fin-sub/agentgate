@@ -232,8 +232,6 @@ function autoDescription() {
 function validate() {
   error.value = '';
   if (!name.value.trim()) error.value = '请输入数据集名称。';
-  else if (!description.value.trim()) error.value = '请输入数据集描述。';
-  else if (!tags.value.length) error.value = '请至少选择或输入一个场景标签。';
   return !error.value;
 }
 async function create(withImport: boolean) {
@@ -471,7 +469,7 @@ function close() {
           /></div
       ></label>
       <div class="description-title">
-        <label for="v2-dataset-description">描述 <em>*</em></label
+        <label for="v2-dataset-description">描述</label
         ><button type="button" class="text-button" :disabled="!descriptor" @click="autoDescription">
           ✦ 按智能体信息填写
         </button>
@@ -485,7 +483,7 @@ function close() {
       />
       <div class="counter">{{ description.length }} / 512 · 自动填写使用元数据，不调用模型</div>
       <label class="tags-label"
-        >场景标签 <em>*</em
+        >场景标签
         ><el-select
           v-model="tags"
           multiple

@@ -3,6 +3,7 @@ import { defineStore } from 'pinia';
 import { request } from '../../api/evaluations';
 export interface TaskLink {
   id: string;
+  name?: string;
   kind: 'single' | 'ab' | 'stability';
   mockSelection?: { branch: string; credentialScope: string; credentialLabel: string };
   runIds: string[];

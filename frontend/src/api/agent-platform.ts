@@ -249,12 +249,16 @@ function normalizeAgent(value: unknown, status: number): PlatformAgent {
   const agentType = optionalText(row.agentType, status);
   const arrangeType = optionalText(row.arrangeType, status);
   const typeGroup = arrangeType ? group(arrangeType) : group(agentType);
+  const tools = Array.isArray(row.tools) ? row.tools : [];
+  const skills = Array.isArray(row.skills) ? row.skills : [];
   return {
     agentId: text(row.id, status),
     agentName: text(row.name, status),
     typeGroup,
     platformAgentType: agentType,
     platformArrangeType: arrangeType,
+    tools,
+    skills,
   };
 }
 function normalizeBranches(

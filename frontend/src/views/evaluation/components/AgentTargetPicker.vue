@@ -10,6 +10,8 @@ export interface PlatformAgent {
   typeGroup: AgentTypeGroup | null;
   platformAgentType: string | null;
   platformArrangeType: string | null;
+  tools?: { function?: { name?: string; description?: string } }[];
+  skills?: { id: string; name?: string; description?: string; tools?: string[] }[];
 }
 export interface PlatformBranch {
   branchId: string;
@@ -31,6 +33,8 @@ export interface AgentTargetSelection {
   branchId: string | null;
   branchName: string | null;
   agentVersion: string;
+  tools?: PlatformAgent['tools'];
+  skills?: PlatformAgent['skills'];
 }
 // Providers return complete, normalized lists; HTTP and pagination stay outside the UI.
 export interface AgentDirectory {
@@ -110,6 +114,8 @@ const selection = computed<AgentTargetSelection | null>(() => {
     branchId: selectedType.value === 'abcclaw' ? currentBranch.value!.branchId : null,
     branchName: selectedType.value === 'abcclaw' ? currentBranch.value!.branchName : null,
     agentVersion: currentVersion.value.agentVersion,
+    tools: agent.tools,
+    skills: agent.skills,
   };
 });
 watch(selection, (value) => emit('selection-change', value ? { ...value } : null), {
