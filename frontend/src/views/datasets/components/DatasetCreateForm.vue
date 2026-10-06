@@ -260,7 +260,7 @@ function close() {
           :disabled="!selection || saving"
           @click="confirmTarget"
         >
-          {{ saving ? '处理中…' : pinned ? '重新读取定义与会话' : '确认并读取定义与会话' }}
+          {{ saving ? '处理中…' : pinned ? '重新读取' : 'Agent定义与会话样例' }}
         </button>
       </div>
       <section v-if="descriptor" class="definition" aria-label="关联智能体只读信息">
