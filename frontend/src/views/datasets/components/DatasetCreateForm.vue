@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { request, type TargetDescriptor } from '../../../api/evaluations';
 import type { EvaluationRun } from '../../evaluation/types/run';
 import type { Trace } from '../../../api/client';
 import { datasetApi } from '../../../api/datasets';
 import { agentDirectory, localAgentDirectory } from '../../../api/agent-platform';
 import { useAuthStore } from '../../../stores/modules/auth';
+import AgentTargetPicker, { type AgentTargetSelection } from '../../evaluation/components/AgentTargetPicker.vue';
 
 const auth = useAuthStore();
 const platformDirectory = computed(() =>
@@ -36,14 +37,13 @@ const modeNames: Record<Mode, string> = {
   workflow: '工作流',
   cloudshrimp: '云虾',
 };
-const mode = ref<Mode>('base'),
-  targets = ref<Target[]>([]),
-  loading = ref(false),
-  loadError = ref('');
-const agentId = ref(''),
-  version = ref(''),
-  branch = ref(''),
-  pinned = ref<Target | null>(null);
+const platformPicker = ref<InstanceType<typeof AgentTargetPicker> | null>(null);
+const selection = ref<AgentTargetSelection | null>(null);
+function receiveSelection(value: AgentTargetSelection | null) {
+  selection.value = value;
+  pinned.value = null;
+}
+const pinned = ref<Target | null>(null);
 const name = ref(''),
   description = ref(''),
   tags = ref<string[]>([]),
@@ -59,31 +59,6 @@ const runId = ref(''),
   traceLoading = ref(false),
   traceError = ref('');
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
-const modeTargets = computed(() =>
-  targets.value.filter((t) => t.snapshot.invocation_config.mode === mode.value),
-);
-const agents = computed(() =>
-  Array.from(
-    new Map(modeTargets.value.map((t) => [t.descriptor.ref.external_target_id, t])).values(),
-  ),
-);
-const agentTargets = computed(() =>
-  modeTargets.value.filter((t) => t.descriptor.ref.external_target_id === agentId.value),
-);
-const branches = computed(() =>
-  Array.from(
-    new Set(agentTargets.value.map((t) => t.git_branch_url).filter((b): b is string => !!b)),
-  ),
-);
-const versionTargets = computed(() =>
-  agentTargets.value.filter(
-    (t) =>
-      mode.value !== 'cloudshrimp' || !branches.value.length || t.git_branch_url === branch.value,
-  ),
-);
-const selected = computed(() =>
-  versionTargets.value.find((t) => t.descriptor.ref.external_version_id === version.value),
-);
 const descriptor = computed(() => pinned.value?.descriptor);
 const variables = computed(() => Object.entries(descriptor.value?.input_schema?.properties ?? {}));
 const nodes = computed(
@@ -127,34 +102,6 @@ function invalidate() {
   traceLoading.value = false;
   error.value = '';
 }
-watch(
-  mode,
-  () => {
-    agentId.value = '';
-    branch.value = '';
-    version.value = '';
-    invalidate();
-  },
-  { flush: 'sync' },
-);
-watch(
-  agentId,
-  () => {
-    branch.value = '';
-    version.value = '';
-    invalidate();
-  },
-  { flush: 'sync' },
-);
-watch(
-  branch,
-  () => {
-    version.value = '';
-    invalidate();
-  },
-  { flush: 'sync' },
-);
-watch(version, invalidate, { flush: 'sync' });
 watch(runId, () => {
   caseId.value = '';
   trace.value = null;
@@ -162,66 +109,43 @@ watch(runId, () => {
   traceSequence++;
   traceLoading.value = false;
 });
-async function loadTargets() {
-  loading.value = true;
-  loadError.value = '';
-  invalidate();
-  targets.value = [];
-  agentId.value = '';
-  version.value = '';
-  branch.value = '';
-  try {
-    const agents = await platformDirectory.value.getAgents({
-      token: platformToken.value,
-      teamId: platformTeamId.value,
-    });
-    targets.value = agents.map((agent) => {
-      const m = agent.typeGroup === 'abcclaw' ? 'cloudshrimp' : (agent.platformArrangeType as Mode) || 'base';
-      return {
-        descriptor: {
-          ref: {
-            source_id: 'platform',
-            target_type: 'agent',
-            external_target_id: agent.agentId,
-            external_version_id: '',
-          },
-          content_sha256: '',
-          display_name: agent.agentName,
-          skills: (agent.skills ?? []).map((s) => ({
-            external_skill_id: s.id,
-            external_version_id: 'v1',
-            name: s.name ?? s.id,
-            description: s.description ?? '',
-            tools: [],
-            prompt: null,
-          })),
-          tools: (agent.tools ?? []).map((t) => ({
-            name: t?.function?.name ?? '',
-            description: t?.function?.description ?? '',
-            input_schema: {},
-          })),
-          metadata: { mode: m, topology: { composition: m, nodes: [], edges: [] } },
-        } as unknown as Descriptor,
-        snapshot: { invocation_config: { mode: m } },
-        git_branch_url: null,
-      };
-    });
-  } catch {
-    loadError.value =
-      auth.loginMode === 'external'
-        ? '本地智能体目录读取失败，请确认模拟服务运行中。'
-        : '行内智能体目录读取失败，请检查网络和 token。';
-  } finally {
-    loading.value = false;
-  }
-}
+// 目录加载由 AgentTargetPicker 内部处理，此处无需手动加载。
 async function confirmTarget() {
-  if (!selected.value) {
-    error.value = '请选择智能体及已登记版本。云虾分支必须匹配服务端返回的选项。';
+  if (!selection.value) {
+    error.value = '请选择智能体、版本（abcclaw 还需分支地址）。';
     return;
   }
   const ticket = ++contextSequence;
-  pinned.value = clone(selected.value);
+  const sel = selection.value;
+  const m: Mode = sel.typeGroup === 'abcclaw' ? 'cloudshrimp' : (sel.platformArrangeType as Mode) || 'base';
+  pinned.value = {
+    descriptor: {
+      ref: {
+        source_id: 'platform',
+        target_type: 'agent',
+        external_target_id: sel.agentId,
+        external_version_id: sel.agentVersion,
+      },
+      content_sha256: '',
+      display_name: sel.agentName,
+      skills: (sel.skills ?? []).map((s) => ({
+        external_skill_id: s.id,
+        external_version_id: 'v1',
+        name: s.name ?? s.id,
+        description: s.description ?? '',
+        tools: [],
+        prompt: null,
+      })),
+      tools: (sel.tools ?? []).map((t) => ({
+        name: t?.function?.name ?? '',
+        description: t?.function?.description ?? '',
+        input_schema: {},
+      })),
+      metadata: { mode: m },
+    } as unknown as Descriptor,
+    snapshot: { invocation_config: { mode: m } },
+    git_branch_url: null,
+  };
   error.value = '';
   tab.value = 'prompt';
   runsLoading.value = true;
@@ -270,7 +194,7 @@ async function loadTrace() {
 function autoDescription() {
   if (descriptor.value)
     description.value =
-      `用于测评${modeNames[mode.value]}智能体「${descriptor.value.display_name}」的 ${descriptor.value.ref.external_version_id} 版本，核查回答质量、执行过程与工具调用。`.slice(
+      `用于测评智能体「${descriptor.value.display_name}」的 ${descriptor.value.ref.external_version_id} 版本，核查回答质量、执行过程与工具调用。`.slice(
         0,
         512,
       );
@@ -301,7 +225,6 @@ function close() {
     return;
   emit('close');
 }
-onMounted(loadTargets);
 </script>
 
 <template>
@@ -318,67 +241,26 @@ onMounted(loadTargets);
   >
     <template v-if="true">
       <h3><span class="step-number">01</span>关联智能体</h3>
-      <div class="target-fields" :class="{ cloud: mode === 'cloudshrimp' }">
-        <label
-          >智能体模式 <em>*</em
-          ><select v-model="mode" aria-label="数据集智能体模式">
-            <option value="base">基础编排 · Dify</option>
-            <option value="workflow">工作流 · Dify</option>
-            <option value="cloudshrimp">云虾 · DeepAgent</option>
-          </select></label
-        >
-        <label
-          >智能体 ID / 名称 <em>*</em
-          ><select v-model="agentId" aria-label="数据集智能体" :disabled="loading">
-            <option value="">请选择智能体</option>
-            <option
-              v-for="t in agents"
-              :key="t.descriptor.ref.external_target_id"
-              :value="t.descriptor.ref.external_target_id"
-            >
-              {{ t.descriptor.ref.external_target_id }} · {{ t.descriptor.display_name }}
-            </option>
-          </select></label
-        >
-        <label v-if="mode === 'cloudshrimp'"
-          >Git 仓库分支地址<input
-            v-model="branch"
-            aria-label="数据集 Git 分支"
-            list="dataset-branches"
-            placeholder="填写或选择已登记分支"
-            :disabled="!agentId || !branches.length" /><datalist id="dataset-branches">
-            <option v-for="b in branches" :key="b" :value="b" /></datalist
-        ></label>
-        <label
-          >智能体版本 <em>*</em
-          ><select v-model="version" aria-label="数据集智能体版本" :disabled="!agentId">
-            <option value="">请选择版本</option>
-            <option
-              v-for="t in versionTargets"
-              :key="t.descriptor.content_sha256"
-              :value="t.descriptor.ref.external_version_id"
-            >
-              {{ t.descriptor.ref.external_version_id }}
-            </option>
-          </select></label
-        >
-      </div>
-      <p v-if="mode === 'cloudshrimp' && agentId && !branches.length" class="warning">
-        当前部署未提供 Git 分支；只能预览当前部署版本，不能确认分支绑定。本演示不会虚构客户分支。
+      <AgentTargetPicker
+        ref="platformPicker"
+        class="full"
+        :directory="platformDirectory"
+        :token="platformToken"
+        :team-id="platformTeamId"
+        :disabled="saving"
+        @selection-change="receiveSelection"
+      />
+      <p class="muted">
+        选择智能体后自动加载版本；abcclaw 类型需先选分支地址再选版本。
       </p>
-      <p v-if="loadError" role="alert" class="warning">{{ loadError }}</p>
       <div class="target-actions">
-        <button type="button" class="secondary" :disabled="loading" @click="loadTargets">
-          {{ loading ? '读取目录中…' : '刷新智能体目录' }}</button
-        ><button
+        <button
           type="button"
           class="primary"
-          :disabled="!selected || loading || runsLoading"
+          :disabled="!selection || saving"
           @click="confirmTarget"
         >
-          {{
-            runsLoading ? '读取上下文中…' : pinned ? '重新读取定义与会话' : '确认并读取定义与会话'
-          }}
+          {{ saving ? '处理中…' : pinned ? '重新读取定义与会话' : '确认并读取定义与会话' }}
         </button>
       </div>
       <section v-if="descriptor" class="definition" aria-label="关联智能体只读信息">
@@ -405,15 +287,13 @@ onMounted(loadTargets);
         </div>
         <div class="context-body">
           <template v-if="tab === 'prompt'"
-            ><h4>{{ mode === 'workflow' ? '工作流服务提供的提示词' : '智能体系统提示词' }}</h4>
+            ><h4>智能体系统提示词</h4>
             <pre>{{ descriptor.prompt || '服务端未提供提示词' }}</pre>
             <template v-if="descriptor.metadata.summary_prompt"
               ><h4>回答汇总提示词</h4>
               <pre>{{ descriptor.metadata.summary_prompt }}</pre>
             </template>
-            <p v-if="mode === 'workflow'" class="note">
-              此处不是全部节点提示词；未提供的节点提示词不会自动补写。
-            </p></template
+          </template
           >
           <template v-else-if="tab === 'skills'"
             ><h4>Skill · {{ descriptor.skills.length }}</h4>
