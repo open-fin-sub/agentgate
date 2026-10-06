@@ -7,6 +7,7 @@ import { datasetApi } from '../../../api/datasets';
 import { agentDirectory, localAgentDirectory } from '../../../api/agent-platform';
 import { useAuthStore } from '../../../stores/modules/auth';
 import AgentTargetPicker, { type AgentTargetSelection } from '../../evaluation/components/AgentTargetPicker.vue';
+import TargetStructure from '../../evaluation/components/TargetStructure.vue';
 
 const auth = useAuthStore();
 const platformDirectory = computed(() =>
@@ -49,7 +50,7 @@ const name = ref(''),
   tags = ref<string[]>([]),
   icon = ref('🗂️'),
   error = ref('');
-const tab = ref('prompt');
+const tab = ref('graph');
 const runs = ref<EvaluationRun[]>([]),
   runsLoading = ref(false),
   runsError = ref('');
@@ -147,7 +148,7 @@ async function confirmTarget() {
     git_branch_url: null,
   };
   error.value = '';
-  tab.value = 'prompt';
+  tab.value = 'graph';
   runsLoading.value = true;
   runsError.value = '';
   runs.value = [];
@@ -271,9 +272,7 @@ function close() {
         <div class="context-tabs" role="tablist">
           <button
             v-for="t in [
-              { id: 'prompt', name: '提示词' },
-              { id: 'skills', name: 'Skill / Tool' },
-              { id: 'nodes', name: '节点结构' },
+              { id: 'graph', name: '智能体图谱' },
               { id: 'sessions', name: '已有会话' },
             ]"
             :key="t.id"
@@ -286,41 +285,9 @@ function close() {
           </button>
         </div>
         <div class="context-body">
-          <template v-if="tab === 'prompt'"
-            ><h4>智能体系统提示词</h4>
-            <pre>{{ descriptor.prompt || '服务端未提供提示词' }}</pre>
-            <template v-if="descriptor.metadata.summary_prompt"
-              ><h4>回答汇总提示词</h4>
-              <pre>{{ descriptor.metadata.summary_prompt }}</pre>
-            </template>
-          </template
-          >
-          <template v-else-if="tab === 'skills'"
-            ><h4>Skill · {{ descriptor.skills.length }}</h4>
-            <article v-for="s in descriptor.skills" :key="s.external_skill_id">
-              <b>{{ s.name }}</b>
-              <p>{{ s.description || '未提供描述' }}</p>
-              <details v-if="s.prompt">
-                <summary>Skill 提示词（只读）</summary>
-                <pre>{{ s.prompt }}</pre>
-              </details>
-            </article>
-            <p v-if="!descriptor.skills.length" class="note">该版本未声明 Skill。</p>
-            <h4>Tool · {{ descriptor.tools?.length ?? 0 }}</h4>
-            <article v-for="(t, i) in descriptor.tools" :key="i">
-              <b>{{ t.name }}</b>
-              <p>{{ t.description || '未提供描述' }}</p>
-            </article></template
-          >
-          <template v-else-if="tab === 'nodes'"
-            ><article v-for="node in nodes" :key="node.id">
-              <b>{{ node.kind }} · {{ node.label }}</b>
-              <p>{{ node.description || '未提供描述' }}</p>
-              <pre v-if="node.prompt">{{ node.prompt }}</pre>
-              <small v-else-if="node.kind === 'workflow'">未提供独立节点提示词</small>
-            </article>
-            <p v-if="!nodes.length">服务端未提供节点结构。</p></template
-          >
+          <template v-if="tab === 'graph'">
+            <TargetStructure :descriptor="descriptor" hide-source />
+          </template>
           <template v-else>
             <p class="note">
               从最近 200 条测评中按来源、应用 ID
