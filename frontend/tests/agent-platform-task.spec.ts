@@ -536,8 +536,8 @@ async function openForm(page: Page, selected = false) {
     });
     if (path === '/api/datasets')
       return reply(route, [
-        { id: 'dataset', name: '测试评测集', version: 2 },
-        { id: 'other', name: '另一评测集', version: 1 },
+        { id: 'dataset', name: '测试测评集', version: 2 },
+        { id: 'other', name: '另一测评集', version: 1 },
       ]);
     if (path === '/api/evaluators')
       return reply(route, [
@@ -577,6 +577,11 @@ async function openForm(page: Page, selected = false) {
         }),
       );
     }
+    if (path === '/api/agent-platform/comparisons')
+      return reply(route, {
+        baseline: { run_id: 'ab-a', status: 'pending' },
+        candidate: { run_id: 'ab-b', status: 'pending' },
+      });
     if (path === '/api/run-comparisons')
       return reply(route, { baseline: { run_id: 'a' }, candidate: { run_id: 'b' } });
     if (path === '/api/evaluation-tasks/a') return reply(route, {});
@@ -601,7 +606,7 @@ async function openForm(page: Page, selected = false) {
     );
   });
   await page.goto(url.replace('__directory', '__form') + (selected ? '?selected' : ''));
-  await expect(page.getByLabel('任务评测集版本', { exact: true })).toHaveValue('2');
+  await expect(page.getByLabel('任务测评集版本', { exact: true })).toHaveValue('2');
   await expect(page.getByRole('combobox', { name: '选择智能体', exact: true })).toBeEnabled();
   return requests;
 }
@@ -618,18 +623,18 @@ async function selectFormTarget(page: Page, claw = false) {
   if (claw) await choose(page, '分支地址', '分支 · branch/raw');
   await choose(page, '智能体版本', claw ? 'v2' : 'v1');
 }
-const start = (page: Page) => page.getByRole('button', { name: '开始评测', exact: true });
+const start = (page: Page) => page.getByRole('button', { name: '开始测评', exact: true });
 
 test('form preserves dataset/execution choices through target changes and logout, without legacy catalogs', async ({
   page,
 }) => {
   const requests = await openForm(page);
-  await page.getByLabel('任务评测集', { exact: true }).selectOption('other');
+  await page.getByLabel('任务测评集', { exact: true }).selectOption('other');
   await page.getByLabel('并发样本数', { exact: true }).fill('7');
   await page.getByLabel('执行超时（秒）', { exact: true }).fill('999');
   await selectFormTarget(page);
   await choose(page, '智能体版本', 'v2');
-  await expect(page.getByLabel('任务评测集', { exact: true })).toHaveValue('other');
+  await expect(page.getByLabel('任务测评集', { exact: true })).toHaveValue('other');
   await expect(page.getByLabel('并发样本数', { exact: true })).toHaveValue('7');
   await expect(page.getByLabel('执行超时（秒）', { exact: true })).toHaveValue('999');
   await expect(page.getByRole('button', { name: 'Skill 静态分析', exact: true })).toBeDisabled();
@@ -676,6 +681,48 @@ test('form submits workflow target and selected source cases with isolated token
       storage: JSON.stringify({ ...localStorage, ...sessionStorage }),
     })),
   ).toEqual({ updates: 1, storage: '{}' });
+});
+
+test('platform A/B submits both versions to the comparison endpoint', async ({ page }) => {
+  const requests = await openForm(page);
+  await selectFormTarget(page);
+  await page.getByRole('button', { name: 'A/B 实验', exact: true }).click();
+  const candidate = page.getByLabel('平台候选版本', { exact: true });
+  await expect(candidate).toBeEnabled();
+  await candidate.selectOption('v2');
+  await page.getByRole('button', { name: '创建 A/B 实验', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => (window as any).created.length)).toBe(1);
+  const submission = requests.find((r) => r.path === '/api/agent-platform/comparisons')!;
+  expect(submission.body).toEqual({
+    target: {
+      team_id: 'team',
+      agent_id: 'workflow',
+      type_group: 'base/workflow',
+      baseline_version: 'v1',
+      candidate_version: 'v2',
+      arrange_type: 'workflow',
+    },
+    dataset_id: 'dataset',
+    dataset_version: 2,
+    evaluator_ids: ['judge'],
+    timeout_seconds: 300,
+  });
+  expect(submission.headers['x-agent-platform-token']).toBe('form-secret');
+  expect(requests.some((r) => r.path === '/api/run-comparisons')).toBe(false);
+});
+
+test('platform A/B requires a different candidate version before creating', async ({ page }) => {
+  await openForm(page);
+  await selectFormTarget(page);
+  await page.getByRole('button', { name: 'A/B 实验', exact: true }).click();
+  const create = page.getByRole('button', { name: '创建 A/B 实验', exact: true });
+  await expect(create).toBeDisabled();
+  const candidate = page.getByLabel('平台候选版本', { exact: true });
+  await expect(candidate).toBeEnabled();
+  await candidate.selectOption('v1');
+  await expect(create).toBeDisabled();
+  await candidate.selectOption('v2');
+  await expect(create).toBeEnabled();
 });
 
 test('personal space submits without a team_id field', async ({ page }) => {
@@ -800,7 +847,7 @@ test('A/B keeps legacy endpoint and association, returning to single requires fr
   page,
 }) => {
   const requests = await openForm(page);
-  await selectFormTarget(page);
+  // 不预选平台目标：内置 Demo 的 A/B 走 legacy 端点；预选平台目标会切换到平台 A/B 分支。
   await page.getByRole('button', { name: 'A/B 实验', exact: true }).click();
   await expect(page.getByRole('button', { name: '创建 A/B 实验', exact: true })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Skill 静态分析', exact: true })).toBeEnabled();
@@ -843,7 +890,7 @@ test('late A/B catalogs cannot change the single task dataset or execution setti
   await expect(page.getByRole('combobox', { name: '选择智能体', exact: true })).toBeEnabled();
   await selectFormTarget(page);
   await expect(page.getByLabel('并发样本数', { exact: true })).toHaveValue('9');
-  await expect(page.getByLabel('任务评测集', { exact: true })).toHaveValue('dataset');
+  await expect(page.getByLabel('任务测评集', { exact: true })).toHaveValue('dataset');
 });
 
 test('scheduled execution sends UTC and rejects invalid numeric limits before creating', async ({
@@ -887,7 +934,7 @@ test('cancelling uncovered-case confirmation releases the lock without a creatio
     ]),
   );
   await page.reload();
-  await expect(page.getByLabel('任务评测集版本', { exact: true })).toHaveValue('2');
+  await expect(page.getByLabel('任务测评集版本', { exact: true })).toHaveValue('2');
   await page.route('**/api/datasets/dataset/versions/2', (route) =>
     reply(route, {
       cases: [...sampleCases, { id: 'uncovered', turns: [{ input: { txt: '未覆盖' }, expectations: [] }] }],

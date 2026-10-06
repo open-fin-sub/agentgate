@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from datetime import UTC, datetime
+from collections.abc import Callable
 from typing import Annotated, Literal, Protocol, cast
 
 from fastapi import APIRouter, HTTPException, Request
@@ -100,6 +101,59 @@ class PlatformEvaluationInput(BaseModel):
         ):
             raise ValueError("reservation requires one repetition and a future time")
         return self
+
+
+class PlatformComparisonTargetInput(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    team_id: Identifier | None = None
+    agent_id: Identifier
+    type_group: TypeGroup
+    baseline_version: Identifier
+    candidate_version: Identifier
+    arrange_type: ArrangeType | None = None
+    branch_id: Identifier | None = None
+
+    @model_validator(mode="after")
+    def validate_branch(self) -> PlatformComparisonTargetInput:
+        if self.baseline_version == self.candidate_version:
+            raise ValueError("A/B requires two different agent versions")
+        if self.type_group == "abcclaw":
+            if self.branch_id is None:
+                raise ValueError("abcclaw requires branch_id")
+            if "arrange_type" in self.model_fields_set:
+                raise ValueError("abcclaw must omit arrange_type")
+        else:
+            if self.arrange_type is None:
+                raise ValueError("base/workflow requires arrange_type")
+            if "branch_id" in self.model_fields_set:
+                raise ValueError("base/workflow must omit branch_id")
+        return self
+
+
+class PlatformComparisonInput(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    target: PlatformComparisonTargetInput
+    dataset_id: Identifier
+    dataset_version: int = Field(strict=True, ge=1)
+    evaluator_ids: list[Identifier] = Field(min_length=1, strict=True)
+    case_ids: list[Identifier] | None = Field(default=None, min_length=1, strict=True)
+    timeout_seconds: int = Field(strict=True, ge=1, le=3600)
+
+    @field_validator("case_ids", mode="before")
+    @classmethod
+    def reject_null_cases(cls, value: object) -> object:
+        if value is None:
+            raise ValueError("omit case_ids for all cases")
+        return value
+
+    @field_validator("case_ids", "evaluator_ids")
+    @classmethod
+    def unique_ids(cls, value: list[str] | None) -> list[str] | None:
+        if value is not None and len(set(value)) != len(value):
+            raise ValueError("identifiers must be unique")
+        return value
 
 
 class SubmitPlatformEvaluation(Protocol):
@@ -226,3 +280,60 @@ async def launch_platform_evaluation(request: Request) -> JSONResponse:
         raise HTTPException(
             500, "Submission outcome is uncertain; check tasks before retrying"
         ) from None
+
+
+SubmitPlatformComparison = Callable[..., object]
+
+
+@router.post("/comparisons", status_code=202)
+async def launch_platform_comparison(request: Request) -> JSONResponse:
+    token = read_platform_token(request)
+    try:
+        inputs = PlatformComparisonInput.model_validate(await request.json())
+    except (ValueError, UnicodeError):
+        raise HTTPException(422, "Invalid platform comparison request") from None
+    submitter = getattr(request.app.state, "submit_agent_platform_comparison", None)
+    if not callable(submitter):
+        raise HTTPException(503, "Platform comparison submission is unavailable")
+    caller = get_user_info()
+    try:
+        baseline, candidate = await run_in_threadpool(
+            submitter,
+            team_id=inputs.target.team_id,
+            agent_id=inputs.target.agent_id,
+            type_group=inputs.target.type_group,
+            baseline_version=inputs.target.baseline_version,
+            candidate_version=inputs.target.candidate_version,
+            arrange_type=inputs.target.arrange_type,
+            branch_id=inputs.target.branch_id,
+            dataset_id=inputs.dataset_id,
+            dataset_version=inputs.dataset_version,
+            case_ids=tuple(inputs.case_ids) if inputs.case_ids is not None else None,
+            evaluator_ids=tuple(inputs.evaluator_ids),
+            timeout_seconds=inputs.timeout_seconds,
+            token=token,
+            user_team_id=caller.user_team_id if caller else "",
+            user_id=caller.user_id if caller else "anonymous",
+            user_name=caller.user_name if caller else "匿名用户",
+        )
+    except PermissionError:
+        raise HTTPException(403, "Platform target access was rejected") from None
+    except LookupError:
+        raise HTTPException(404, "Selected evaluation resource is unavailable") from None
+    except ValueError:
+        raise HTTPException(422, "Target or evaluation settings were rejected") from None
+    except (TimeoutError, ConnectionError):
+        raise HTTPException(
+            503, "Submission outcome is uncertain; check tasks before retrying"
+        ) from None
+    except Exception:  # noqa: BLE001 -- Never expose or log an upstream credential-bearing error.
+        raise HTTPException(
+            500, "Submission outcome is uncertain; check tasks before retrying"
+        ) from None
+    return JSONResponse(
+        {
+            "baseline": {"run_id": baseline.id, "status": baseline.status},
+            "candidate": {"run_id": candidate.id, "status": candidate.status},
+        },
+        202,
+    )

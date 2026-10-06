@@ -1279,6 +1279,19 @@ class SQLiteRepository:
             if cursor.rowcount != 1:
                 raise ValueError("expected Dataset draft does not exist")
 
+    def delete_dataset_record(self, dataset_id: str, *, user_team_id: str) -> None:
+        with self._connect() as db:
+            db.execute(
+                f"DELETE FROM {_T_DATASET_VERSIONS} WHERE dataset_id=? AND user_team_id=?",
+                (dataset_id, user_team_id),
+            )
+            cursor = db.execute(
+                f"DELETE FROM {_T_DATASETS} WHERE id=? AND user_team_id=?",
+                (dataset_id, user_team_id),
+            )
+            if cursor.rowcount != 1:
+                raise ValueError("expected Dataset does not exist")
+
     def replace_dataset_draft(
         self, expected_draft_id: str, published: DatasetVersion
     ) -> None:
@@ -1926,3 +1939,27 @@ def _load_evaluator_spec(row: sqlite3.Row) -> EvaluatorSpec:
     if spec.content_sha256 != row["content_sha256"]:
         raise ValueError("stored Evaluator content hash does not match its payload")
     return spec
+
+    def delete_task_record(self, task_id: str, *, user_team_id: str) -> None:
+        """Permanently delete one task with all its runs, traces and results."""
+        with self._connect() as db:
+            row = db.execute(
+                f"SELECT payload FROM {_T_EVALUATION_TASKS} WHERE id=?",
+                (task_id,),
+            ).fetchone()
+            if row is None:
+                raise ValueError("task does not exist")
+            run_ids = [
+                r[0]
+                for r in db.execute(
+                    f"SELECT run_id FROM {_T_EVALUATION_TASK_RUNS} WHERE task_id=?",
+                    (task_id,),
+                )
+            ]
+            for run_id in run_ids:
+                db.execute(f"DELETE FROM {_T_RESULTS} WHERE run_id=?", (run_id,))
+                db.execute(f"DELETE FROM {_T_TRACES} WHERE run_id=?", (run_id,))
+                db.execute(f"DELETE FROM {_T_RUNS} WHERE id=?", (run_id,))
+                db.execute(f"DELETE FROM {_T_RUNS_NEW} WHERE id=?", (run_id,))
+            db.execute(f"DELETE FROM {_T_EVALUATION_TASK_RUNS} WHERE task_id=?", (task_id,))
+            db.execute(f"DELETE FROM {_T_EVALUATION_TASKS} WHERE id=?", (task_id,))

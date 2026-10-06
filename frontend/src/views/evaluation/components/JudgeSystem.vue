@@ -414,7 +414,7 @@ const templateLabels1: Record<string, string> = {
           design = null;
         "
       >
-        打开评测配置
+        打开测评配置
       </button></template
     ></el-dialog
   >

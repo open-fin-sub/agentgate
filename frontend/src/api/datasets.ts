@@ -218,6 +218,10 @@ export const datasetApi = {
     request<void>(`/api/datasets/${id(datasetId)}/drafts/current`, {
       method: 'DELETE',
     }),
+  deleteRecord: (datasetId: string) =>
+    request<{ deleted: string }>(`/api/datasets/${id(datasetId)}/record`, {
+      method: 'DELETE',
+    }),
   publish: (datasetId: string, expectedHash: string) =>
     request<ApiDatasetVersion>(`/api/datasets/${id(datasetId)}/drafts/publish`, {
       method: 'POST',

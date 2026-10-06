@@ -12,7 +12,7 @@ export const evaluatorScenarios: Record<string, string> = {
   composite: '组合规则和模型评分；阻断项失败不能被高分抵消。',
 };
 
-// 详情页说明适用条件，不代表已针对某个评测集做出推荐。
+// 详情页说明适用条件，不代表已针对某个测评集做出推荐。
 export const evaluatorRecommendationReasons: Record<string, string> = {
   skill_routing: '样本要求命中特定 Skill 时推荐使用，可发现路由错误，避免后续业务走错分支。',
   required_tool: '业务流程有必需动作时推荐使用，可发现漏调工具，例如未发起人工复核。',

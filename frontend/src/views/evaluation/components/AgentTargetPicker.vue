@@ -10,6 +10,8 @@ export interface PlatformAgent {
   typeGroup: AgentTypeGroup | null;
   platformAgentType: string | null;
   platformArrangeType: string | null;
+  tools?: { function?: { name?: string; description?: string } }[];
+  skills?: { id: string; name?: string; description?: string; tools?: string[] }[];
 }
 export interface PlatformBranch {
   branchId: string;
@@ -31,6 +33,8 @@ export interface AgentTargetSelection {
   branchId: string | null;
   branchName: string | null;
   agentVersion: string;
+  tools?: PlatformAgent['tools'];
+  skills?: PlatformAgent['skills'];
 }
 // Providers return complete, normalized lists; HTTP and pagination stay outside the UI.
 export interface AgentDirectory {
@@ -56,9 +60,11 @@ const props = withDefaults(
     token: string;
     teamId: string;
     disabled?: boolean;
+    versionLabel?: string;
   }>(),
   {
     disabled: false,
+    versionLabel: '智能体版本',
   },
 );
 const emit = defineEmits<{ 'selection-change': [selection: AgentTargetSelection | null] }>();
@@ -108,6 +114,8 @@ const selection = computed<AgentTargetSelection | null>(() => {
     branchId: selectedType.value === 'abcclaw' ? currentBranch.value!.branchId : null,
     branchName: selectedType.value === 'abcclaw' ? currentBranch.value!.branchName : null,
     agentVersion: currentVersion.value.agentVersion,
+    tools: agent.tools,
+    skills: agent.skills,
   };
 });
 watch(selection, (value) => emit('selection-change', value ? { ...value } : null), {
@@ -249,7 +257,7 @@ const fields = computed(() => [
   },
   {
     key: 'version' as const,
-    label: '智能体版本',
+    label: props.versionLabel,
     placeholder:
       selectedType.value === 'abcclaw' && !selected.branch ? '请先选择分支地址' : '请选择版本',
     disabled: !agentAvailable.value || (selectedType.value === 'abcclaw' && !branchAvailable.value),
@@ -282,7 +290,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="agent-target-picker" aria-label="评测对象选择">
+  <section class="agent-target-picker" aria-label="测评对象选择">
     <div class="target-fields">
       <div v-for="field in fields" :key="field.key" class="target-field">
         <label :id="`${prefix}-${field.key}-label`" :for="`${prefix}-${field.key}`">{{
@@ -339,7 +347,7 @@ onBeforeUnmount(() => {
       {{
         selection
           ? `已选择：${selection.agentName} / ${selection.typeGroup}${selection.branchId ? ' / ' + selection.branchId : ''} / ${selection.agentVersion}`
-          : '请完成评测对象选择。'
+          : '请完成测评对象选择。'
       }}
     </p>
   </section>

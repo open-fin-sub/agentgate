@@ -55,7 +55,7 @@ button:disabled {
   display: flex;
 }
 .sidebar {
-  width: 220px;
+  width: 160px;
   background: #fff;
   border-right: 1px solid #e5e7eb;
   min-height: calc(100vh - 64px);
@@ -623,7 +623,7 @@ button:disabled {
     padding: 20px;
   }
   .sidebar {
-    width: 200px;
+    width: 160px;
   }
   .choice-grid {
     grid-template-columns: 1fr;
