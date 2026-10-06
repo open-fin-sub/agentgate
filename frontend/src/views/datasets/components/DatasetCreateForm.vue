@@ -111,6 +111,38 @@ watch(runId, () => {
   traceLoading.value = false;
 });
 // 目录加载由 AgentTargetPicker 内部处理，此处无需手动加载。
+function buildTopologyFromSelection(
+  sel: AgentTargetSelection,
+  composition: string,
+): { composition: string; nodes: { id: string; kind: string; label: string; description: string }[]; edges: { source: string; target: string; relation: string }[] } {
+  const nodes: { id: string; kind: string; label: string; description: string }[] = [
+    { id: sel.agentId, kind: 'agent', label: sel.agentName, description: `被测智能体（${composition}）` },
+  ];
+  const edges: { source: string; target: string; relation: string }[] = [];
+  for (const skill of sel.skills ?? []) {
+    const skillId = `${sel.agentId}:skill:${skill.id}`;
+    nodes.push({ id: skillId, kind: 'skill', label: skill.name ?? skill.id, description: skill.description ?? '' });
+    edges.push({ source: sel.agentId, target: skillId, relation: 'includes_skill' });
+    for (const toolName of skill.tools ?? []) {
+      const toolId = `${sel.agentId}:tool:${toolName}`;
+      if (!nodes.some((n) => n.id === toolId)) {
+        nodes.push({ id: toolId, kind: 'tool', label: toolName, description: `工具：${toolName}` });
+      }
+      edges.push({ source: skillId, target: toolId, relation: 'includes_tool' });
+    }
+  }
+  for (const tool of sel.tools ?? []) {
+    const name = tool?.function?.name ?? '';
+    if (!name) continue;
+    const toolId = `${sel.agentId}:tool:${name}`;
+    if (!nodes.some((n) => n.id === toolId)) {
+      nodes.push({ id: toolId, kind: 'tool', label: name, description: tool?.function?.description ?? '' });
+      edges.push({ source: sel.agentId, target: toolId, relation: 'includes_tool' });
+    }
+  }
+  return { composition, nodes, edges };
+}
+
 async function confirmTarget() {
   if (!selection.value) {
     error.value = '请选择智能体、版本（abcclaw 还需分支地址）。';
@@ -119,6 +151,7 @@ async function confirmTarget() {
   const ticket = ++contextSequence;
   const sel = selection.value;
   const m: Mode = sel.typeGroup === 'abcclaw' ? 'cloudshrimp' : (sel.platformArrangeType as Mode) || 'base';
+  const topology = buildTopologyFromSelection(sel, m);
   pinned.value = {
     descriptor: {
       ref: {
@@ -142,7 +175,7 @@ async function confirmTarget() {
         description: t?.function?.description ?? '',
         input_schema: {},
       })),
-      metadata: { mode: m },
+      metadata: { mode: m, topology },
     } as unknown as Descriptor,
     snapshot: { invocation_config: { mode: m } },
     git_branch_url: null,
