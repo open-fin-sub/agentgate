@@ -1,9 +1,18 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { request, type TargetDescriptor } from '../../../api/evaluations';
 import type { EvaluationRun } from '../../evaluation/types/run';
 import type { Trace } from '../../../api/client';
 import { datasetApi } from '../../../api/datasets';
+import { agentDirectory, localAgentDirectory } from '../../../api/agent-platform';
+import { useAuthStore } from '../../../stores/modules/auth';
+
+const auth = useAuthStore();
+const platformDirectory = computed(() =>
+  auth.loginMode === 'external' ? localAgentDirectory : agentDirectory,
+);
+const platformToken = computed(() => (auth.loginMode === 'bank' ? auth.token : 'local'));
+const platformTeamId = computed(() => (auth.loginMode === 'bank' ? auth.teamId : ''));
 
 type Mode = 'base' | 'workflow' | 'cloudshrimp';
 type Descriptor = TargetDescriptor & {
@@ -162,9 +171,46 @@ async function loadTargets() {
   version.value = '';
   branch.value = '';
   try {
-    targets.value = await request<Target[]>('/bank-targets');
+    const agents = await platformDirectory.value.getAgents({
+      token: platformToken.value,
+      teamId: platformTeamId.value,
+    });
+    targets.value = agents.map((agent) => {
+      const m = agent.typeGroup === 'abcclaw' ? 'cloudshrimp' : (agent.platformArrangeType as Mode) || 'base';
+      return {
+        descriptor: {
+          ref: {
+            source_id: 'platform',
+            target_type: 'agent',
+            external_target_id: agent.agentId,
+            external_version_id: '',
+          },
+          content_sha256: '',
+          display_name: agent.agentName,
+          skills: (agent.skills ?? []).map((s) => ({
+            external_skill_id: s.id,
+            external_version_id: 'v1',
+            name: s.name ?? s.id,
+            description: s.description ?? '',
+            tools: [],
+            prompt: null,
+          })),
+          tools: (agent.tools ?? []).map((t) => ({
+            name: t?.function?.name ?? '',
+            description: t?.function?.description ?? '',
+            input_schema: {},
+          })),
+          metadata: { mode: m, topology: { composition: m, nodes: [], edges: [] } },
+        } as unknown as Descriptor,
+        snapshot: { invocation_config: { mode: m } },
+        git_branch_url: null,
+      };
+    });
   } catch {
-    loadError.value = '智能体目录读取失败，请检查新版服务后重试。';
+    loadError.value =
+      auth.loginMode === 'external'
+        ? '本地智能体目录读取失败，请确认模拟服务运行中。'
+        : '行内智能体目录读取失败，请检查网络和 token。';
   } finally {
     loading.value = false;
   }
@@ -255,7 +301,7 @@ function close() {
     return;
   emit('close');
 }
-// 关联智能体配置待实现：不自动读取目录，控件已整体禁用。
+onMounted(loadTargets);
 </script>
 
 <template>
@@ -271,10 +317,7 @@ function close() {
     :close-on-press-escape="!saving"
   >
     <template v-if="true">
-      <h3 class="pending-heading">
-        <span class="step-number">01</span>关联智能体<small>待实现</small>
-      </h3>
-      <fieldset class="pending-section" disabled aria-label="关联智能体（待实现，已禁用）">
+      <h3><span class="step-number">01</span>关联智能体</h3>
       <div class="target-fields" :class="{ cloud: mode === 'cloudshrimp' }">
         <label
           >智能体模式 <em>*</em
@@ -338,8 +381,6 @@ function close() {
           }}
         </button>
       </div>
-      </fieldset>
-      <p class="pending-note">关联智能体配置待实现；当前创建数据集不依赖该配置。</p>
       <section v-if="descriptor" class="definition" aria-label="关联智能体只读信息">
         <div class="definition-title">
           <b>{{ descriptor.display_name }} · {{ descriptor.ref.external_version_id }}</b
