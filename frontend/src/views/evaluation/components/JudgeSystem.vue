@@ -398,7 +398,7 @@ const templateLabels1: Record<string, string> = {
     >
     <template #footer
       ><button class="asset-secondary" @click="close">关闭</button
-      ><button v-if="editing" class="asset-primary" @click="save">保存 UX 设计</button
+      ><button v-if="editing" class="asset-primary" @click="save">保存</button
       ><button
         v-else-if="design && !originId"
         class="asset-secondary"
