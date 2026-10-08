@@ -1,10 +1,18 @@
 <script lang="ts">
+import type { TargetDescriptor } from '../../../api/evaluations';
+export interface LocalTarget {
+  adapter_type: 'local_bank' | 'demo_loan';
+  mode: 'base' | 'workflow' | 'cloudshrimp' | null;
+  descriptor: TargetDescriptor;
+}
 export type AgentTypeGroup = 'base/workflow' | 'abcclaw';
 export interface PlatformTeam {
   teamId: string;
   teamName: string;
 }
 export interface PlatformAgent {
+  local?: boolean;
+  unavailable?: boolean;
   agentId: string;
   agentName: string;
   typeGroup: AgentTypeGroup | null;
@@ -19,10 +27,21 @@ export interface PlatformBranch {
   children: readonly PlatformBranch[];
 }
 export interface PlatformVersion {
+  localTarget?: LocalTarget;
   agentVersion: string;
   status?: string;
 }
+export interface PlatformCapability {
+  tools: { name: string; description?: string | null }[];
+  skills: {
+    external_skill_id: string;
+    name: string;
+    description?: string | null;
+    tools: string[];
+  }[];
+}
 export interface AgentTargetSelection {
+  localTarget?: LocalTarget;
   teamId: string;
   teamName: string;
   agentId: string;
@@ -47,6 +66,12 @@ export interface AgentDirectory {
     agentId: string;
     branchId: string;
   }): Promise<readonly PlatformVersion[]>;
+  getCapabilities?(input: {
+    token: string;
+    agentId: string;
+    agentVersion: string;
+    branchId?: string | null;
+  }): Promise<PlatformCapability>;
 }
 </script>
 
@@ -75,7 +100,11 @@ const selected = reactive({ agent: '', branch: '', version: '' });
 const agents = ref<readonly PlatformAgent[]>([]);
 const branches = ref<readonly (PlatformBranch & { depth: number })[]>([]);
 const versions = ref<readonly PlatformVersion[]>([]);
-const states = reactive<Record<ListKey, LoadState>>({ agent: 'idle', branch: 'idle', version: 'idle' });
+const states = reactive<Record<ListKey, LoadState>>({
+  agent: 'idle',
+  branch: 'idle',
+  version: 'idle',
+});
 const errors = reactive<Record<ListKey, string>>({ agent: '', branch: '', version: '' });
 const sequence: Record<ListKey, number> = { agent: 0, branch: 0, version: 0 };
 let session = 0;
@@ -88,12 +117,17 @@ const currentVersion = computed(() =>
   versions.value.find((item) => item.agentVersion === selected.version),
 );
 const selectedType = computed<AgentTypeGroup | null>(() => currentAgent.value?.typeGroup ?? null);
+const requiresBranch = computed(
+  () => selectedType.value === 'abcclaw' && !currentAgent.value?.local,
+);
 const typeError = computed(() => {
   if (!currentAgent.value) return '';
+  if (currentAgent.value.unavailable) return '智能体服务未启动，请启动后重试。';
   return selectedType.value ? '' : '该智能体类型未知或存在冲突，暂不支持选择。';
 });
 const agentAvailable = computed(
-  () => states.agent === 'ready' && !!currentAgent.value && !!selectedType.value && !typeError.value,
+  () =>
+    states.agent === 'ready' && !!currentAgent.value && !!selectedType.value && !typeError.value,
 );
 const branchAvailable = computed(
   () => agentAvailable.value && states.branch === 'ready' && !!currentBranch.value,
@@ -101,7 +135,7 @@ const branchAvailable = computed(
 const selection = computed<AgentTargetSelection | null>(() => {
   if (disposed || !agentAvailable.value || states.version !== 'ready' || !currentVersion.value)
     return null;
-  if (selectedType.value === 'abcclaw' && !branchAvailable.value) return null;
+  if (requiresBranch.value && !branchAvailable.value) return null;
   const agent = currentAgent.value!;
   return {
     teamId: props.teamId,
@@ -111,9 +145,10 @@ const selection = computed<AgentTargetSelection | null>(() => {
     typeGroup: selectedType.value!,
     platformAgentType: agent.platformAgentType,
     platformArrangeType: agent.platformArrangeType,
-    branchId: selectedType.value === 'abcclaw' ? currentBranch.value!.branchId : null,
-    branchName: selectedType.value === 'abcclaw' ? currentBranch.value!.branchName : null,
+    branchId: requiresBranch.value ? currentBranch.value!.branchId : null,
+    branchName: requiresBranch.value ? currentBranch.value!.branchName : null,
     agentVersion: currentVersion.value.agentVersion,
+    ...(currentVersion.value.localTarget ? { localTarget: currentVersion.value.localTarget } : {}),
     tools: agent.tools,
     skills: agent.skills,
   };
@@ -201,7 +236,7 @@ function flattenBranches(
   ]);
 }
 function loadBranches() {
-  if (!agentAvailable.value || selectedType.value !== 'abcclaw') return;
+  if (!agentAvailable.value || !requiresBranch.value) return;
   return loadList(
     'branch',
     () => props.directory.getBranches({ token: props.token, agentId: selected.agent }),
@@ -215,12 +250,12 @@ function loadBranches() {
   );
 }
 function loadVersions() {
-  if (!agentAvailable.value || (selectedType.value === 'abcclaw' && !branchAvailable.value)) return;
+  if (!agentAvailable.value || (requiresBranch.value && !branchAvailable.value)) return;
   return loadList(
     'version',
     () => {
       const input = { token: props.token, agentId: selected.agent };
-      return selectedType.value === 'abcclaw'
+      return requiresBranch.value
         ? props.directory.getBranchVersions({ ...input, branchId: selected.branch })
         : props.directory.getAgentVersions(input);
     },
@@ -239,17 +274,14 @@ const fields = computed(() => [
     disabled: !props.token,
     options: agents.value.map((item) => ({
       value: item.agentId,
-      label: `${item.agentName} · ${item.agentId}`,
+      label: `${item.agentName}${item.unavailable ? '（服务离线）' : ''}`,
     })),
   },
   {
     key: 'branch' as const,
     label: '分支地址',
-    placeholder:
-      selectedType.value === 'base/workflow' || !currentAgent.value
-        ? '不适用（base/workflow）'
-        : '请选择分支地址',
-    disabled: !agentAvailable.value || selectedType.value !== 'abcclaw',
+    placeholder: !requiresBranch.value ? '不适用（无平台分支）' : '请选择分支地址',
+    disabled: !agentAvailable.value || !requiresBranch.value,
     options: branches.value.map((item) => ({
       value: item.branchId,
       label: `${'↳ '.repeat(item.depth)}${item.branchName || item.branchId} · ${item.branchId}`,
@@ -258,9 +290,8 @@ const fields = computed(() => [
   {
     key: 'version' as const,
     label: props.versionLabel,
-    placeholder:
-      selectedType.value === 'abcclaw' && !selected.branch ? '请先选择分支地址' : '请选择版本',
-    disabled: !agentAvailable.value || (selectedType.value === 'abcclaw' && !branchAvailable.value),
+    placeholder: requiresBranch.value && !selected.branch ? '请先选择分支地址' : '请选择版本',
+    disabled: !agentAvailable.value || (requiresBranch.value && !branchAvailable.value),
     options: versions.value.map((item) => ({
       value: item.agentVersion,
       label: item.status ? `${item.agentVersion} · ${item.status}` : item.agentVersion,

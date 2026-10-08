@@ -58,6 +58,7 @@ class PlatformTargetInput(BaseModel):
 class PlatformEvaluationInput(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
+    name: Annotated[str, Field(max_length=128), AfterValidator(nonblank)] | None = None
     target: PlatformTargetInput
     dataset_id: Identifier
     dataset_version: int = Field(strict=True, ge=1)
@@ -134,6 +135,7 @@ class PlatformComparisonTargetInput(BaseModel):
 class PlatformComparisonInput(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
+    name: Annotated[str, Field(max_length=128), AfterValidator(nonblank)] | None = None
     target: PlatformComparisonTargetInput
     dataset_id: Identifier
     dataset_version: int = Field(strict=True, ge=1)
@@ -179,6 +181,7 @@ class SubmitPlatformEvaluation(Protocol):
         user_team_id: str,
         user_id: str,
         user_name: str,
+        name: str | None = None,
     ) -> EvaluationTask: ...
 
 
@@ -259,6 +262,7 @@ async def launch_platform_evaluation(request: Request) -> JSONResponse:
             user_team_id=caller.user_team_id if caller else "",
             user_id=caller.user_id if caller else "anonymous",
             user_name=caller.user_name if caller else "匿名用户",
+            name=inputs.name,
         )
     except PermissionError:
         raise HTTPException(403, "Platform target access was rejected") from None
@@ -315,6 +319,7 @@ async def launch_platform_comparison(request: Request) -> JSONResponse:
             user_team_id=caller.user_team_id if caller else "",
             user_id=caller.user_id if caller else "anonymous",
             user_name=caller.user_name if caller else "匿名用户",
+            name=inputs.name,
         )
     except PermissionError:
         raise HTTPException(403, "Platform target access was rejected") from None

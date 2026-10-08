@@ -88,7 +88,7 @@ onUnmounted(() => sequence++);
         <small>已完成任务的执行用例数，重跑单独计数</small>
       </article>
       <article class="card">
-        <div class="metric-label">数据集样本</div>
+        <div class="metric-label">测评集样本</div>
         <div class="metric-value">{{ data?.dataset_samples ?? '—' }}</div>
         <small>当前 {{ data?.dataset_count ?? '—' }} 个未归档集的最新发布样本，不随时间筛选</small>
       </article>

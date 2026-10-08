@@ -14,6 +14,7 @@ Dependencies = Annotated[ServerDependencies, Depends(get_dependencies)]
 class TaskAssociationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     kind: EvaluationTaskKind
+    name: str | None = None
     run_ids: tuple[str, ...]
     static_report_ids: tuple[str, ...] = ()
 

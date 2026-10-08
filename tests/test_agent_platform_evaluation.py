@@ -107,6 +107,7 @@ def test_exact_submission_and_safe_response(claw, count):
             "user_team_id": "gate-team",
             "user_id": "user",
             "user_name": "User",
+            "name": None,
         }
     ]
     assert SECRET not in response.text
@@ -451,6 +452,7 @@ def test_platform_comparison_submission_creates_ab_pair():
             "user_team_id": "",
             "user_id": "anonymous",
             "user_name": "匿名用户",
+            "name": None,
         }
     ]
 
@@ -490,3 +492,12 @@ def test_platform_comparison_rejects_invalid_targets(target_override, expected):
             "/api/agent-platform/comparisons", headers=HEADERS, json=body
         )
     assert response.status_code == expected
+
+
+@pytest.mark.parametrize("name", ["", "   ", "a" * 129])
+def test_invalid_task_names_rejected_before_submission(name):
+    calls = []
+    with client_for(lambda **kw: calls.append(kw)) as client:
+        response = client.post(PATH, json={**payload(), "name": name}, headers=HEADERS)
+    assert response.status_code == 422
+    assert calls == []

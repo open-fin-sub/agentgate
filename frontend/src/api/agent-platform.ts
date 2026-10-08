@@ -1,11 +1,14 @@
 import type {
+  LocalTarget,
   AgentDirectory,
   AgentTypeGroup,
   PlatformAgent,
   PlatformBranch,
+  PlatformCapability,
   PlatformTeam,
   PlatformVersion,
 } from '../views/evaluation/components/AgentTargetPicker.vue';
+import { request } from './evaluations';
 
 export type AgentPlatformErrorKind =
   | 'invalid_input'
@@ -295,6 +298,29 @@ function normalizeVersions(value: unknown, status: number, branchId?: string): P
   return [...result.values()];
 }
 
+function normalizeCapabilities(value: unknown, status: number): PlatformCapability {
+  const row = object(value, status);
+  const tools = array(row.tools, status);
+  const skills = array(row.skills, status);
+  const normalizedTools = tools.map((raw) => {
+    const tool = object(raw, status);
+    return {
+      name: text(tool.name, status),
+      description: optionalText(tool.description, status),
+    };
+  });
+  const normalizedSkills = skills.map((raw) => {
+    const skill = object(raw, status);
+    return {
+      external_skill_id: text(skill.external_skill_id, status),
+      name: text(skill.name, status),
+      description: optionalText(skill.description, status),
+      tools: array(skill.tools, status).map((name) => text(name, status)),
+    };
+  });
+  return { tools: normalizedTools, skills: normalizedSkills };
+}
+
 // 行内目录：origin 由部署环境配置（VITE_AGENT_PLATFORM_ORIGIN / VITE_ABCCLAW_PLATFORM_ORIGIN，
 // 空值走同源 /web 代理）。行外目录：固定本地虚拟地址（VITE_LOCAL_PLATFORM_ORIGIN 可覆盖）。
 const LOCAL_PLATFORM_ORIGIN: string =
@@ -378,9 +404,94 @@ function createDirectory(fixedOrigin: string): AgentDirectory {
       return normalizeVersions(unwrap(response.value, response.status), response.status, branchId);
     });
   };
-  return { getTeams, getAgents, getBranches, getAgentVersions, getBranchVersions };
+  const getCapabilities: AgentDirectory['getCapabilities'] = async ({
+    token,
+    agentId,
+    agentVersion,
+    branchId,
+  }) => {
+    validateId(agentId);
+    validateId(agentVersion);
+    return query(token, async (signal) => {
+      const response = await getJson(
+        '/web/agent/capabilities',
+        { agentId, agentVersion, ...(branchId ? { branchId } : {}) },
+        token,
+        signal,
+        fixedOrigin,
+      );
+      return normalizeCapabilities(unwrap(response.value, response.status), response.status);
+    });
+  };
+  return {
+    getTeams,
+    getAgents,
+    getBranches,
+    getAgentVersions,
+    getBranchVersions,
+    getCapabilities,
+  };
 }
 
 export const agentDirectory: AgentDirectory = createDirectory('');
-export const localAgentDirectory: AgentDirectory = createDirectory(LOCAL_PLATFORM_ORIGIN);
+const mockDirectory = createDirectory(LOCAL_PLATFORM_ORIGIN);
+interface LocalCatalog {
+  targets: LocalTarget[];
+  unavailable: { agent_id: string; name: string; mode: string }[];
+}
+async function localCatalog(token: string): Promise<LocalCatalog> {
+  if (token !== 'local') throw failure('invalid_input');
+  return request<LocalCatalog>('/local-targets');
+}
+const isLocalId = (id: string) => ['loan-agent', 'loan-base', 'loan-workflow', 'loan-cloudshrimp'].includes(id);
+export const localAgentDirectory: AgentDirectory = {
+  ...mockDirectory,
+  async getCapabilities(input) {
+    if (!isLocalId(input.agentId)) return mockDirectory.getCapabilities!(input);
+    const catalog = await localCatalog(input.token);
+    const target = catalog.targets.find(t => t.descriptor.ref.external_target_id === input.agentId &&
+      t.descriptor.ref.external_version_id === input.agentVersion);
+    if (!target) throw failure('business');
+    return { tools: target.descriptor.tools ?? [], skills: target.descriptor.skills.map(s => ({
+      external_skill_id: s.external_skill_id, name: s.name, description: s.description,
+      tools: (s.tools ?? []).map(t => t.name),
+    })) };
+  },
+  async getAgents(input) {
+    const [mock, catalog] = await Promise.all([mockDirectory.getAgents(input), localCatalog(input.token)]);
+    const local = new Map<string, PlatformAgent>();
+    for (const target of catalog.targets) {
+      const descriptor = target.descriptor;
+      local.set(descriptor.ref.external_target_id, {
+        agentId: descriptor.ref.external_target_id,
+        agentName: descriptor.display_name,
+        typeGroup: target.mode === 'cloudshrimp' ? 'abcclaw' : 'base/workflow',
+        platformAgentType: null,
+        platformArrangeType: target.mode,
+        local: true,
+        tools: descriptor.tools?.map(t => ({ function: t })),
+        skills: descriptor.skills.map(s => ({ id: s.external_skill_id, name: s.name,
+          description: s.description, tools: s.tools?.map(t => t.name) })),
+      });
+    }
+    for (const target of catalog.unavailable) local.set(target.agent_id, {
+      agentId: target.agent_id, agentName: target.name,
+      typeGroup: target.mode === 'cloudshrimp' ? 'abcclaw' : 'base/workflow',
+      platformAgentType: null, platformArrangeType: target.mode, local: true, unavailable: true,
+    });
+    return [...mock, ...local.values()];
+  },
+  async getAgentVersions(input) {
+    if (!isLocalId(input.agentId)) return mockDirectory.getAgentVersions(input);
+    const catalog = await localCatalog(input.token);
+    return catalog.targets.filter(t => t.descriptor.ref.external_target_id === input.agentId)
+      .map(t => ({ agentVersion: t.descriptor.ref.external_version_id, localTarget: t }));
+  },
+  async getBranches(input) {
+    return isLocalId(input.agentId) ? [] : mockDirectory.getBranches(input);
+  },
+  async getBranchVersions(input) {
+    return isLocalId(input.agentId) ? [] : mockDirectory.getBranchVersions(input);
+  },
+};
 export const getTeams = agentDirectory.getTeams;

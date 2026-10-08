@@ -36,7 +36,7 @@ const status = ref(''),
 let timer: ReturnType<typeof setTimeout> | undefined,
   disposed = false;
 const link = (id: string) => links.value.find((t) => t.runIds.includes(id));
-const title = (r: EvaluationRun) => taskTitle(r, link(r.id)?.kind);
+const title = (r: EvaluationRun) => taskTitle(r, link(r.id)?.kind, link(r.id)?.name);
 function state(r: EvaluationRun) {
   const states = (link(r.id)?.runIds ?? [r.id]).map(
     (id) => runs.value.find((x) => x.id === id)?.status,
@@ -118,7 +118,7 @@ async function deleteTask(id: string) {
 function exportTasks(ids?: string[]) {
   downloadCsv(
     [
-      ['任务名称', '应用', '数据集', '状态', '评估方式', '得分', '创建时间'],
+      ['任务名称', '被测Agent', '测评集', '状态', '评估方式', '得分', '创建时间'],
       ...filtered.value
         .filter((r) => !ids || ids.includes(r.id))
         .map((r) => [
@@ -185,7 +185,7 @@ onUnmounted(() => {
 </script>
 <template>
   <div class="page-head">
-    <div style="display:flex;align-items:flex-end;gap:16px;">
+    <div style="display: flex; align-items: flex-end; gap: 16px">
       <h1 class="page-title">测评任务</h1>
       <div class="tabs">
         <button
@@ -203,17 +203,11 @@ onUnmounted(() => {
   <section class="card tasks-list">
     <div class="list-toolbar">
       <nav class="tabs">
-        <button
-          class="tab"
-          :class="{ active: !taskTab }"
-          @click="taskTab = ''"
-        >
-          全部
-        </button>
+        <button class="tab" :class="{ active: !taskTab }" @click="taskTab = ''">全部</button>
         <button
           v-for="t in [
             ['single', '单任务'],
-            ['ab', 'A/B Test 任务'],
+            ['ab', 'A/B试验'],
           ]"
           :key="'tt-' + t[0]"
           class="tab"
@@ -239,6 +233,17 @@ onUnmounted(() => {
     <p v-if="error" class="notice error" role="alert">{{ error }}</p>
     <div class="table-wrap">
       <table class="data-table">
+        <colgroup>
+          <col style="width: 3%" />
+          <col style="width: 17%" />
+          <col style="width: 8%" />
+          <col style="width: 13%" />
+          <col style="width: 15%" />
+          <col style="width: 18%" />
+          <col style="width: 10%" />
+          <col style="width: 8%" />
+          <col style="width: 8%" />
+        </colgroup>
         <thead>
           <tr>
             <th>
@@ -253,8 +258,8 @@ onUnmounted(() => {
             </th>
             <th>任务名称</th>
             <th>任务类型</th>
-            <th>应用</th>
-            <th>数据集</th>
+            <th>被测Agent</th>
+            <th>测评集</th>
             <th>评估方式</th>
             <th>进度与状态</th>
             <th>得分</th>
@@ -272,27 +277,33 @@ onUnmounted(() => {
               />
             </td>
             <td class="name-cell">
-              <button class="link" @click="emit('navigate', 'tasks/' + r.id)">{{ title(r) }}</button
+              <button class="link" :title="title(r)" @click="emit('navigate', 'tasks/' + r.id)">
+                {{ title(r) }}</button
               ><small>{{ new Date(r.created_at).toLocaleString() }}</small>
             </td>
             <td>
-              <span class="badge info">{{
+              <span>{{
                 link(r.id)?.kind === 'ab'
-                  ? 'A/B Test 任务'
+                  ? 'A/B试验'
                   : link(r.id)?.kind === 'stability'
                     ? '稳定性测试'
                     : '单任务'
               }}</span>
             </td>
             <td>
-              {{ r.manifest.target.display_name
-              }}<small>{{ r.manifest.target.ref.external_version_id }}</small>
+              <span class="primary-text" :title="r.manifest.target.display_name">{{
+                r.manifest.target.display_name
+              }}</span
+              ><small>{{ r.manifest.target.ref.external_version_id }}</small>
             </td>
             <td>
-              {{ r.manifest.dataset.dataset_name }}<small>v{{ r.manifest.dataset.version }}</small>
+              <span class="primary-text" :title="r.manifest.dataset.dataset_name">{{
+                r.manifest.dataset.dataset_name
+              }}</span
+              ><small>v{{ r.manifest.dataset.version }}</small>
             </td>
             <td>
-              <span class="badge info">{{ strategy(r) }}</span>
+              <span>{{ strategy(r) }}</span>
             </td>
             <td class="progress-cell">
               <template v-if="done(r)"
@@ -385,7 +396,7 @@ onUnmounted(() => {
   user-select: none;
 }
 .tasks-list {
-  padding: 24px;
+  padding: 16px;
 }
 .filters {
   gap: 12px;
@@ -419,43 +430,55 @@ onUnmounted(() => {
   font-size: 13px;
 }
 .data-table {
-  min-width: 1250px;
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  font-size: 13px;
 }
 .data-table th {
+  padding: 10px 6px;
   white-space: nowrap;
 }
-.name-cell {
-  min-width: 200px;
-  max-width: 300px;
+.primary-text,
+.name-cell .link {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .name-cell .link {
   text-align: left;
   font-weight: 500;
-  line-height: 1.7;
+  line-height: inherit;
 }
 .data-table small {
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 11px;
   color: #81928a;
   margin-top: 8px;
 }
 .data-table td {
-  padding-top: 20px;
-  padding-bottom: 20px;
+  vertical-align: top;
+  white-space: nowrap;
+  line-height: 22px;
+  padding: 16px 6px;
 }
-.row-actions {
-  position: sticky;
-  right: 0;
-  background: white;
-  min-width: 130px;
-  box-shadow: -5px 0 8px #23402f06;
+.data-table .row-actions {
+  white-space: normal;
 }
 .row-actions button {
-  margin: 5px;
+  margin: 0 8px 0 0;
+  height: auto;
+  padding: 0;
+  border: 0;
   font-size: 12px;
+  line-height: inherit;
 }
 .progress-cell {
-  min-width: 120px;
+  min-width: 0;
 }
 .progress-cell > div {
   display: flex;
@@ -481,12 +504,13 @@ progress.failed::-webkit-progress-value {
   background: #e2646e;
 }
 .task-score {
-  font-size: 19px;
+  font-size: 14px;
   font-weight: 650;
   color: #00a584;
 }
 .task-score p {
-  font-size: 14px;
+  margin: 0;
+  font: inherit;
   white-space: nowrap;
 }
 .task-score .danger {

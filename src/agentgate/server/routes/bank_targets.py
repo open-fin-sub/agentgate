@@ -18,6 +18,7 @@ Dependencies = Annotated[ServerDependencies, Depends(get_dependencies)]
 
 class BankLaunch(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    name: str | None = Field(default=None, min_length=1, max_length=128)
     mode: Literal["base", "workflow", "cloudshrimp"]
     dataset_id: str
     dataset_version: int = Field(ge=1)
@@ -67,7 +68,7 @@ def launch(request: BankLaunch, dependencies: Dependencies):
         runs = [run, *(EvaluationRun(manifest=run.manifest, user_team_id=run.user_team_id,
             user_id=run.user_id, user_name=run.user_name, api_key=run.api_key)
             for _ in range(request.repetitions - 1))]
-        task = EvaluationTask(id=run.id, kind="stability" if request.repetitions > 1 else "single", run_ids=tuple(r.id for r in runs))
+        task = EvaluationTask(id=run.id, name=request.name.strip() if request.name else None, kind="stability" if request.repetitions > 1 else "single", run_ids=tuple(r.id for r in runs))
         dependencies.repository.save_task_runs(task, runs)
         for item in runs:
             if item.status == "scheduled":

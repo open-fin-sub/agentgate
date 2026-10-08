@@ -219,7 +219,7 @@ const templateLabels2: Record<string, string> = {
 <template>
   <div v-if="!embedded" class="page-head">
     <div>
-      <h1 class="page-title">A/B 实验</h1>
+      <h1 class="page-title">A/B试验</h1>
       <p class="page-sub">
         {{
           mode === 'history'

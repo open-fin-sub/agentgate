@@ -145,6 +145,7 @@ def submit_platform_evaluation(
     user_team_id: str,
     user_id: str,
     user_name: str,
+    name: str | None = None,
 ) -> EvaluationTask:
     if credentials is None:
         raise ConnectionError("platform credential encryption is not configured")
@@ -229,6 +230,7 @@ def submit_platform_evaluation(
         ]
         task = EvaluationTask(
             id=task_id,
+            name=name,
             kind="single" if repetitions == 1 else "stability",
             run_ids=tuple(r.id for r in runs),
             credential_id=metadata.id,
@@ -276,6 +278,7 @@ def submit_platform_comparison(
     user_team_id: str,
     user_id: str,
     user_name: str,
+    name: str | None = None,
 ) -> tuple[EvaluationRun, EvaluationRun]:
     """Create and dispatch one controlled A/B pair of platform Runs."""
     if credentials is None:
@@ -361,6 +364,7 @@ def submit_platform_comparison(
             )
         task = EvaluationTask(
             id=task_id,
+            name=name,
             kind="ab",
             run_ids=tuple(item.id for item in prepared),
             credential_id=metadata.id,

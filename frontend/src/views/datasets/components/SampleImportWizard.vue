@@ -172,7 +172,8 @@ function close() {
   <el-dialog
     :model-value="true"
     title="新增样本"
-    width="min(1050px,96vw)"
+    class="sample-wizard-dialog"
+    width="min(800px,96vw)"
     :close-on-click-modal="false"
     :show-close="!busy"
     :close-on-press-escape="!busy"
@@ -189,7 +190,7 @@ function close() {
         <button
           v-for="m in [
             { id: 'manual', name: '＋ 手动创建', description: '多轮对话、期望输出与工具调用' },
-            { id: 'file', name: '⇧ 导入数据集', description: 'JSON / Excel (.xlsx) / CSV / ZIP' },
+            { id: 'file', name: '⇧ 导入测评集', description: 'JSON / Excel (.xlsx) / CSV / ZIP' },
             {
               id: 'annotation',
               name: '✓ 从标注导入',
@@ -334,11 +335,14 @@ function close() {
 .sample-wizard {
   color: #344158;
 }
+.sample-wizard h3 {
+  margin: 10px 0 14px;
+}
 .steps {
   display: flex;
   justify-content: center;
   gap: 20px;
-  padding: 25px;
+  padding: 14px 0;
   color: #99a3b4;
   font-size: 14px;
 }
@@ -347,15 +351,16 @@ function close() {
 }
 .methods {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
 .methods button {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
   text-align: left;
-  padding: 28px;
+  padding: 16px 24px;
+  min-height: 104px;
   border: 1px solid #dce4ef;
   border-radius: 10px;
   background: white;

@@ -416,3 +416,10 @@ Status: implemented; 361 tests passing
 | `integration/p1-new` | Reject; it contains no Trace redaction implementation. |
 | Current refactor | Reuse immutable `Trace`, `TraceSpan`, and `FrozenJsonObject` contracts and the application read boundary. |
 | From scratch | Implement recursive key and text redaction, checksum-aware card masking, immutable protected views, and ResultReader/FastAPI integration. |
+
+
+### 2026-09-29 · Sample Trace explorer
+
+Implemented in the sample detail view below the evaluation panels. TaskResults retains request, cache and loading/error ownership. TraceExplorer renders the parent-child execution graph and read-only CodeMirror JSON, with selection, unfolding, scrolling and span highlighting. trace-presentation builds a deterministic display forest, calculates timing from recorded timestamps, and uses the JSON syntax tree to locate direct objects in the top-level spans array. Source objects and array order are unchanged.
+
+Missing parents remain visible as roots. Cycles are broken for display without dropping nodes; invalid or missing timing stays unavailable. Focused coverage includes 6,000-level chains, repeated nested span_id fields, escaped/Unicode text and unknown JSON fields. 17 related unit tests, typecheck, lint and production build passed. Browser checks passed with the actual component and utility, plus an existing sample in the local application. No backend contracts or trace collection behavior changed.

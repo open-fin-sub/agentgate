@@ -99,9 +99,9 @@ test('restored history and unified creation use real API responses',async({page,
  page.on('pageerror',e=>errors.push(e.message))
  await page.goto('/#tasks')
  await expect(page.getByRole('button',{name:'单任务',exact:true})).toBeVisible()
- await expect(page.getByRole('button',{name:'A/B 实验',exact:true})).toBeVisible()
+ await expect(page.getByRole('button',{name:'A/B试验',exact:true})).toBeVisible()
  await expect(page.getByRole('combobox',{name:'执行状态筛选'})).toBeVisible()
- await expect(page.locator('.sidebar').getByRole('link',{name:'A/B 实验'})).toHaveCount(0)
+ await expect(page.locator('.sidebar').getByRole('link',{name:'A/B试验'})).toHaveCount(0)
  await page.getByRole('button',{name:'发起测评',exact:true}).click()
  await page.getByRole('dialog',{name:'新建测评任务'}).getByRole('combobox',{name:'智能体',exact:true}).selectOption('demo')
  const dialog=page.getByRole('dialog')
@@ -138,7 +138,7 @@ test('create A/B via the shared form, then retrieve real comparison',async({page
  await dialog.getByRole('button',{name:/A\/B 实验/}).click()
  await dialog.getByRole('button',{name:'采用推荐并查看理由'}).click()
  const response=page.waitForResponse(r=>r.url().endsWith('/api/run-comparisons')&&r.request().method()==='POST')
- await dialog.getByRole('button',{name:'创建 A/B 实验',exact:true}).click()
+ await dialog.getByRole('button',{name:'创建 A/B试验',exact:true}).click()
  const result=await response
  expect(result.status()).toBe(202)
 const pair=(await result.json()).data
@@ -149,10 +149,10 @@ const pair=(await result.json()).data
  },{timeout:45000}).toEqual(['completed','completed'])
  await expect(page.getByRole('heading',{name:'结果对比',exact:true})).toBeVisible({timeout:15000})
  await page.goto('/#tasks')
- await page.getByRole('button',{name:'A/B 实验',exact:true}).click()
+ await page.getByRole('button',{name:'A/B试验',exact:true}).click()
  await expect(page.locator('tbody tr').first()).toBeVisible()
  await page.reload()
- await page.getByRole('button',{name:'A/B 实验',exact:true}).click()
+ await page.getByRole('button',{name:'A/B试验',exact:true}).click()
  await expect(page.locator('tbody tr').first()).toBeVisible()
 })
 

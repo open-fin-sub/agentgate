@@ -665,7 +665,7 @@ onMounted(async () => {
       </div>
       <div v-if="!showingDetail" class="actions" style="margin-left: auto">
         <button class="primary" data-testid="create-dataset" :disabled="busy" @click="openCreate">
-          ＋ 创建数据集
+          ＋ 创建测评集
         </button>
       </div>
       <div v-else-if="activeDataset" class="actions">

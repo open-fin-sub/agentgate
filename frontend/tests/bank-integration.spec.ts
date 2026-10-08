@@ -9,7 +9,7 @@ test('bank targets use real catalog, database datasets and capability limits',as
  const form=page.getByRole('dialog',{name:'新建测评任务'})
  await expect(form.getByRole('combobox',{name:'智能体',exact:true})).toHaveValue('base')
  await expect(form.getByRole('checkbox',{name:/Skill 静态分析/})).toBeDisabled()
- await expect(form.getByRole('button',{name:'A/B 实验',exact:true})).toBeDisabled()
+ await expect(form.getByRole('button',{name:'A/B试验',exact:true})).toBeDisabled()
  await expect(form.getByRole('spinbutton',{name:'并发样本数'})).toHaveValue('1')
  await expect(form.getByRole('spinbutton',{name:'失败重试次数'})).toBeDisabled()
  await form.getByRole('combobox',{name:'智能体',exact:true}).selectOption('workflow')

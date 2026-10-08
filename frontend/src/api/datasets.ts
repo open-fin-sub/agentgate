@@ -22,6 +22,7 @@ interface ApiExpectationBase {
 }
 
 type ApiExpectation =
+  | Extract<SerializedExpectation, { kind: 'execution_path' }>
   | Expectation
   | (ApiExpectationBase & { kind: 'skill_route'; condition: Condition })
   | (ApiExpectationBase & {
@@ -152,6 +153,7 @@ export function toApiCase(item: EvaluationCase): ApiEvaluationCase {
               (e) => e.kind === 'policy' && e.policy_id === policy_id,
             ),
           ),
+          ...original.filter((e) => e.kind === 'execution_path'),
           ...turn.expectations,
         ];
         const order = new Map(original.map((e, i) => [e.id, i]));

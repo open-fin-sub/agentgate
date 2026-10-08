@@ -30,6 +30,7 @@ from agentgate.application.evaluator_management import (
 from agentgate.application.result_case_writeback import ResultCaseWriteback
 from agentgate.demo.bootstrap import (
     ensure_demo_dataset,
+    ensure_loan_core_datasets,
     ensure_demo_target_descriptors,
 )
 from agentgate.demo.loan import LOAN_DATASET, LoanAgent
@@ -282,6 +283,7 @@ def build_dependencies(
         if isinstance(database_config, SQLiteConfig):
             ensure_demo_target_descriptors(target_catalog)
             ensure_demo_dataset(repository)
+            ensure_loan_core_datasets(repository)
         configured_api_key_encryptor = api_key_encryptor
         if (
             configured_api_key_encryptor is None

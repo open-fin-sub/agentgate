@@ -3,7 +3,7 @@ import {test,expect} from '@playwright/test'
 test('all menu routes, unknown route recovery and task form validation',async({page})=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message))
  await page.goto('/')
- for(const [name,heading] of [['测评总览','测评总览'],['测评集','测评集'],['评估器','评估器'],['测评任务','测评任务'],['结果中心','结果中心'],['A/B 实验','A/B 实验'],['调优中心','调优中心'],['Skill 静态分析','Skill 静态分析']]){
+ for(const [name,heading] of [['测评总览','测评总览'],['测评集','测评集'],['评估器','评估器'],['测评任务','测评任务'],['结果中心','结果中心'],['A/B试验','A/B试验'],['调优中心','调优中心'],['Skill 静态分析','Skill 静态分析']]){
   await page.locator('.sidebar').getByRole('link',{name,exact:true}).click()
   await expect(page.getByRole('heading',{name:heading,exact:true}).first()).toBeVisible()
   await expect(page.locator('.sidebar .nav-item.active')).toHaveText(name)

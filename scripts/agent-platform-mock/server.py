@@ -97,6 +97,15 @@ def create_app():
             raise HTTPException(422, "use branch versions")
         return wrapped(fixtures["versions"])
 
+    @app.get("/web/agent/capabilities")
+    def capabilities(agentId: str, agentVersion: str | None = None, branchId: str | None = None):
+        # 本地扩展接口：目录文档未定义能力声明；未登记能力的智能体返回 404 供调用方优雅降级。
+        agent(agentId)
+        declared = fixtures.get("agentCapabilities", {}).get(agentId)
+        if declared is None:
+            raise HTTPException(404, "no declared capabilities")
+        return wrapped(declared)
+
     @app.get("/web/abcclaw/v2/branchTree")
     def branch_tree(agentId: str):
         if agent(agentId)["agentType"] != "abcclaw":

@@ -577,7 +577,7 @@ onMounted(async () => {
           <p class="evaluator-status-note">
             {{
               selected.evaluator.source === 'builtin'
-                ? '内置评估器启停保存在当前浏览器，影响本页面新建任务、A/B 实验及重跑；历史报告和其他客户端不受影响。清除浏览器数据会重置。'
+                ? '内置评估器启停保存在当前浏览器，影响本页面新建任务、A/B试验及重跑；历史报告和其他客户端不受影响。清除浏览器数据会重置。'
                 : !selected.latest
                   ? '尚无发布版本：保存并发布草稿后，启用即可发起测评。'
                   : !selected.evaluator.enabled

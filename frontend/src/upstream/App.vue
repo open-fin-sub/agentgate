@@ -230,7 +230,7 @@ onUnmounted(() => {
             <div>
               <span class="step">01 · EVALUATION SETUP</span>
               <h2 id="config-title">评估配置</h2>
-              <p>选择 Agent、数据集与评估器，然后启动一次真实评估。</p>
+              <p>选择 Agent、测评集与评估器，然后启动一次真实评估。</p>
             </div>
             <div class="run-count">已完成 {{ overview.completed_runs }} 次运行</div>
           </div>
@@ -257,7 +257,7 @@ onUnmounted(() => {
             <article class="config-card">
               <div class="card-index">D</div>
               <label>Dataset</label>
-              <el-select v-model="selectedDataset" data-testid="dataset-select" aria-label="数据集">
+              <el-select v-model="selectedDataset" data-testid="dataset-select" aria-label="测评集">
                 <el-option
                   v-for="item in datasets"
                   :key="item.id"

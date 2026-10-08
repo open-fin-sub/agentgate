@@ -950,7 +950,7 @@
         <section v-else-if="page === 'experiments'" class="page">
           <div class="page-head">
             <div>
-              <h1 class="page-title">A/B 实验</h1>
+              <h1 class="page-title">A/B试验</h1>
               <div class="page-sub">
                 在同一测评集上对比两组配置；保持其他条件一致，只改动一项资产，才能将差异归因到该变量。
               </div>
@@ -958,7 +958,7 @@
             <div class="actions">
               <button class="secondary" @click="resetAbExperiment">重置实验</button
               ><button class="primary" :disabled="!canRunAb" @click="runAbExperiment">
-                运行 A/B 实验
+                运行 A/B试验
               </button>
             </div>
           </div>
@@ -1466,7 +1466,7 @@
     <div v-if="abModal" class="modal-backdrop">
       <div class="modal ab-modal">
         <div class="modal-header">
-          <b>创建 A/B 实验</b><button class="ghost" @click="abModal = false">✕</button>
+          <b>创建 A/B试验</b><button class="ghost" @click="abModal = false">✕</button>
         </div>
         <div class="modal-body">
           <div class="form-grid">
@@ -1475,7 +1475,7 @@
               ><input
                 class="input"
                 v-model="abName"
-                placeholder="例如：客户服务主智能体发布前 A/B 实验"
+                placeholder="例如：客户服务主智能体发布前 A/B试验"
               />
             </div>
             <div class="field">
@@ -2024,7 +2024,7 @@ const primaryNav = [
 ];
 const analysisNav = [
   { key: 'results', label: '结果中心' },
-  { key: 'experiments', label: 'A/B 实验' },
+  { key: 'experiments', label: 'A/B试验' },
   { key: 'optimizer', label: '调优中心' },
   { key: 'analysis', label: 'Skill 静态分析' },
 ];
@@ -2078,7 +2078,7 @@ const abSkillIds = ref<string[]>(['s-1', 's-2']);
 const abRunMode = ref<'立即执行' | '预约执行'>('立即执行');
 const abGate = ref('通过率不低于基线且 P0 全通过');
 const abExperiment = ref({
-  name: '客户服务主智能体发布前 A/B 实验',
+  name: '客户服务主智能体发布前 A/B试验',
   target: '客户服务主智能体',
   skills: '订单查询 Skill、风险提示 Skill',
   dataset: '核心业务回归集 · v1.4',
@@ -2951,7 +2951,7 @@ function runAbExperiment() {
     tone: newFail === 0 && candidatePass >= basePass ? 'success' : 'warn',
   };
   abRan.value = true;
-  showToast(`A/B 实验已完成：受控变量为${variable}。`);
+  showToast(`A/B试验已完成：受控变量为${variable}。`);
 }
 function toggleAbSkill(id: string) {
   abSkillIds.value = abSkillIds.value.includes(id)
@@ -2973,7 +2973,7 @@ function createAbExperiment() {
     .map((item) => item.name)
     .join('、');
   abExperiment.value = {
-    name: abName.value.trim() || `${target?.name || '测评对象'} A/B 实验`,
+    name: abName.value.trim() || `${target?.name || '测评对象'} A/B试验`,
     target: target?.name || '测评对象',
     skills,
     dataset: abDataset.value,
@@ -2990,7 +2990,7 @@ function createAbExperiment() {
     status: '通过',
   };
   abModal.value = false;
-  showToast(`A/B 实验已${abRunMode.value === '立即执行' ? '创建并开始运行' : '创建并预约'}。`);
+  showToast(`A/B试验已${abRunMode.value === '立即执行' ? '创建并开始运行' : '创建并预约'}。`);
 }
 function toggleAnalysisScope(scope: string) {
   selectedAnalysisScopes.value = selectedAnalysisScopes.value.includes(scope)

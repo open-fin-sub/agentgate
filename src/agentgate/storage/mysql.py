@@ -1051,7 +1051,7 @@ class MySQLRepository:
             reports[report.target_descriptor_sha256] = report_id
         if previous:
             task = EvaluationTask.model_validate(
-                {**previous.model_dump(), "static_report_ids": tuple(reports.values())}
+                {**previous.model_dump(), "name": task.name if task.name is not None else previous.name, "static_report_ids": tuple(reports.values())}
             )
             _update(db, s.evaluation_tasks, task)
         else:

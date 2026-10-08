@@ -34,6 +34,7 @@ const taskKind = ref<'single' | 'ab'>('single'),
   includeStatic = ref(false);
 const platformPicker = ref<InstanceType<typeof AgentTargetPicker> | null>(null);
 const platformSelection = ref<AgentTargetSelection | null>(null);
+const localBankSelected = computed(() => platformSelection.value?.localTarget?.adapter_type === 'local_bank');
 const auth = useAuthStore();
 const platformDirectory = computed(() =>
   auth.loginMode === 'external' ? localAgentDirectory : agentDirectory,
@@ -42,6 +43,9 @@ const platformToken = computed(() => (auth.loginMode === 'bank' ? auth.token : '
 const platformTeamId = computed(() => (auth.loginMode === 'bank' ? auth.teamId : ''));
 function receivePlatformSelection(selection: AgentTargetSelection | null) {
   platformSelection.value = selection;
+  if (selection?.localTarget?.adapter_type === 'local_bank') {
+    concurrency.value = 1; timeout.value = 180; retries.value = 0;
+  }
 }
 const platformCandidateVersion = ref('');
 const platformCandidateVersions = ref<readonly { agentVersion: string; status?: string }[]>([]);
@@ -68,7 +72,7 @@ const staticDialog = ref(false),
   staticError = ref('');
 const staticConnection = ref<{ model: string; base_url: string; configured: boolean } | null>(null);
 const staticReport = ref<any>(null),
-  staticReports = ref<{ version: string; reportId: string }[]>([]);
+  staticReports = ref<{ version: string; reportId: string; descriptorHash: string }[]>([]);
 let staticSequence = 0;
 function cancelAnalysis() {
   staticSequence++;
@@ -79,7 +83,7 @@ function cancelAnalysis() {
   staticLoading.value = false;
 }
 async function confirmStatic() {
-  if (taskKind.value !== 'ab' || submitting.value) return;
+  if (!staticAvailable.value || submitting.value || staticLoading.value) return;
   const ticket = ++staticSequence;
   staticLoading.value = true;
   staticError.value = '';
@@ -88,14 +92,15 @@ async function confirmStatic() {
   staticReports.value = [];
   try {
     const reports = [];
-    for (const version of taskKind.value === 'ab'
-      ? [selectedVersion.value, candidateVersion.value]
-      : [selectedVersion.value]) {
-      const report = bankTarget.value
+    const exactTarget = staticTarget.value;
+    for (const version of exactTarget
+      ? [exactTarget.ref.external_version_id]
+      : [selectedVersion.value, candidateVersion.value]) {
+      const report = exactTarget
         ? await request<any>(
             '/skill-analysis/reports',
             'POST',
-            { target_descriptor_sha256: bankTarget.value.descriptor.content_sha256 },
+            { target_descriptor_sha256: exactTarget.content_sha256 },
             240000,
           )
         : await request<any>('/evaluations/skill-analysis', 'POST', { version }, 240000);
@@ -104,7 +109,9 @@ async function confirmStatic() {
         staticReport.value = report;
         throw Error('静态分析未完成，请检查模型权限或连接。报告 ID：' + report.id);
       }
-      reports.push({ version, reportId: report.id });
+      if (exactTarget && report.target_descriptor_sha256 !== exactTarget.content_sha256)
+        throw Error('分析报告与所选智能体定义不一致，请重新分析。');
+      reports.push({ version, reportId: report.id, descriptorHash: report.target_descriptor_sha256 });
       if (!staticReport.value) staticReport.value = report;
     }
     staticReports.value = reports;
@@ -117,7 +124,7 @@ async function confirmStatic() {
   }
 }
 async function openStatic() {
-  if (taskKind.value !== 'ab' || submitting.value) return;
+  if (!staticAvailable.value || submitting.value || staticLoading.value) return;
   const ticket = ++staticSequence;
   staticDialog.value = true;
   staticError.value = '';
@@ -180,6 +187,7 @@ const branchMismatch = computed(
 );
 const targetDescriptor = computed(() => {
   if (branchMismatch.value) return undefined;
+  if (platformSelection.value?.localTarget) return platformSelection.value.localTarget.descriptor;
   if (bankTarget.value) return bankTarget.value.descriptor;
   if (platformSelection.value) {
     const sel = platformSelection.value;
@@ -219,6 +227,15 @@ const targetDescriptor = computed(() => {
   }
   return undefined;
 });
+
+const staticTarget = computed(() => auth.loginMode === 'external'
+  ? platformSelection.value?.localTarget?.descriptor ?? bankTarget.value?.descriptor
+  : undefined);
+const staticAvailable = computed(() => staticTarget.value
+  ? staticTarget.value.skills.length >= 2
+  : auth.loginMode === 'external' && taskKind.value === 'ab' && !platformSelection.value && selectedAgent.value === 'demo');
+watch([platformSelection, selectedAgent, selectedVersion, candidateVersion, taskKind,
+  () => auth.loginMode, () => auth.teamId], cancelAnalysis);
 
 function buildFrontendTopology(sel: NonNullable<typeof platformSelection.value>) {
   if (!sel.tools?.length && !sel.skills?.length) return null;
@@ -465,6 +482,15 @@ async function submit() {
     return;
   }
   const platform = platformPicker.value?.readSubmissionSelection() ?? null;
+  const localTarget = platform?.target.localTarget;
+  if (localTarget && auth.loginMode !== 'external') {
+    formError.value = '本地智能体仅支持行外模式。';
+    return;
+  }
+  if (localTarget?.adapter_type === 'local_bank' && (concurrency.value !== 1 || retries.value !== 0 || timeout.value > 300)) {
+    formError.value = '贷款智能体要求并发 1、重试 0、超时不超过 300 秒。';
+    return;
+  }
   if (taskKind.value === 'single' && !platform) {
     formError.value = '请完整选择被测智能体及版本。';
     return;
@@ -536,7 +562,7 @@ async function submit() {
     formError.value = '请选择已发布的测评集及版本。';
     return;
   }
-  if (taskKind.value === 'ab' && !selectedVersion.value) {
+  if (taskKind.value === 'ab' && !platform && !selectedVersion.value) {
     formError.value = '请选择智能体版本。';
     return;
   }
@@ -559,9 +585,9 @@ async function submit() {
     repetitions: repetitions.value,
     scheduledFor:
       launchMode.value === 'scheduled' ? new Date(scheduledAt.value).toISOString() : undefined,
-    baseline: selectedVersion.value,
-    candidate: candidateVersion.value,
-    staticReports: taskKind.value === 'ab' && includeStatic.value ? [...staticReports.value] : [],
+    baseline: localTarget ? platform!.target.agentVersion : selectedVersion.value,
+    candidate: localTarget ? platformCandidateVersion.value : candidateVersion.value,
+    staticReports: includeStatic.value ? [...staticReports.value] : [],
   };
   submitting.value = true;
   formError.value = '';
@@ -581,7 +607,7 @@ async function submit() {
       exact.cases = exact.cases.filter((c) => caseIds.includes(c.id));
       if (exact.cases.length !== caseIds.length) invalid('所选用例不在当前发布版本中。');
     }
-    if (platform) {
+    if (platform && !localTarget) {
       const incompatible = exact.cases.filter(
         (c) =>
           Object.keys(c.initial_state ?? {}).length > 0 ||
@@ -617,7 +643,35 @@ async function submit() {
         { confirmButtonText: '继续测评', cancelButtonText: '返回修改' },
       );
     creating = true;
-    if (platform && taskKind.value === 'ab') {
+    if (localTarget && taskKind.value === 'single') {
+      const common = {
+        dataset_id: snapshot.datasetId, dataset_version: snapshot.datasetVersion,
+        case_ids: snapshot.caseIds, evaluator_ids: snapshot.evaluatorIds,
+        timeout_seconds: snapshot.timeout, scheduled_for: snapshot.scheduledFor,
+      };
+      const created = await request<{ id?: string; run_id?: string; run_ids?: string[] }>(
+        localTarget.adapter_type === 'local_bank' ? '/bank-evaluations'
+          : snapshot.repetitions > 1 ? '/stability-experiments' : '/evaluations',
+        'POST', localTarget.adapter_type === 'local_bank'
+          ? { ...common, name: snapshot.name, mode: localTarget.mode,
+              target_descriptor_sha256: localTarget.descriptor.content_sha256,
+              repetitions: snapshot.repetitions }
+          : { ...common, version: platform!.target.agentVersion,
+              max_parallel_cases: snapshot.concurrency, max_retries: snapshot.retries,
+              ...(snapshot.repetitions > 1 ? { repetitions: snapshot.repetitions } : {}) },
+      );
+      const id = created.id ?? created.run_id;
+      if (!id) throw Error('Invalid local task response');
+      const link: TaskLink = { id, name: snapshot.name,
+        kind: snapshot.repetitions > 1 ? 'stability' : 'single',
+        runIds: created.run_ids ?? [id], staticReports: snapshot.staticReports };
+      await saveTaskLink(link);
+      emit('created', link);
+      ElMessage.success('测评任务已提交');
+      return;
+    }
+    if (localTarget?.adapter_type === 'local_bank') invalid('该贷款智能体仅登记一个版本，暂不支持 A/B试验。');
+    if (platform && !localTarget && taskKind.value === 'ab') {
       const target = platform.target;
       const created = await httpRequest<{
         baseline: { run_id: string };
@@ -667,7 +721,7 @@ async function submit() {
         );
       return;
     }
-    if (platform) {
+    if (platform && !localTarget) {
       const target = platform.target;
       const created = await httpRequest<unknown>('/agent-platform/evaluations', {
         method: 'POST',
@@ -1056,7 +1110,7 @@ onMounted(() => void openCreate(props.source));
         v-model="selectedEvaluators"
         :static-report="staticReport"
         :static-enabled="includeStatic"
-        :static-available="taskKind === 'ab' && (!bankTarget || !!targetDescriptor?.skills.length)"
+        :static-available="staticAvailable"
         @static="openStatic"
         @cancel-analysis="cancelAnalysis"
       />
@@ -1119,7 +1173,7 @@ onMounted(() => void openCreate(props.source));
           >并发样本数<input
             class="input"
             v-model.number="concurrency"
-            :disabled="taskKind === 'ab'"
+            :disabled="taskKind === 'ab' || localBankSelected"
             title="最多 30 个样本并发"
             aria-label="并发样本数"
             type="number"
@@ -1132,11 +1186,11 @@ onMounted(() => void openCreate(props.source));
             class="input"
             :disabled="taskKind === 'ab'"
             v-model.number="timeout"
-            :title="bankTarget ? '1–300 秒，最大 300 秒' : '1–3600 秒，最大 3600 秒'"
+            :title="bankTarget || localBankSelected ? '1–300 秒，最大 300 秒' : '1–3600 秒，最大 3600 秒'"
             aria-label="执行超时（秒）"
             type="number"
             min="1"
-            :max="bankTarget ? 300 : 3600"
+            :max="bankTarget || localBankSelected ? 300 : 3600"
             step="1"
         /></label>
         <label class="field"
@@ -1154,7 +1208,7 @@ onMounted(() => void openCreate(props.source));
           >失败重试次数<input
             class="input"
             v-model.number="retries"
-            :disabled="taskKind === 'ab'"
+            :disabled="taskKind === 'ab' || localBankSelected"
             title="最多 5 次；仅重试可安全重试的执行错误"
             aria-label="失败重试次数"
             type="number"
@@ -1515,11 +1569,6 @@ fieldset {
 }
 </style>
 <style>
-/* revision.scss 以 !important 将全部弹窗压到 min(400px,92vw)；本表单按需求取双倍宽度，
-   并放宽其 55vh 弹窗体高度上限。 */
-.el-overlay .el-dialog.task-create-dialog {
-  width: min(800px, 96vw) !important;
-}
 .el-overlay .el-dialog.task-create-dialog .el-dialog__body {
   max-height: 68vh;
 }

@@ -8,6 +8,7 @@ import { agentDirectory, localAgentDirectory } from '../../../api/agent-platform
 import { useAuthStore } from '../../../stores/modules/auth';
 import AgentTargetPicker, { type AgentTargetSelection } from '../../evaluation/components/AgentTargetPicker.vue';
 import TargetStructure from '../../evaluation/components/TargetStructure.vue';
+import { matchesAnnotationTarget } from '../../evaluation/utils/annotation-feedback';
 
 const auth = useAuthStore();
 const platformDirectory = computed(() =>
@@ -180,6 +181,7 @@ async function confirmTarget() {
     snapshot: { invocation_config: { mode: m } },
     git_branch_url: null,
   };
+  if (sel.localTarget) pinned.value.descriptor = sel.localTarget.descriptor as Descriptor;
   error.value = '';
   tab.value = 'graph';
   runsLoading.value = true;
@@ -188,16 +190,11 @@ async function confirmTarget() {
   try {
     const all = await request<EvaluationRun[]>('/runs?limit=200');
     if (ticket !== contextSequence) return;
-    const target = pinned.value!.descriptor.ref;
-    runs.value = all.filter((r) => {
-      const ref = r.manifest.target.ref;
-      return (
-        ref.source_id === target.source_id &&
-        ref.target_type === target.target_type &&
-        ref.external_target_id === target.external_target_id &&
-        ref.external_version_id === target.external_version_id
-      );
-    });
+    runs.value = all.filter((r) => matchesAnnotationTarget(r, {
+      ...sel, loginMode: auth.loginMode,
+      ...(sel.localTarget ? { localExecution: { sourceId: sel.localTarget.descriptor.ref.source_id,
+        adapterType: sel.localTarget.adapter_type } } : {}),
+    }));
   } catch {
     if (ticket === contextSequence)
       runsError.value = '历史测评记录读取失败，不能据此判断没有会话。';
@@ -235,7 +232,7 @@ function autoDescription() {
 }
 function validate() {
   error.value = '';
-  if (!name.value.trim()) error.value = '请输入数据集名称。';
+  if (!name.value.trim()) error.value = '请输入测评集名称。';
   return !error.value;
 }
 async function create(withImport: boolean) {
@@ -264,8 +261,8 @@ function close() {
 <template>
   <el-dialog
     :model-value="true"
-    title="创建数据集"
-    width="min(1060px,96vw)"
+    title="创建测评集"
+    width="min(800px,96vw)"
     top="3vh"
     class="dataset-create-v2"
     :close-on-click-modal="false"
@@ -274,7 +271,53 @@ function close() {
     :close-on-press-escape="!saving"
   >
     <template v-if="true">
-      <h3><span class="step-number">01</span>关联智能体</h3>
+      <h3><span class="step-number">01</span>测评集名称</h3>
+      <label
+        >头像 &amp; 测评集名称 <em>*</em>
+        <div class="name-row">
+          <select v-model="icon" aria-label="测评集头像">
+            <option>🗂️</option>
+            <option>💬</option>
+            <option>🤖</option>
+            <option>📋</option></select
+          ><input
+            v-model="name"
+            maxlength="128"
+            aria-label="测评集名称"
+            placeholder="例如：贷款智能体·高风险申请回归集"
+          /></div
+      ></label>
+      <div class="description-title">
+        <label for="v2-dataset-description">测评集描述（选填）</label
+        ><button type="button" class="text-button" :disabled="!descriptor" @click="autoDescription">
+          ✦ 按智能体信息填写
+        </button>
+      </div>
+      <input
+        type="text"
+        id="v2-dataset-description"
+        v-model="description"
+        maxlength="512"
+        placeholder="请简要说明测评内容与业务场景"
+      />
+      <div class="counter">{{ description.length }} / 512 · 自动填写使用元数据，不调用模型</div>
+      <label class="tags-label"
+        >场景标签（选填）
+        <el-select
+          v-model="tags"
+          multiple
+          filterable
+          allow-create
+          default-first-option
+          placeholder="选择标签，或输入后按回车新增"
+          aria-label="测评集场景标签"
+          ><el-option
+            v-for="t in ['贷款申请', '风险审核', '进度查询', '工具调用', '多轮对话', '安全合规']"
+            :key="t"
+            :label="t"
+            :value="t" /></el-select
+      ></label>
+      <h3><span class="step-number">02</span>关联智能体</h3>
       <AgentTargetPicker
         ref="platformPicker"
         class="full"
@@ -373,52 +416,6 @@ function close() {
         </div>
         <p class="fingerprint">定义摘要：{{ descriptor.content_sha256 }}</p>
       </section>
-      <h3><span class="step-number">02</span>数据集基本信息</h3>
-      <label
-        >头像 &amp; 数据集名称 <em>*</em>
-        <div class="name-row">
-          <select v-model="icon" aria-label="数据集头像">
-            <option>🗂️</option>
-            <option>💬</option>
-            <option>🤖</option>
-            <option>📋</option></select
-          ><input
-            v-model="name"
-            maxlength="128"
-            aria-label="数据集名称"
-            placeholder="例如：贷款智能体·高风险申请回归集"
-          /></div
-      ></label>
-      <div class="description-title">
-        <label for="v2-dataset-description">描述</label
-        ><button type="button" class="text-button" :disabled="!descriptor" @click="autoDescription">
-          ✦ 按智能体信息填写
-        </button>
-      </div>
-      <textarea
-        id="v2-dataset-description"
-        v-model="description"
-        maxlength="512"
-        rows="3"
-        placeholder="请简要说明测评内容与业务场景"
-      />
-      <div class="counter">{{ description.length }} / 512 · 自动填写使用元数据，不调用模型</div>
-      <label class="tags-label"
-        >场景标签
-        ><el-select
-          v-model="tags"
-          multiple
-          filterable
-          allow-create
-          default-first-option
-          placeholder="选择标签，或输入后按回车新增"
-          aria-label="数据集场景标签"
-          ><el-option
-            v-for="t in ['贷款申请', '风险审核', '进度查询', '工具调用', '多轮对话', '安全合规']"
-            :key="t"
-            :label="t"
-            :value="t" /></el-select
-      ></label>
       <h3>变量定义 <span class="readonly-chip">自动读取 · 不可编辑</span></h3>
       <p v-if="!descriptor" class="empty-context">确认智能体版本后自动呈现。</p>
       <template v-else
@@ -447,10 +444,10 @@ function close() {
     <template #footer
       ><p v-if="error" class="form-error" role="alert">{{ error }}</p>
       <div class="footer-actions">
-        <span>关联信息不随数据集保存</span
+        <span>关联信息不随测评集保存</span
         ><button type="button" class="secondary" :disabled="saving" @click="close">取消</button
         ><button type="button" class="secondary" :disabled="saving" @click="create(false)">
-          创建空数据集</button
+          创建空测评集</button
         ><button type="button" class="primary" :disabled="saving" @click="create(true)">
           {{ saving ? '正在保存…' : '创建并导入' }}
         </button>
@@ -897,5 +894,11 @@ th {
   .wizard-steps {
     gap: 10px;
   }
+}
+</style>
+
+<style>
+.el-overlay .el-dialog.dataset-create-v2 .el-dialog__body {
+  max-height: 68vh;
 }
 </style>

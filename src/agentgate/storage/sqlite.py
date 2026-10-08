@@ -307,6 +307,31 @@ class SQLiteRepository:
                 );
             """)
 
+    def delete_task_record(self, task_id: str, *, user_team_id: str) -> None:
+        """Permanently delete one task with all its runs, traces and results."""
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute(
+                f"SELECT payload FROM {_T_EVALUATION_TASKS} WHERE id=?",
+                (task_id,),
+            ).fetchone()
+            if row is None:
+                raise ValueError("task does not exist")
+            run_ids = [
+                r[0]
+                for r in db.execute(
+                    f"SELECT run_id FROM {_T_EVALUATION_TASK_RUNS} WHERE task_id=?",
+                    (task_id,),
+                )
+            ]
+            db.execute(f"DELETE FROM {_T_EVALUATION_TASK_RUNS} WHERE task_id=?", (task_id,))
+            for run_id in run_ids:
+                db.execute(f"DELETE FROM {_T_OPTIMIZATION_REPORTS} WHERE run_id=?", (run_id,))
+                db.execute(f"DELETE FROM {_T_RESULTS} WHERE run_id=?", (run_id,))
+                db.execute(f"DELETE FROM {_T_TRACES} WHERE run_id=?", (run_id,))
+                db.execute(f"DELETE FROM {_T_RUNS} WHERE id=?", (run_id,))
+            db.execute(f"DELETE FROM {_T_EVALUATION_TASKS} WHERE id=?", (task_id,))
+
     def save_task_runs(self, task: EvaluationTask, runs: Sequence[EvaluationRun]) -> None:
         if task.run_ids != tuple(r.id for r in runs):
             raise ValueError("invalid task run associations")
@@ -354,7 +379,7 @@ class SQLiteRepository:
                     report = SkillAnalysisReport.model_validate_json(report_row["payload"])
                     reports_by_target[report.target_descriptor_sha256] = report_id
                 task = EvaluationTask.model_validate({
-                    **previous.model_dump(),
+                    **previous.model_dump(), "name": task.name if task.name is not None else previous.name,
                     "static_report_ids": tuple(reports_by_target.values()),
                 })
             for report_id in task.static_report_ids:
@@ -1939,27 +1964,3 @@ def _load_evaluator_spec(row: sqlite3.Row) -> EvaluatorSpec:
     if spec.content_sha256 != row["content_sha256"]:
         raise ValueError("stored Evaluator content hash does not match its payload")
     return spec
-
-    def delete_task_record(self, task_id: str, *, user_team_id: str) -> None:
-        """Permanently delete one task with all its runs, traces and results."""
-        with self._connect() as db:
-            row = db.execute(
-                f"SELECT payload FROM {_T_EVALUATION_TASKS} WHERE id=?",
-                (task_id,),
-            ).fetchone()
-            if row is None:
-                raise ValueError("task does not exist")
-            run_ids = [
-                r[0]
-                for r in db.execute(
-                    f"SELECT run_id FROM {_T_EVALUATION_TASK_RUNS} WHERE task_id=?",
-                    (task_id,),
-                )
-            ]
-            for run_id in run_ids:
-                db.execute(f"DELETE FROM {_T_RESULTS} WHERE run_id=?", (run_id,))
-                db.execute(f"DELETE FROM {_T_TRACES} WHERE run_id=?", (run_id,))
-                db.execute(f"DELETE FROM {_T_RUNS} WHERE id=?", (run_id,))
-                db.execute(f"DELETE FROM {_T_RUNS_NEW} WHERE id=?", (run_id,))
-            db.execute(f"DELETE FROM {_T_EVALUATION_TASK_RUNS} WHERE task_id=?", (task_id,))
-            db.execute(f"DELETE FROM {_T_EVALUATION_TASKS} WHERE id=?", (task_id,))

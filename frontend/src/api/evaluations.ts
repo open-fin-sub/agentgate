@@ -41,6 +41,7 @@ export interface EvaluatorDetail {
   draft: Definition | null;
 }
 export interface TargetDescriptor {
+  tools?: { name: string; description?: string }[];
   ref: {
     source_id: string;
     target_type: string;
@@ -51,6 +52,7 @@ export interface TargetDescriptor {
   content_sha256: string;
   prompt?: string;
   skills: {
+    tools?: { name: string }[];
     external_skill_id: string;
     external_version_id: string | null;
     name: string;

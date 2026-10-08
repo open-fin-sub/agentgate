@@ -54,6 +54,7 @@ from agentgate.evaluator.rule import (
     SkillRoutingEvaluator,
     ToolArgumentsEvaluator,
 )
+from agentgate.evaluator.rule.execution import ExecutionPathEvaluator
 from agentgate.evaluator.rule.json_schema import validate_json_schema
 from agentgate.evaluator.rule.operators import resolve_condition_operator
 from agentgate.evaluator.rule.policy import validate_policy_id
@@ -696,6 +697,7 @@ _BUILTIN_EVALUATOR_SPECS = (
 )
 
 _BUILTIN_IMPLEMENTATIONS = {
+    ("execution_path", "1"): ExecutionPathEvaluator(),
     ("skill_routing", "1"): SkillRoutingEvaluator(),
     ("required_tool", "1"): RequiredToolEvaluator(),
     ("forbidden_tool", "1"): ForbiddenToolEvaluator(),

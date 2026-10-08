@@ -261,8 +261,8 @@ const templateLabels1: Record<string, string> = {
     :before-close="close"
     :close-on-click-modal="false"
     title="LLM 评估器设计"
-    width="min(1280px,96vw)"
-    class="asset-dialog"
+    width="min(800px,96vw)"
+    class="asset-dialog judge-design-dialog"
   >
     <template v-if="design"
       ><header class="design-header">
@@ -388,7 +388,7 @@ const templateLabels1: Record<string, string> = {
             v-if="editing"
             v-model="active.prompt"
             aria-label="维度评分提示词"
-            rows="14"
+            rows="10"
             placeholder="填写评分标准、指导说明和扣分条件；这是本维度的提示词。"
           />
           <pre v-else>{{ chineseEvaluatorText(active.prompt) }}</pre>
@@ -514,12 +514,12 @@ const templateLabels1: Record<string, string> = {
 }
 .dimension-design {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-columns: 220px minmax(0, 1fr);
   border-top: 1px solid #e4eaf4;
   margin-top: 22px;
 }
 .dimension-design aside {
-  padding: 20px 18px 20px 0;
+  padding: 20px 16px 20px 0;
   border-right: 1px solid #e4eaf4;
 }
 .dimension-item {
@@ -527,8 +527,8 @@ const templateLabels1: Record<string, string> = {
   justify-content: space-between;
   gap: 12px;
   width: 100%;
-  padding: 20px 14px;
-  margin-bottom: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
   border: 1px solid #e2e8f5;
   border-radius: 10px;
   background: #f7f9fd;
@@ -552,9 +552,9 @@ const templateLabels1: Record<string, string> = {
   overflow-wrap: anywhere;
   line-height: 1.8;
   background: #f7f9fb;
-  padding: 24px;
+  padding: 18px;
   border-radius: 10px;
-  min-height: 300px;
+  min-height: 240px;
 }
 .design-header .actions {
   align-items: flex-start;
@@ -574,5 +574,18 @@ const templateLabels1: Record<string, string> = {
   .design-header {
     flex-wrap: wrap;
   }
+}
+</style>
+<style>
+.el-overlay .el-dialog.judge-design-dialog .el-dialog__body {
+  padding: 16px 24px;
+  max-height: 68vh;
+}
+.el-overlay .el-dialog.judge-design-dialog .asset-form-grid {
+  gap: 12px;
+}
+.el-overlay .el-dialog.judge-design-dialog .asset-dialog label,
+.el-overlay .el-dialog.judge-design-dialog label {
+  margin-bottom: 10px;
 }
 </style>

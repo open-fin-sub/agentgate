@@ -686,11 +686,11 @@ test('form submits workflow target and selected source cases with isolated token
 test('platform A/B submits both versions to the comparison endpoint', async ({ page }) => {
   const requests = await openForm(page);
   await selectFormTarget(page);
-  await page.getByRole('button', { name: 'A/B 实验', exact: true }).click();
+  await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
   const candidate = page.getByLabel('平台候选版本', { exact: true });
   await expect(candidate).toBeEnabled();
   await candidate.selectOption('v2');
-  await page.getByRole('button', { name: '创建 A/B 实验', exact: true }).click();
+  await page.getByRole('button', { name: '创建 A/B试验', exact: true }).click();
   await expect.poll(() => page.evaluate(() => (window as any).created.length)).toBe(1);
   const submission = requests.find((r) => r.path === '/api/agent-platform/comparisons')!;
   expect(submission.body).toEqual({
@@ -714,8 +714,8 @@ test('platform A/B submits both versions to the comparison endpoint', async ({ p
 test('platform A/B requires a different candidate version before creating', async ({ page }) => {
   await openForm(page);
   await selectFormTarget(page);
-  await page.getByRole('button', { name: 'A/B 实验', exact: true }).click();
-  const create = page.getByRole('button', { name: '创建 A/B 实验', exact: true });
+  await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
+  const create = page.getByRole('button', { name: '创建 A/B试验', exact: true });
   await expect(create).toBeDisabled();
   const candidate = page.getByLabel('平台候选版本', { exact: true });
   await expect(candidate).toBeEnabled();
@@ -788,7 +788,7 @@ test('submission locks all inputs before asynchronous validation and prevents du
     await reply(route, { cases: sampleCases });
   });
   await start(page).click();
-  await expect(page.getByRole('button', { name: 'A/B 实验', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'A/B试验', exact: true })).toBeDisabled();
   await expect(page.getByRole('combobox', { name: '选择智能体', exact: true })).toBeDisabled();
   await expect(page.getByLabel('并发样本数', { exact: true })).toBeDisabled();
   await page.locator('.dataset-selection .el-select').click({ force: true });
@@ -848,12 +848,12 @@ test('A/B keeps legacy endpoint and association, returning to single requires fr
 }) => {
   const requests = await openForm(page);
   // 不预选平台目标：内置 Demo 的 A/B 走 legacy 端点；预选平台目标会切换到平台 A/B 分支。
-  await page.getByRole('button', { name: 'A/B 实验', exact: true }).click();
-  await expect(page.getByRole('button', { name: '创建 A/B 实验', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
+  await expect(page.getByRole('button', { name: '创建 A/B试验', exact: true })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Skill 静态分析', exact: true })).toBeEnabled();
   await expect(page.getByLabel('并发样本数', { exact: true })).toBeDisabled();
   await expect(page.getByLabel('失败重试次数', { exact: true })).toBeDisabled();
-  await page.getByRole('button', { name: '创建 A/B 实验', exact: true }).click();
+  await page.getByRole('button', { name: '创建 A/B试验', exact: true }).click();
   await expect.poll(() => page.evaluate(() => (window as any).created.length)).toBe(1);
   expect(requests.find((r) => r.path === '/api/run-comparisons')?.body).toEqual({
     baseline_version: 'old-1',
@@ -882,7 +882,7 @@ test('late A/B catalogs cannot change the single task dataset or execution setti
     await gate;
     await reply(route, [{ id: 'late', label: '迟到版本' }]);
   });
-  await page.getByRole('button', { name: 'A/B 实验', exact: true }).click();
+  await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
   await expect.poll(() => requested).toBe(true);
   await page.getByRole('button', { name: '单任务', exact: true }).click();
   await page.getByLabel('并发样本数', { exact: true }).fill('9');
@@ -954,9 +954,9 @@ test('A/B still permits explicit demo selection when the registered bank catalog
 }) => {
   const requests = await openForm(page);
   await page.route('**/api/bank-targets', (route) => reply(route, { detail: 'unavailable' }, 503));
-  await page.getByRole('button', { name: 'A/B 实验', exact: true }).click();
+  await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
   await expect(page.getByRole('alert').filter({ hasText: '真实智能体目录暂不可用' })).toBeVisible();
-  await page.getByRole('button', { name: '创建 A/B 实验', exact: true }).click();
+  await page.getByRole('button', { name: '创建 A/B试验', exact: true }).click();
   await expect.poll(() => page.evaluate(() => (window as any).created.length)).toBe(1);
   expect(requests.some((r) => r.path === '/api/run-comparisons')).toBe(true);
 });

@@ -326,7 +326,7 @@ async function taskCreated(link: TaskLink) {
     </div>
     <template v-if="page === 'overview'">
       <div class="page-head">
-        <div style="display:flex;align-items:flex-end;gap:16px;">
+        <div style="display: flex; align-items: flex-end; gap: 16px">
           <h1 class="page-title">测评总览</h1>
           <div class="tabs">
             <button
@@ -364,7 +364,9 @@ async function taskCreated(link: TaskLink) {
               </td>
               <td class="nowrap">{{ r.manifest.dataset.dataset_name }}</td>
               <td class="nowrap">{{ statusLabel(r.status) }}</td>
-              <td class="nowrap"><button class="link" @click="go('tasks/' + r.id)">查看</button></td>
+              <td class="nowrap">
+                <button class="link" @click="go('tasks/' + r.id)">查看</button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -384,8 +386,8 @@ async function taskCreated(link: TaskLink) {
     </section>
     <AnnotationAssets
       v-else-if="page === 'annotations' || page === 'annotation-templates'"
-      :key="page"
-      :templates="page === 'annotation-templates'"
+      :key="route.split('/')[0]"
+      :templates="route.split('/')[0] === 'annotation-templates'"
       :task-id="runId"
       @navigate="go"
       @dirty-change="evaluatorDirty = $event"
@@ -407,7 +409,7 @@ async function taskCreated(link: TaskLink) {
       <template v-if="runId">
         <section v-if="pairLink" class="card task-linked-summary">
           <a href="#tasks" class="link">← 返回测评任务</a>
-          <h3>A/B 实验</h3>
+          <h3>A/B试验</h3>
           <template v-if="pairLink"
             ><p>两侧使用相同测评集与评估器版本。</p>
             <div class="actions">
@@ -595,7 +597,7 @@ async function taskCreated(link: TaskLink) {
   font-size: 14px;
 }
 .task-create-grid {
-  gap: 22px 28px;
+  gap: 16px 24px;
 }
 .task-create-grid .full {
   grid-column: 1 / -1;
@@ -604,7 +606,7 @@ async function taskCreated(link: TaskLink) {
   display: flex;
   gap: 12px;
   align-items: center;
-  padding-top: 24px;
+  padding-top: 16px;
   border-top: 1px solid #e8edf1;
   margin-top: 4px;
 }
