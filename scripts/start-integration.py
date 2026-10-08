@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import secrets
 import os
 import shutil
 import signal
@@ -92,6 +93,16 @@ def main():
     args = parser.parse_args()
     load_dotenv(os.environ.get("AGENTGATE_MODEL_ENV_FILE", str(ROOT / ".env")), override=False)
     env, ports = local_environment(ROOT, args.port_offset)
+    reporting_key = ROOT / "runtime/trace-report.key"
+    if not reporting_key.exists():
+        with open(reporting_key, "x", opener=lambda p, f: os.open(p, f, 0o600)) as handle:
+            handle.write(secrets.token_urlsafe(32))
+    env.setdefault("TRACE_REPORT_TOKEN", reporting_key.read_text().strip())
+    env.setdefault("TRACE_REPORT_URL", f"http://127.0.0.1:{ports['trace']}")
+    if env["AGENTGATE_AGENT_PLATFORM_MODE"] == "mock":
+        env["AGENTGATE_TRACE_SERVER_URL"] = env["TRACE_REPORT_URL"]
+        env["AGENTGATE_TRACE_SERVER_TOKEN"] = env["TRACE_REPORT_TOKEN"]
+        env["AGENTGATE_REQUIRE_REPORTED_TRACE"] = "1"
     celery = env["AGENT_TASK_DISPATCHER_TYPE"] == "celery"
     local_redis = celery and env["AGENTGATE_AGENT_PLATFORM_MODE"] == "mock"
     for command in ("redis-server", "npm") if local_redis else ("npm",):
@@ -101,7 +112,7 @@ def main():
     if args.with_bank_agents:
         env["AGENTGATE_BANK_BASE_URL"] = f"http://127.0.0.1:{ports['bank']}"
         if env["AGENTGATE_AGENT_PLATFORM_MODE"] == "mock":
-            env["AGENTGATE_TRACE_SERVER_URL"] = f"http://127.0.0.1:{ports['trace']}"
+            env["AGENTGATE_TRACE_SERVER_URL"] = env["TRACE_REPORT_URL"]
         for target, source in [
             ("BANK_MODEL_BASE_URL", "AGENTGATE_JUDGE_BASE_URL"),
             ("BANK_MODEL_NAME", "AGENTGATE_JUDGE_MODEL_ID"),
@@ -117,8 +128,8 @@ def main():
             )
     active = (
         (["redis"] if local_redis else [])
-        + ["directory", "api", "web"]
-        + (["bank", "trace"] if args.with_bank_agents else [])
+        + ["directory", "api", "web", "trace"]
+        + (["bank"] if args.with_bank_agents else [])
     )
     for name in active:
         with socket.socket() as probe:
@@ -156,7 +167,10 @@ def main():
                 str(ports["directory"]),
             ],
             ROOT,
-            env,
+            {
+                **env,
+                "PYTHONPATH": os.pathsep.join([str(ROOT / "src"), str(ROOT / "tested-agents/src")]),
+            },
         ),
         "api": (
             [
@@ -229,25 +243,18 @@ def main():
             ROOT,
             {**env, "PYTHONPATH": str(ROOT / "tested-agents/src")},
         )
-        commands["trace"] = (
-            [
-                python,
-                "-m",
-                "uvicorn",
-                "api.main:app",
-                "--host",
-                "127.0.0.1",
-                "--port",
-                str(ports["trace"]),
-            ],
-            ROOT / "vendor/trace-server/backend",
-            {
-                **env,
-                "PYTHONPATH": str(ROOT / "vendor/trace-server/backend"),
-                "STORAGE_BACKEND": "file",
-                "DATA_FILE": str(ROOT / "runtime/bank-agents/traces"),
-            },
-        )
+    commands["trace"] = (
+        [python, str(ROOT / "scripts/trace-server.py"), "--port", str(ports["trace"])],
+        ROOT,
+        {
+            **env,
+            "PYTHONPATH": os.pathsep.join(
+                [str(ROOT / "src"), str(ROOT / "vendor/trace-server/backend")]
+            ),
+            "STORAGE_BACKEND": "file",
+            "DATA_FILE": str(ROOT / "runtime/trace-server/received"),
+        },
+    )
     children, logs = [], []
     opener = build_opener(ProxyHandler({}))
     try:
@@ -269,9 +276,10 @@ def main():
             f"http://127.0.0.1:{ports['api']}/health",
             f"http://127.0.0.1:{ports['web']}/",
             f"http://127.0.0.1:{ports['directory']}/health",
+            f"http://127.0.0.1:{ports['trace']}/health",
         ]
         if args.with_bank_agents:
-            urls += [f"http://127.0.0.1:{ports[n]}/health" for n in ("bank", "trace")]
+            urls += [f"http://127.0.0.1:{ports[n]}/health" for n in ("bank",)]
         for _ in range(90):
             if any(c.poll() is not None for c in children):
                 raise RuntimeError("服务退出，请查看runtime/*.log。")

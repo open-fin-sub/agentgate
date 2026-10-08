@@ -11,7 +11,9 @@ from urllib.parse import quote, urlencode, urlsplit
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 from uuid import uuid4
 
-from agentgate.domain import TargetDescriptor, TargetRef, Trace, TraceSpan, utcnow
+from agentgate.integrations.observability.trace_server import TraceServerClient
+from agentgate.integrations.observability.trace_sdk import normalize_sdk_exports
+from agentgate.domain import FrozenJsonObject, TargetDescriptor, TargetRef, Trace, TraceSpan, utcnow
 from agentgate.integrations.targets.bank_protocol import (
     build_chatabc_payload,
     build_cloudshrimp_payload,
@@ -329,7 +331,7 @@ class PlatformAdapter:
                 if not isinstance(session, str) or not session.strip():
                     raise ConnectionError("invalid session")
             trace_id = request.traceparent.split("-")[1]
-            spans, outcomes = [], {}
+            spans, outcomes, exports = [], {}, {}
             for index, turn in enumerate(request.case.turns):
                 started = utcnow()
                 text = turn.input["txt"]
@@ -362,6 +364,18 @@ class PlatformAdapter:
                     request_id=rid,
                 )
                 output = {"output": result.output}
+                if result.trace_payloads:
+                    references = result.trace_payloads
+                    if len(references) != 1 or references[0].get("project_id") != "agent-platform-mock" or references[0].get("simulated") is not True:
+                        raise ValueError("invalid simulated trace reference")
+                    source = references[0]["trace_id"]
+                    events = TraceServerClient().fetch_events("agent-platform-mock", source, timeout=remaining())
+                    root = next(e for e in events if e["event_type"] == "trace")
+                    if root.get("session_id") != session or root.get("input") != {"txt": text} or root.get("output") != output or root.get("agent_name") != request.target.ref.external_target_id:
+                        raise ValueError("simulated trace correlation mismatch")
+                    exports[turn.id] = (source, "\n".join(json.dumps(e) for e in events).encode())
+                elif os.getenv("AGENTGATE_REQUIRE_REPORTED_TRACE") == "1":
+                    raise ValueError("simulated peer did not report a trace")
                 outcomes[turn.id] = {"input": turn.input.to_dict(), "output": output, "state": {}}
                 spans.append(
                     TraceSpan(
@@ -380,6 +394,13 @@ class PlatformAdapter:
                         },
                     )
                 )
+            if exports:
+                trace = normalize_sdk_exports(request, exports, project_id="agent-platform-mock")
+                trace = trace.model_copy(update={"spans": tuple(span.model_copy(update={"attributes": FrozenJsonObject({
+                    **span.attributes.to_dict(), "platform.simulated": True, "trace_sdk.replay": False,
+                    "trace.reporting": "http", "trace.provenance": "simulated"
+                })}) for span in trace.spans)})
+                return CaseExecutionResult(request.execution_id, trace.trace_id, trace)
             trace = Trace(
                 trace_id=trace_id,
                 run_id=request.run_id,

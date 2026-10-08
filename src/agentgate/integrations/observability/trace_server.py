@@ -12,13 +12,18 @@ import json
 import os
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 
 from agentgate.run.target_protocol import TargetExecutionError
 
 DEFAULT_BASE_URL = "http://127.0.0.1:8210"
 BASE_URL_ENV = "AGENTGATE_TRACE_SERVER_URL"
 MAX_RESPONSE_BYTES = 10 * 1024 * 1024
+
+
+class NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, *args, **kwargs):
+        return None
 
 
 class TraceServerClient:
@@ -31,7 +36,7 @@ class TraceServerClient:
         parsed = urlsplit(self.base)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc or parsed.query or parsed.fragment:
             raise ValueError(f"{BASE_URL_ENV} must be an absolute HTTP(S) origin")
-        self._opener = opener
+        self._opener = build_opener(NoRedirect()).open if opener is urlopen else opener
 
     def fetch_events(self, project_id: str, trace_id: str, *, timeout: float = 30) -> list[dict]:
         """Return SDK events for one trace: detail plus real LLM requests."""
@@ -49,7 +54,7 @@ class TraceServerClient:
         return detail_to_events(detail, llm["items"])
 
     def _get(self, path: str, *, timeout: float = 30):
-        request = Request(self.base + path, headers={"Accept": "application/json"})
+        request = Request(self.base + path, headers={"Accept": "application/json", **({"Authorization": "Bearer " + os.environ["AGENTGATE_TRACE_SERVER_TOKEN"]} if os.getenv("AGENTGATE_TRACE_SERVER_TOKEN") else {})})
         try:
             with self._opener(request, timeout=timeout) as response:
                 data = response.read(MAX_RESPONSE_BYTES + 1)

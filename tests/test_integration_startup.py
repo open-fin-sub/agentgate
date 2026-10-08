@@ -61,8 +61,8 @@ def test_supervisor_selects_services_and_ports(tmp_path, monkeypatch, kind, with
     assert any("celery" in c for c in commands) == (kind == "celery")
     assert any("dispatch-scheduled-runs.py" in c for c in commands) == (kind == "bjs")
     assert (8107 in checked_ports) == with_bank_agents
-    assert (8210 in checked_ports) == with_bank_agents
-    assert any("api.main:app" in c for c in commands) == with_bank_agents
+    assert 8210 in checked_ports
+    assert any("trace-server.py" in c for c in commands)
     assert 8119 in checked_ports
     assert kill.call_count == len(started)
     assert all(p.wait.called for p in processes)

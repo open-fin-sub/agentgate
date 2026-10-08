@@ -63,7 +63,7 @@ bash scripts/start-bank-integration.sh
 
 ## 数据保存和备份
 
-测评集/评估器定义在 `src/agentgate/demo/loan-core-*.json`，历史只读报告在 `examples/loan-core/history/`，随源码分发。运行后新建数据默认存储在 `runtime/agentgate.db`；贷款业务数据库、SDK 轨迹在 `runtime/bank-agents/`。Trace Server 使用同目录的 JSONL 和请求附件，提供实际轨迹查询。
+测评集/评估器定义在 `src/agentgate/demo/loan-core-*.json`，历史只读报告在 `examples/loan-core/history/`，随源码分发。运行后新建数据默认存储在 `runtime/agentgate.db`；贷款业务数据库、SDK 轨迹在 `runtime/bank-agents/`。智能体通过认证HTTP上传JSONL事件及模型请求附件；Trace Server独立保存到 `runtime/trace-server/received/`，查询不读取发送端目录。
 
 启动器首次生成 `runtime/credential.key`（仅当前用户可读），API 和 Worker 共享用于加密密钥库；若手动指定 `AGENTGATE_API_KEY_ENCRYPTION_KEY`，请自己保存该值。备份前停止服务，完整备份 `runtime/` 并妥善保管密钥文件；删除运行目录会丢失本机新增数据，种子文件不能还原个人修改。`.env`、`runtime/` 和模型密钥不提交 Git。
 
@@ -84,3 +84,5 @@ PYTHONPATH=src .venv/bin/pytest -q tests
 自动化单元测试使用模拟模型，真实模型验收使用上述 `run-loan-core-evaluations.py`。更详细的 [安装与验收](docs/bank-agents/README.md)、[架构](docs/architecture.md)、[项目进展](docs/project-progress.md) 和 [文档索引](docs/README.md) 均在仓库内。后端许可证见 LICENSE；不能将该许可证自动扩展至客户 SDK/Trace Server，来源声明在对应 vendor 目录。
 
 本次[新目录及真实模型验收记录](docs/bank-agents/delivery-verification-20261008.md)保留运行ID、实际分数及验证范围。
+
+六类智能体现支持[主动 Trace 上报与分机部署](docs/trace/trace-reporting.md)。可运行 `.venv/bin/python scripts/verify-trace-reporting.py` 新建六项验收任务；三个本地模拟体的轨迹会明确标记为模拟。

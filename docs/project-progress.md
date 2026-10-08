@@ -2,6 +2,13 @@
 
 Last updated: 2026-10-08
 
+## Six-target HTTP Trace reporting — 2026-10-08
+
+- Added authenticated complete-bundle upload and independent receiver storage without modifying original vendor sources. The three loan targets transmit actual SDK events and LLM attachments; three protocol peers transmit explicitly simulated traces, including simulated failure status.
+- Local full startup enables strict reported evidence and shared private reporting credentials; in-bank gateway/Trace query configuration stays separate. The UI labels simulated traces. Remote sender endpoints require HTTPS; physical cross-machine/TLS deployment is documented, not claimed as tested.
+- Six tasks/nine turns passed real HTTP acceptance (three actual DeepSeek v4 Pro loan executions). Receiver queries still returned all nine traces and nine LLM attachments while sender evidence was temporarily moved aside. Files were restored.
+- Verification:1398 backend tests passed,35 skipped;32 tested-Agent tests;82 frontend unit tests;lint/typecheck/build passed. See [protocol, deployment and run IDs](trace/trace-reporting.md). Current feature work is on `feature/trace-reporting`; no merge or remote push is included in this Goal.
+
 ## Portable local delivery — 2026-10-08
 
 - Completed the local eight-process launcher with the bundled upstream Trace Server file backend and local Agent directory. Unified Redis6397 and persistent runtime paths; retained BJS scheduling and configured in-bank gateway/Trace routing.

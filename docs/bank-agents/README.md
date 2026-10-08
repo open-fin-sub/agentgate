@@ -30,7 +30,7 @@
 
 [历史报告](../../examples/loan-core/history/index.html) 保留2026-10-07、v2、DeepSeek v4 Pro的9项专项任务：72次样本执行，67通过、5失败。历史 JSON 保留评分及失败证据，移除了 Judge 原始请求响应。它是只读参考，不自动导入本机任务列表，也不代表 v3 的测试结论。
 
-`runtime/agentgate.db` 保存本机测评集、评估器、任务和结果；`runtime/bank-agents/` 保存合成贷款数据库及 SDK 轨迹。Trace Server 使用提供的上游 file backend 读取 `traces/` 中 JSONL 及附件，不需要单独部署 PostgreSQL。`runtime/credential.key` 是本机密钥库主密钥，须与数据库一起安全备份；`.env` 和整个运行目录不随源码上传。
+`runtime/agentgate.db` 保存本机测评集、评估器、任务和结果；`runtime/bank-agents/` 保存合成贷款数据库及 SDK 轨迹。Trace Server 通过新增HTTP采集接口接收上报，在独立的 `runtime/trace-server/received/` 保存事件及附件，再复用上游file backend查询，不需要PostgreSQL或与发送端共享目录。`runtime/credential.key` 是本机密钥库主密钥，须与数据库一起安全备份；`.env` 和整个运行目录不随源码上传。
 
 ## 范围
 

@@ -9,6 +9,9 @@ import type { Trace } from '../../../api/evaluations';
 import { buildTracePresentation } from '../utils/trace-presentation';
 
 const props = defineProps<{ trace: Trace }>();
+const simulated = computed(() =>
+  props.trace.spans.some((span) => span.attributes['platform.simulated'] === true),
+);
 const presentation = computed(() => buildTracePresentation(props.trace));
 const selectedId = ref<string | null>(null);
 const editorContainer = ref<HTMLDivElement>();
@@ -128,7 +131,7 @@ onBeforeUnmount(() => {
 <template>
   <section class="trace-explorer" aria-label="执行轨迹追踪">
     <header class="explorer-heading">
-      <h2>执行轨迹追踪</h2>
+      <h2>执行轨迹追踪<span v-if="simulated"> · 模拟轨迹</span></h2>
       <span>{{ presentation.nodes.length }} 个环节</span>
     </header>
     <div class="explorer-panes">
