@@ -1,6 +1,14 @@
 # AgentGate Project Progress
 
-Last updated: 2026-09-26
+Last updated: 2026-10-08
+
+## Portable local delivery — 2026-10-08
+
+- Completed the local eight-process launcher with the bundled upstream Trace Server file backend and local Agent directory. Unified Redis6397 and persistent runtime paths; retained BJS scheduling and configured in-bank gateway/Trace routing.
+- Shipped seven loan evaluators using the recipient's model, alongside the existing three v3 datasets. Added read-only v2 historical results/report and a command that creates nine fresh rule/LLM/hybrid tasks.
+- Replaced stale installation instructions. Removed automatic global process termination from service-start commands; pre-existing services are preserved.
+- Verified clean-directory installation, all nine real DeepSeek v4 Pro smoke runs, browser Trace/LLM scores, shutdown/restart persistence, and wheel seed resources. Two LLM-only tasks scored85 below the existing95 task gate; evidence is retained, not converted to pass.
+- Validation:1385 backend tests passed (35 skipped),29 tested-Agent tests,82 frontend tests,lint/typecheck/build. See [delivery evidence](bank-agents/delivery-verification-20261008.md).
 
 ## Annotation v2 per-turn editor — 2026-09-26
 

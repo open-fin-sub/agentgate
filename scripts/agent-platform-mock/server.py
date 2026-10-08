@@ -207,4 +207,7 @@ app = create_app()
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="127.0.0.1", port=8119, access_log=False)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, default=8119)
+    uvicorn.run(app, host="127.0.0.1", port=parser.parse_args().port, access_log=False)
