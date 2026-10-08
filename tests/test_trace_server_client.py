@@ -1,7 +1,7 @@
 import json
+from urllib.error import HTTPError
 
 import pytest
-from urllib.error import HTTPError
 
 from agentgate.integrations.observability.trace_server import TraceServerClient, detail_to_events
 from agentgate.run.target_protocol import TargetExecutionError
@@ -100,6 +100,44 @@ def test_detail_to_events_defaults_span_event_id_to_span_id():
     events = detail_to_events(detail, [])
     span = next(e for e in events if e["event_type"] == "span")
     assert span["event_id"] == "sp-1"
+
+
+@pytest.mark.parametrize("kind", ["span", "observation", "llm"])
+def test_foreign_child_trace_is_rejected(kind):
+    from copy import deepcopy
+
+    detail = deepcopy(DETAIL)
+    llm = []
+    if kind == "span":
+        detail["spans"][0]["traceId"] = "foreign"
+    elif kind == "observation":
+        detail["observations"] = [{"spanId": "sp-1", "traceId": "foreign"}]
+    else:
+        llm = [{"spanId": "sp-1", "traceId": "foreign"}]
+    with pytest.raises(TargetExecutionError, match="another trace"):
+        detail_to_events(detail, llm)
+
+
+def test_bad_json_is_a_sanitized_protocol_error():
+    response = Response({})
+    response._body = b'private-response-not-json'
+    client = TraceServerClient("https://trace.example", opener=lambda *a, **k: response)
+    with pytest.raises(TargetExecutionError, match="invalid JSON") as error:
+        client.fetch_events("project", "trace")
+    assert "private-response" not in str(error.value)
+
+
+def test_query_budget_is_shared_between_detail_and_attachments(monkeypatch):
+    from agentgate.integrations.observability import trace_server
+
+    clock = iter([0, 3])
+    monkeypatch.setattr(trace_server.time, "monotonic", lambda: next(clock))
+    timeouts = []
+    def opener(request, *, timeout):
+        timeouts.append(timeout)
+        return Response(LLM if request.full_url.endswith("llm_requests") else DETAIL)
+    TraceServerClient("https://trace.example", opener=opener).fetch_events("project", "trace", timeout=10)
+    assert timeouts == [10, 7]
 
 
 def test_default_opener_path_fetches_over_real_http():

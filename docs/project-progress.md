@@ -2,6 +2,15 @@
 
 Last updated: 2026-10-08
 
+## In-bank complete evidence and BJS dispatch integrity — 2026-10-08
+
+- Autonomous Goal scoped to complete in-bank Trace retrieval and truthful BJS failures. User explicitly deferred in-bank Skill static analysis because no real version-definition API is available; the existing unavailable UI remains unchanged.
+- ChatABC base/workflow and Yunxia now require per-turn SSE Trace references, fetch configured project evidence and model attachments, validate session/Pod/input/output/completeness, and reuse SDK normalization. Missing evidence fails instead of becoming output-only success. Query credentials remain separate from login credentials; no conversation replay on query failure. Yunxia requests debugTrace.
+- Removed BJS transport-error simulated success. Tests verify waiting/retry/exhausted-failure transitions and no retry inside the dispatcher. Remote exactly-once acceptance/cancellation is not claimed.
+- Validation: full backend 1469 passed/40 skipped, including positive/negative tool-rule checks and Case input aliases (28 evidence tests total); loan runtime 32 passed; unchanged frontend 82 tests, lint, typecheck/build passed using the identical frontend source in the existing dependency worktree. Seven pre-existing Ruff diagnostics in the legacy adapters/execution tests remain; new evidence and changed BJS/query files pass Ruff. Existing dependency and frontend chunk-size warnings remain.
+- Verified real local HTTP Trace query transport with fixture gateways, not a real in-bank deployment. See [configuration and acceptance](inbank-evidence-acceptance.md), [implementation ownership](inbank-evidence-implementation.md).
+- Restarted the full local acceptance stack with the current source and preserved/backed up the existing database. All nine external loan smoke runs (three agents × rule/LLM/hybrid) completed with passing evaluation results, numeric scores and remote Trace evidence; model records identify DeepSeek v4 Pro. Real in-bank integration remains unverified. After autonomous implementation concluded, the user explicitly authorized committing and merging/pushing this work to `origin/integration/baibo`.
+
 ## Six-target HTTP Trace reporting — 2026-10-08
 
 - Added authenticated complete-bundle upload and independent receiver storage without modifying original vendor sources. The three loan targets transmit actual SDK events and LLM attachments; three protocol peers transmit explicitly simulated traces, including simulated failure status.

@@ -440,3 +440,7 @@ Ownership:
 - `scripts/verify-trace-reporting.py`: create six new local tasks, verify nine turn-level traces and explicit simulation, and save IDs/results for independent acceptance. It accepts only local external-mode APIs.
 
 Verification record and deployment instructions: [Trace reporting](trace-reporting.md). Full regression and six-target acceptance must pass before completion; original failed development attempts remain in the local task history.
+
+## In-bank HTTP evidence integration — 2026-10-08
+
+Under the explicitly authorized Goal, ChatABC and Yunxia now use the existing Trace Server query client and SDK normalizer instead of constructing output-only records. Ownership, source-baseline assessment and verification are recorded in [the in-bank implementation plan](../inbank-evidence-implementation.md); the required runtime/query contract and deployment limits are in [acceptance instructions](../inbank-evidence-acceptance.md). The user deferred in-bank static Skill definitions, which are not inferred from execution evidence or local mock capabilities.

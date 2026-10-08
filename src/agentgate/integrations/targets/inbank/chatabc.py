@@ -15,7 +15,8 @@ from urllib.parse import quote, urlencode, urlparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 from uuid import uuid4
 
-from agentgate.domain import SpanStatus, TargetType, Trace, TraceSpan, utcnow
+from agentgate.domain import TargetType, Trace, utcnow
+from agentgate.integrations.observability.trace_server import TraceServerClient
 from agentgate.integrations.targets.bank_protocol import (
     build_chatabc_payload,
     parse_bank_sse,
@@ -25,13 +26,18 @@ from agentgate.integrations.targets.inbank.diagnostics import (
     mapping_shape,
     safe_url,
 )
+from agentgate.integrations.targets.inbank.evidence import (
+    TurnEvidence,
+    assemble_evidence,
+    configured_trace_source,
+    fetch_turn_evidence,
+)
 from agentgate.run.target_protocol import (
     CaseExecutionRequest,
     CaseExecutionResult,
     CaseExecutionStatus,
     TargetExecutionError,
 )
-
 
 LOGGER = logging.getLogger(__name__)
 _MAX_RESPONSE_BYTES = 10 * 1024 * 1024
@@ -282,8 +288,9 @@ class InbankChatABCTargetAdapter:
             request.timeout_seconds,
         )
         try:
+            project, trace_client = configured_trace_source()
             self._ensure_pod(request)
-            result = self._execute_case(request)
+            result = self._execute_case(request, project, trace_client)
         except TargetExecutionError as exc:
             self._statuses[handle] = CaseExecutionStatus.FAILED
             LOGGER.error(
@@ -499,7 +506,9 @@ class InbankChatABCTargetAdapter:
                 )
             self._sleep(min(self.settings.health_poll_interval_seconds, remaining))
 
-    def _execute_case(self, request: CaseExecutionRequest) -> CaseExecutionResult:
+    def _execute_case(
+        self, request: CaseExecutionRequest, project: str, trace_client: TraceServerClient
+    ) -> CaseExecutionResult:
         assert self._agent_name is not None
         arrange_type = _arrange_type(request)
         prefix = (
@@ -538,10 +547,8 @@ class InbankChatABCTargetAdapter:
             session_id,
         )
 
-        trace_id = request.traceparent.split("-")[1]
-        parent_span_id = request.traceparent.split("-")[2]
         input_field = _input_field(request)
-        spans: list[TraceSpan] = []
+        evidence: dict[str, TurnEvidence] = {}
         outcomes: dict[str, dict[str, Any]] = {}
         final_output: dict[str, Any] = {}
         for sequence, turn in enumerate(request.case.turns):
@@ -626,39 +633,16 @@ class InbankChatABCTargetAdapter:
                 "output": final_output,
                 "state": {},
             }
-            spans.append(
-                TraceSpan(
-                    trace_id=trace_id,
-                    span_id=uuid4().hex[:16],
-                    parent_span_id=parent_span_id,
-                    name="inbank.chatabc.turn",
-                    operation_type="turn",
-                    sequence=sequence,
-                    started_at=started_at,
-                    ended_at=ended_at,
-                    status=SpanStatus.OK,
-                    attributes={
-                        "agentgate.turn.id": turn.id,
-                        "inbank.arrange_type": arrange_type,
-                        "inbank.session_id": session_id,
-                        "inbank.request_id": request_id,
-                        "inbank.evidence_mode": "output_only",
-                        "inbank.pod_created": True,
-                        "inbank.pod_healthy": True,
-                    },
-                )
+            evidence[turn.id] = fetch_turn_evidence(
+                trace_client, project, chat,
+                session_id=session_id, request_id=request_id,
+                input_field=input_field, turn_input=turn_input,
+                agent_name=self._agent_name,
+                timeout=min(request.timeout_seconds, self.settings.request_timeout_seconds),
             )
 
-        trace = Trace(
-            trace_id=trace_id,
-            run_id=request.run_id,
-            case_id=request.case.id,
-            spans=tuple(spans),
-            turn_outcomes=outcomes,
-            final_output=final_output,
-            final_state={},
-        )
-        return CaseExecutionResult(request.execution_id, trace_id, trace)
+        trace = assemble_evidence(request, project, evidence, outcomes)
+        return CaseExecutionResult(request.execution_id, trace.trace_id, trace)
 
     def _log_pod_lifecycle(self, phase: str, status: str) -> None:
         LOGGER.info(
@@ -755,7 +739,7 @@ def _input_field(request: CaseExecutionRequest) -> str:
 def resolve_chatabc_trace(
     request: CaseExecutionRequest, result: CaseExecutionResult
 ) -> Trace:
-    """Return the output-only AgentGate execution record for evaluation."""
+    """Return the complete, correlated Trace Server evidence for evaluation."""
 
     if result.execution_id != request.execution_id:
         raise TargetExecutionError(

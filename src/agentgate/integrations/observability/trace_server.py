@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
@@ -34,20 +35,27 @@ class TraceServerClient:
             base_url if base_url is not None else os.getenv(BASE_URL_ENV, DEFAULT_BASE_URL)
         ).rstrip("/")
         parsed = urlsplit(self.base)
-        if parsed.scheme not in {"http", "https"} or not parsed.netloc or parsed.query or parsed.fragment:
+        if (parsed.scheme not in {"http", "https"} or not parsed.hostname
+            or parsed.username is not None or parsed.password is not None
+            or parsed.path not in {"", "/"} or parsed.query or parsed.fragment
+            or any(c.isspace() for c in self.base)):
             raise ValueError(f"{BASE_URL_ENV} must be an absolute HTTP(S) origin")
         self._opener = build_opener(NoRedirect()).open if opener is urlopen else opener
 
     def fetch_events(self, project_id: str, trace_id: str, *, timeout: float = 30) -> list[dict]:
         """Return SDK events for one trace: detail plus real LLM requests."""
+        deadline = time.monotonic() + timeout
         detail = self._get(
             f"/api/v1/projects/{quote(project_id, safe='')}/traces/{quote(trace_id, safe='')}",
             timeout=timeout,
         )
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TargetExecutionError("unavailable", "trace server query deadline exceeded")
         llm = self._get(
             f"/api/v1/projects/{quote(project_id, safe='')}"
             f"/traces/{quote(trace_id, safe='')}/llm_requests",
-            timeout=timeout,
+            timeout=remaining,
         )
         if not isinstance(llm, dict) or not isinstance(llm.get("items"), list):
             raise TargetExecutionError("protocol_error", "trace server returned invalid LLM request list")
@@ -66,8 +74,10 @@ class TraceServerClient:
                 "unavailable" if exc.code >= 500 else "rejected",
                 f"trace server HTTP {exc.code}",
             ) from None
-        except (URLError, TimeoutError):
+        except (URLError, TimeoutError, OSError):
             raise TargetExecutionError("unavailable", "trace server request failed") from None
+        except (ValueError, UnicodeError):
+            raise TargetExecutionError("protocol_error", "trace server returned invalid JSON") from None
 
 
 def detail_to_events(detail: dict, llm_requests: list[dict]) -> list[dict]:
@@ -112,6 +122,8 @@ def detail_to_events(detail: dict, llm_requests: list[dict]) -> list[dict]:
     for span in spans:
         if not isinstance(span, dict) or not isinstance(span.get("id"), str):
             raise TargetExecutionError("protocol_error", "trace server span is invalid")
+        if span.get("traceId", trace["id"]) != trace["id"]:
+            raise TargetExecutionError("protocol_error", "trace server span belongs to another trace")
         events.append({
             "event_type": "span",
             "event_id": opt_text(span.get("eventId")) or span["id"],
@@ -129,10 +141,13 @@ def detail_to_events(detail: dict, llm_requests: list[dict]) -> list[dict]:
             "duration_ms": opt_int(span.get("durationMs")),
             "started_at": opt_text(span.get("startedAt")),
             "error_info": span.get("errorInfo"),
+            "metadata": span.get("metadata"),
         })
     for observation in observations:
         if not isinstance(observation, dict) or not isinstance(observation.get("spanId"), str):
             raise TargetExecutionError("protocol_error", "trace server observation is invalid")
+        if observation.get("traceId", trace["id"]) != trace["id"]:
+            raise TargetExecutionError("protocol_error", "trace server observation belongs to another trace")
         events.append({
             "event_type": "observation",
             "event_id": text(observation.get("id"), "id"),
@@ -148,6 +163,8 @@ def detail_to_events(detail: dict, llm_requests: list[dict]) -> list[dict]:
     for item in llm_requests:
         if not isinstance(item, dict) or not isinstance(item.get("spanId"), str):
             raise TargetExecutionError("protocol_error", "trace server LLM request is invalid")
+        if item.get("traceId", trace["id"]) != trace["id"]:
+            raise TargetExecutionError("protocol_error", "trace server model request belongs to another trace")
         events.append({
             "event_type": "llm_request",
             "event_id": text(item.get("eventId"), "eventId"),
