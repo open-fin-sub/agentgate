@@ -579,6 +579,9 @@ async function submit() {
     caseIds: scope.value === 'selected' ? [...selectedCaseIds.value] : undefined,
     evaluatorIds: [...selectedEvaluators.value],
     chosen: evaluators.value.filter((e) => selectedEvaluators.value.includes(e.id)),
+    evaluatorRefs: evaluators.value
+      .filter((e) => selectedEvaluators.value.includes(e.id))
+      .map((e) => ({ evaluator_id: e.id, evaluator_version: e.latest_version! })),
     concurrency: concurrency.value,
     timeout: timeout.value,
     retries: retries.value,
@@ -646,7 +649,7 @@ async function submit() {
     if (localTarget && taskKind.value === 'single') {
       const common = {
         dataset_id: snapshot.datasetId, dataset_version: snapshot.datasetVersion,
-        case_ids: snapshot.caseIds, evaluator_ids: snapshot.evaluatorIds,
+        case_ids: snapshot.caseIds, evaluator_refs: snapshot.evaluatorRefs,
         timeout_seconds: snapshot.timeout, scheduled_for: snapshot.scheduledFor,
       };
       const created = await request<{ id?: string; run_id?: string; run_ids?: string[] }>(
@@ -696,7 +699,7 @@ async function submit() {
           dataset_id: snapshot.datasetId,
           dataset_version: snapshot.datasetVersion,
           ...(caseIds ? { case_ids: caseIds } : {}),
-          evaluator_ids: snapshot.evaluatorIds,
+          evaluator_refs: snapshot.evaluatorRefs,
           timeout_seconds: snapshot.timeout,
         },
       });
@@ -742,7 +745,7 @@ async function submit() {
           dataset_id: snapshot.datasetId,
           dataset_version: snapshot.datasetVersion,
           ...(caseIds ? { case_ids: caseIds } : {}),
-          evaluator_ids: snapshot.evaluatorIds,
+          evaluator_refs: snapshot.evaluatorRefs,
           max_parallel_cases: snapshot.concurrency,
           timeout_seconds: snapshot.timeout,
           max_retries: snapshot.retries,

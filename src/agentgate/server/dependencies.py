@@ -118,6 +118,7 @@ class ServerDependencies:
         dataset_version: int | None = None,
         case_ids: list[str] | None = None,
         evaluator_ids: list[str] | None = None,
+        evaluator_refs: list[EvaluatorRef] | None = None,
         timeout_seconds: float = 300,
         max_parallel_cases: int = 1,
         max_retries: int = 0,
@@ -133,6 +134,7 @@ class ServerDependencies:
             dataset_version=dataset_version,
             case_ids=case_ids,
             evaluator_ids=evaluator_ids,
+            evaluator_refs=evaluator_refs,
             timeout_seconds=timeout_seconds,
             max_parallel_cases=max_parallel_cases,
             max_retries=max_retries,
@@ -174,6 +176,7 @@ class ServerDependencies:
         dataset_version: int | None = None,
         case_ids: list[str] | None = None,
         evaluator_ids: list[str] | None = None,
+        evaluator_refs: list[EvaluatorRef] | None = None,
     ) -> EvaluationRun:
         """Create and synchronously execute one POC Loan Agent evaluation."""
 
@@ -183,6 +186,7 @@ class ServerDependencies:
             dataset_version=dataset_version,
             case_ids=case_ids,
             evaluator_ids=evaluator_ids,
+            evaluator_refs=evaluator_refs,
             timeout_seconds=300,
             max_parallel_cases=1,
             max_retries=0,
@@ -231,6 +235,7 @@ class ServerDependencies:
         scheduled_for: datetime | None = None,
         persist: bool = True,
         api_key: str | None = None,
+        evaluator_refs: list[EvaluatorRef] | None = None,
     ) -> EvaluationRun:
         target = self._resolve_demo_target(version)
         return self.runs.create_run(
@@ -239,6 +244,7 @@ class ServerDependencies:
             dataset_version=dataset_version,
             case_ids=case_ids,
             evaluator_ids=evaluator_ids,
+            evaluator_refs=evaluator_refs,
             timeout_seconds=timeout_seconds,
             max_parallel_cases=max_parallel_cases,
             max_retries=max_retries,

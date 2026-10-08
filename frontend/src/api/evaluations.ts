@@ -106,8 +106,16 @@ export async function request<T>(
   timeoutMs = 30000,
 ): Promise<T> {
   if (method === 'POST') {
-    if (['/evaluations', '/bank-evaluations', '/stability-experiments'].includes(path))
-      assertLocallyEnabled((body as { evaluator_ids?: string[] })?.evaluator_ids ?? []);
+    if (['/evaluations', '/bank-evaluations', '/stability-experiments'].includes(path)) {
+      const selection = body as {
+        evaluator_ids?: string[];
+        evaluator_refs?: { evaluator_id: string }[];
+      };
+      assertLocallyEnabled([
+        ...(selection?.evaluator_ids ?? []),
+        ...(selection?.evaluator_refs ?? []).map((ref) => ref.evaluator_id),
+      ]);
+    }
     if (path === '/run-comparisons')
       assertLocallyEnabled(
         ((body as { evaluators?: { id: string }[] })?.evaluators ?? []).map((e) => e.id),

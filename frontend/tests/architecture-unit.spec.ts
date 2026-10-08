@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { createPinia } from 'pinia';
 import { http } from '../src/utils/request';
+import { request as evaluationRequest } from '../src/api/evaluations';
 import { useTaskLinksStore } from '../src/stores/modules/task-links';
 import { useSettingsPreviewStore } from '../src/stores/modules/model-preview';
 
@@ -124,4 +125,34 @@ test('cyclic workflow renders all nodes without an invented execution order', as
   expect(html).toContain('此图含循环或无法分层的连线');
   for (const node of workflowTopology.nodes) expect(html).toContain('流程节点 ' + node.label);
   expect(html).not.toContain('NaN');
+});
+
+
+test('explicit evaluator versions respect local disabled preferences before POST', async () => {
+  const previous = http.defaults.adapter;
+  const storage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  let calls = 0;
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
+    getItem: () => JSON.stringify(['final-output']),
+  } });
+  try {
+    http.defaults.adapter = async config => {
+      calls++;
+      return { data: {}, status: 202, statusText: 'Accepted', headers: {}, config };
+    };
+    for (const path of ['/evaluations', '/bank-evaluations', '/stability-experiments']) {
+      await expect(evaluationRequest(path, 'POST', {
+        evaluator_refs: [{ evaluator_id: 'final-output', evaluator_version: '1' }],
+      })).rejects.toThrow('已在当前浏览器禁用');
+      expect(calls).toBe(0);
+    }
+    await evaluationRequest('/evaluations', 'POST', {
+      evaluator_refs: [{ evaluator_id: 'enabled-custom', evaluator_version: '1' }],
+    });
+    expect(calls).toBe(1);
+  } finally {
+    http.defaults.adapter = previous;
+    if (storage) Object.defineProperty(globalThis, 'localStorage', storage);
+    else Reflect.deleteProperty(globalThis, 'localStorage');
+  }
 });

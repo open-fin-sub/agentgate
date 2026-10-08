@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from datetime import UTC, datetime
 from collections.abc import Callable
+from datetime import UTC, datetime
 from typing import Annotated, Literal, Protocol, cast
 
 from fastapi import APIRouter, HTTPException, Request
@@ -13,6 +13,7 @@ from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validat
 from starlette.concurrency import run_in_threadpool
 from starlette.responses import JSONResponse
 
+from agentgate.domain import EvaluatorRef
 from agentgate.domain.evaluation_task import EvaluationTask
 from agentgate.server.user_context import get_user_info
 
@@ -62,13 +63,24 @@ class PlatformEvaluationInput(BaseModel):
     target: PlatformTargetInput
     dataset_id: Identifier
     dataset_version: int = Field(strict=True, ge=1)
-    evaluator_ids: list[Identifier] = Field(min_length=1, strict=True)
+    evaluator_ids: list[Identifier] | None = Field(default=None, min_length=1, strict=True)
+    evaluator_refs: list[EvaluatorRef] | None = Field(default=None, min_length=1, strict=True)
     case_ids: list[Identifier] | None = Field(default=None, min_length=1, strict=True)
     max_parallel_cases: int = Field(strict=True, ge=1, le=30)
     timeout_seconds: int = Field(strict=True, ge=1, le=3600)
     max_retries: int = Field(strict=True, ge=0, le=5)
     repetitions: int = Field(strict=True, ge=1, le=20)
     scheduled_for: datetime | None = None
+
+    @model_validator(mode="after")
+    def validate_evaluator_selection(self) -> PlatformEvaluationInput:
+        if (self.evaluator_ids is None) == (self.evaluator_refs is None):
+            raise ValueError("provide either evaluator_ids or evaluator_refs")
+        if self.evaluator_refs is not None:
+            ids = [ref.evaluator_id for ref in self.evaluator_refs]
+            if len(ids) != len(set(ids)):
+                raise ValueError("Evaluator references must be unique")
+        return self
 
     @field_validator("case_ids", mode="before")
     @classmethod
@@ -139,9 +151,20 @@ class PlatformComparisonInput(BaseModel):
     target: PlatformComparisonTargetInput
     dataset_id: Identifier
     dataset_version: int = Field(strict=True, ge=1)
-    evaluator_ids: list[Identifier] = Field(min_length=1, strict=True)
+    evaluator_ids: list[Identifier] | None = Field(default=None, min_length=1, strict=True)
+    evaluator_refs: list[EvaluatorRef] | None = Field(default=None, min_length=1, strict=True)
     case_ids: list[Identifier] | None = Field(default=None, min_length=1, strict=True)
     timeout_seconds: int = Field(strict=True, ge=1, le=3600)
+
+    @model_validator(mode="after")
+    def validate_evaluator_selection(self) -> PlatformComparisonInput:
+        if (self.evaluator_ids is None) == (self.evaluator_refs is None):
+            raise ValueError("provide either evaluator_ids or evaluator_refs")
+        if self.evaluator_refs is not None:
+            ids = [ref.evaluator_id for ref in self.evaluator_refs]
+            if len(ids) != len(set(ids)):
+                raise ValueError("Evaluator references must be unique")
+        return self
 
     @field_validator("case_ids", mode="before")
     @classmethod
@@ -171,7 +194,8 @@ class SubmitPlatformEvaluation(Protocol):
         dataset_id: str,
         dataset_version: int,
         case_ids: tuple[str, ...] | None,
-        evaluator_ids: tuple[str, ...],
+        evaluator_ids: tuple[str, ...] | None,
+        evaluator_refs: tuple[EvaluatorRef, ...] | None,
         max_parallel_cases: int,
         timeout_seconds: int,
         max_retries: int,
@@ -252,7 +276,8 @@ async def launch_platform_evaluation(request: Request) -> JSONResponse:
             dataset_id=inputs.dataset_id,
             dataset_version=inputs.dataset_version,
             case_ids=tuple(inputs.case_ids) if inputs.case_ids is not None else None,
-            evaluator_ids=tuple(inputs.evaluator_ids),
+            evaluator_ids=tuple(inputs.evaluator_ids) if inputs.evaluator_ids is not None else None,
+            evaluator_refs=tuple(inputs.evaluator_refs) if inputs.evaluator_refs is not None else None,
             max_parallel_cases=inputs.max_parallel_cases,
             timeout_seconds=inputs.timeout_seconds,
             max_retries=inputs.max_retries,
@@ -313,7 +338,8 @@ async def launch_platform_comparison(request: Request) -> JSONResponse:
             dataset_id=inputs.dataset_id,
             dataset_version=inputs.dataset_version,
             case_ids=tuple(inputs.case_ids) if inputs.case_ids is not None else None,
-            evaluator_ids=tuple(inputs.evaluator_ids),
+            evaluator_ids=tuple(inputs.evaluator_ids) if inputs.evaluator_ids is not None else None,
+            evaluator_refs=tuple(inputs.evaluator_refs) if inputs.evaluator_refs is not None else None,
             timeout_seconds=inputs.timeout_seconds,
             token=token,
             user_team_id=caller.user_team_id if caller else "",

@@ -155,7 +155,9 @@ export const useReviewStore = defineStore('review', () => {
   }
   const annotationTasks = ref<AnnotationTask[]>(readAnnotations());
   const annotationTemplates = computed<AnnotationTemplate[]>(() => {
-    const templates = new Map(defaultAnnotationTemplates.map((template) => [template.id, template]));
+    const templates = new Map(
+      defaultAnnotationTemplates.map((template) => [template.id, template]),
+    );
     for (const task of annotationTasks.value) templates.set(task.template.id, task.template);
     return [...templates.values()];
   });
@@ -241,7 +243,7 @@ export const useReviewStore = defineStore('review', () => {
         const catalog = await api.evaluators();
         const results = await Promise.all(
           catalog
-            .filter((e) => e.latest_version)
+            .filter((e) => e.latest_version || e.has_draft)
             .map(async (e) => ({ id: e.id, detail: await api.evaluator(e.id) })),
         );
         evaluatorCatalog.value = catalog;
@@ -256,9 +258,19 @@ export const useReviewStore = defineStore('review', () => {
               description:
                 detail.evaluator.description || '从已发布 LLM 评估器读取，不另存一套评分内容。',
               instruction: String(d.config.instruction ?? ''),
-              criteria: Object.entries((d.config.rubric as Record<string, string>) ?? {}).map(
-                ([key, text]) => ({ key, text: String(text) }),
-              ),
+              criteria:
+                d.implementation_id === 'answer_quality' && d.implementation_version === '2'
+                  ? (
+                      d.config.dimensions as {
+                        id: string;
+                        name: string;
+                        description: string;
+                        prompt: string;
+                      }[]
+                    ).map((row) => ({ key: row.id, text: `${row.name}：${row.prompt}` }))
+                  : Object.entries((d.config.rubric as Record<string, string>) ?? {}).map(
+                      ([key, text]) => ({ key, text: String(text) }),
+                    ),
               dimension: d.dimension,
               metric: d.metric,
               version: String(d.version ?? ''),

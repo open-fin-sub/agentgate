@@ -420,6 +420,20 @@ watch(sampleId, () => {
               <p v-if="s.config?.model">
                 {{ s.config.model.provider_id }} · {{ s.config.model.model_id }}
               </p>
+              <p v-if="s.kind === 'llm_judge'">
+                通过分数 {{ Number(s.config.pass_threshold ?? 0.8) * 100 }} / 100
+              </p>
+              <dl
+                v-if="s.implementation_id === 'answer_quality' && s.implementation_version === '2'"
+              >
+                <template v-for="dimension in s.config.dimensions" :key="dimension.id">
+                  <dt>{{ dimension.name }} · {{ dimension.weight }}%</dt>
+                  <dd>
+                    {{ dimension.description }}
+                    <pre>{{ dimension.prompt }}</pre>
+                  </dd>
+                </template>
+              </dl>
               <dl v-if="s.config?.rubric">
                 <template v-for="(text, key) in s.config.rubric" :key="key"
                   ><dt>{{ key }}</dt>

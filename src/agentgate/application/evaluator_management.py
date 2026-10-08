@@ -31,6 +31,7 @@ from agentgate.evaluator.executor import (
     execute_evaluators,
 )
 from agentgate.evaluator.judge import AnswerQualityJudge, JudgeModelClient
+from agentgate.evaluator.judge.dimension_quality import DimensionQualityJudge
 from agentgate.evaluator.versioning import (
     clone_evaluator_version_to_draft,
     create_evaluator_draft,
@@ -772,6 +773,9 @@ def build_default_evaluator_management(
             ),
         )
         implementations[("answer_quality", "1")] = AnswerQualityJudge(
+            {judge_client.provider_id: judge_client}
+        )
+        implementations[("answer_quality", "2")] = DimensionQualityJudge(
             {judge_client.provider_id: judge_client}
         )
 

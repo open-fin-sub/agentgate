@@ -80,7 +80,7 @@ onMounted(refresh);
           {{ m.model_id }} · {{ m.provider_id }}{{ m.credential_ref ? ' · 指定凭据引用' : '' }}
         </option></select
       ><small v-if="!models.length"
-        >暂无已发布评估器的模型引用，可填写自定义引用进行 UX 设计。</small
+        >暂无评估器模型引用，可填写后端已接入的提供商与模型。</small
       ></label
     >
     <div v-if="editable && isCustom" class="model-fields">

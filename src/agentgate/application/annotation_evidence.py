@@ -5,6 +5,7 @@ import json
 
 from agentgate.domain import Case, EvaluationResult, EvaluatorSpec, Trace, canonical_json
 from agentgate.evaluator.judge.answer_quality import build_answer_quality_request
+from agentgate.evaluator.judge.dimension_quality import build_dimension_quality_request
 from agentgate.evaluator.judge.model_protocol import request_fingerprint
 from agentgate.evaluator.rule.operators import resolve_operator
 from agentgate.evaluator.rule.output import FinalOutputEvaluator
@@ -81,9 +82,13 @@ def evaluator_annotation_evidence(
                 user_prompt=record.request_user_prompt,
                 prompt_source="recorded",
             )
-        elif spec.implementation_id == "answer_quality" and spec.implementation_version == "1":
+        elif spec.implementation_id == "answer_quality" and spec.implementation_version in {"1", "2"}:
             try:
-                request = build_answer_quality_request(spec, case, trace)
+                build_request = (
+                    build_answer_quality_request if spec.implementation_version == "1"
+                    else build_dimension_quality_request
+                )
+                request = build_request(spec, case, trace)
                 payload.update(
                     system_prompt=request.system_prompt,
                     user_prompt=request.user_prompt,

@@ -12,7 +12,14 @@ from uuid import uuid4
 from agentgate.application.credential_management import ApiKeyManagement
 from agentgate.application.evaluator_management import EvaluatorManagement
 from agentgate.application.run_management import RunManagement
-from agentgate.domain import EvaluationRun, TargetDescriptor, TargetRef, TargetSnapshot, utcnow
+from agentgate.domain import (
+    EvaluationRun,
+    EvaluatorRef,
+    TargetDescriptor,
+    TargetRef,
+    TargetSnapshot,
+    utcnow,
+)
 from agentgate.domain.evaluation_task import EvaluationTask
 from agentgate.integrations.job_dispatchers import JobDispatcher
 from agentgate.integrations.targets.agent_platform import PlatformClient, resolve_platform_target
@@ -135,7 +142,7 @@ def submit_platform_evaluation(
     dataset_id: str,
     dataset_version: int,
     case_ids: tuple[str, ...] | None,
-    evaluator_ids: tuple[str, ...],
+    evaluator_ids: tuple[str, ...] | None,
     max_parallel_cases: int,
     timeout_seconds: int,
     max_retries: int,
@@ -146,6 +153,7 @@ def submit_platform_evaluation(
     user_id: str,
     user_name: str,
     name: str | None = None,
+    evaluator_refs: tuple[EvaluatorRef, ...] | None = None,
 ) -> EvaluationTask:
     if credentials is None:
         raise ConnectionError("platform credential encryption is not configured")
@@ -197,6 +205,7 @@ def submit_platform_evaluation(
             dataset_version=dataset_version,
             case_ids=case_ids,
             evaluator_ids=evaluator_ids,
+            evaluator_refs=evaluator_refs,
             max_parallel_cases=max_parallel_cases,
             timeout_seconds=timeout_seconds,
             max_retries=max_retries,
@@ -272,15 +281,18 @@ def submit_platform_comparison(
     dataset_id: str,
     dataset_version: int,
     case_ids: tuple[str, ...] | None,
-    evaluator_ids: tuple[str, ...],
+    evaluator_ids: tuple[str, ...] | None,
     timeout_seconds: int,
     token: str,
     user_team_id: str,
     user_id: str,
     user_name: str,
     name: str | None = None,
+    evaluator_refs: tuple[EvaluatorRef, ...] | None = None,
 ) -> tuple[EvaluationRun, EvaluationRun]:
     """Create and dispatch one controlled A/B pair of platform Runs."""
+    if evaluator_ids is not None and evaluator_refs is not None:
+        raise ValueError("use evaluator_ids or evaluator_refs, not both")
     if credentials is None:
         raise ConnectionError("platform credential encryption is not configured")
     if baseline_version == candidate_version:
@@ -302,6 +314,22 @@ def submit_platform_comparison(
     try:
         management = RunManagement(repository, evaluators)
         prepared: list[EvaluationRun] = []
+        selected_specs = (
+            evaluators.select_versions(evaluator_refs)
+            if evaluator_refs is not None
+            else evaluators.select(evaluator_ids)
+        )
+        if evaluator_refs is not None:
+            primary_ids = tuple(ref.evaluator_id for ref in evaluator_refs)
+        elif evaluator_ids is not None:
+            primary_ids = evaluator_ids
+        else:
+            primary_ids = tuple(spec.id for spec in selected_specs)
+        versions = {spec.id: spec.version for spec in selected_specs}
+        selected_refs = tuple(
+            EvaluatorRef(evaluator_id=evaluator_id, evaluator_version=versions[evaluator_id])
+            for evaluator_id in primary_ids
+        )
         for version in (baseline_version, candidate_version):
             descriptor, adapter_type, invocation_config = _platform_target_snapshot(
                 platform_mode=platform_mode,
@@ -331,7 +359,7 @@ def submit_platform_comparison(
                 dataset_id=dataset_id,
                 dataset_version=dataset_version,
                 case_ids=case_ids,
-                evaluator_ids=evaluator_ids,
+                evaluator_refs=selected_refs,
                 max_parallel_cases=1,
                 timeout_seconds=timeout_seconds,
                 max_retries=0,

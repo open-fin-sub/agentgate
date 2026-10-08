@@ -2,6 +2,27 @@
 
 Last updated: 2026-10-08
 
+## LLM 评估器保存、发布与按版本运行 — 2026-10-08
+
+用户批准并授权完成后推送 GitHub。当前实际入口 JudgeSystem 已接通服务端草稿、发布启用与版本历史；
+保存后刷新可恢复完整维度配置，保存失败保留编辑内容，写成功而刷新失败时保留已完成操作的状态。
+删除原前端临时草稿/历史状态。发布后旧版本保持不变，任务配置区显示当时的模型、维度提示词、权重与阈值。
+
+新增 `answer_quality@2`，单次模型请求返回逐维度分数、置信度、依据和复核标记；后端用十进制算法
+计算加权总分，前端同步严格校验权重合计。保留原 `answer_quality@1`，历史按其原协议运行。
+非法响应最多纠正一次，超时、错误和纠正均保留实际请求/响应证据，不能变为通过。
+复用 Catalog/SQLite/RunManifest，没有新增持久化表或迁移别名。
+
+单任务、平台 A/B 和稳定性任务均贯通精确版本引用，行内真实 Token、行外 local Token 与目录分流保持不变。
+复合评估器子项仅作为执行依赖，主评估器来自用户明确选择，避免重复参与总分计算。
+基线参考与职责记录在 [Catalog 实施计划](evaluator/catalog-implementation-plan.md)，
+用户验收步骤见 [LLM 持久化操作指南](evaluator/llm-persistence-guide.md)。
+
+后端全量回归：1550 项通过、40 项跳过（两条既有依赖弃用提示）。
+前端验收：88 项单元测试、6 项真实后端保存发布浏览器测试、5 项任务版本及登录分流浏览器测试通过；
+栈检查、lint、类型检查与生产构建通过。浏览器使用独立临时 SQLite，模型执行使用确定性客户端验证；
+本次未访问付费模型或真实行内网关。
+
 ## In-bank complete evidence and BJS dispatch integrity — 2026-10-08
 
 - Autonomous Goal scoped to complete in-bank Trace retrieval and truthful BJS failures. User explicitly deferred in-bank Skill static analysis because no real version-definition API is available; the existing unavailable UI remains unchanged.

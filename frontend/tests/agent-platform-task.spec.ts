@@ -97,7 +97,12 @@ const call = (page: Page, name: string, input: Record<string, unknown> = { token
   page.evaluate(({ name, input }) => (window as any).callDirectory(name, input), { name, input });
 async function choose(page: Page, label: string, option: string) {
   await page.getByRole('combobox', { name: label, exact: true }).press('Enter');
-  await page.getByRole('option', { name: option, exact: true }).click();
+  await page
+    .getByRole('option', {
+      name: label === '选择智能体' ? option.split(' · ')[0] : option,
+      exact: true,
+    })
+    .click();
 }
 
 test('complete paginated team membership uses teamId, deduplicates identical rows and omits browser cookies', async ({
@@ -519,7 +524,11 @@ test('real picker consumes the HTTP directory through an exact abcclaw version',
 });
 
 const sampleCases = [
-  { id: 'case-1', name: '样本一', turns: [{ input: { txt: '问题一' }, expectations: [{ kind: 'output' }] }] },
+  {
+    id: 'case-1',
+    name: '样本一',
+    turns: [{ input: { txt: '问题一' }, expectations: [{ kind: 'output' }] }],
+  },
 ];
 async function openForm(page: Page, selected = false) {
   const requests: { path: string; method: string; body: any; headers: Record<string, string> }[] =
@@ -608,6 +617,7 @@ async function openForm(page: Page, selected = false) {
   await page.goto(url.replace('__directory', '__form') + (selected ? '?selected' : ''));
   await expect(page.getByLabel('任务测评集版本', { exact: true })).toHaveValue('2');
   await expect(page.getByRole('combobox', { name: '选择智能体', exact: true })).toBeEnabled();
+  await page.getByLabel('任务名称', { exact: true }).fill('版本固定测试');
   return requests;
 }
 async function selectFormTarget(page: Page, claw = false) {
@@ -654,6 +664,7 @@ test('form submits workflow target and selected source cases with isolated token
     .toEqual([{ id: 'task-1', kind: 'single', runIds: ['run-0'], staticReports: [] }]);
   const submission = requests.find((r) => r.path === '/api/agent-platform/evaluations')!;
   expect(submission.body).toEqual({
+    name: '版本固定测试',
     target: {
       team_id: 'team',
       agent_id: 'workflow',
@@ -664,7 +675,7 @@ test('form submits workflow target and selected source cases with isolated token
     dataset_id: 'dataset',
     dataset_version: 2,
     case_ids: ['case-1'],
-    evaluator_ids: ['judge'],
+    evaluator_refs: [{ evaluator_id: 'judge', evaluator_version: '1' }],
     max_parallel_cases: 1,
     timeout_seconds: 300,
     max_retries: 0,
@@ -694,6 +705,7 @@ test('platform A/B submits both versions to the comparison endpoint', async ({ p
   await expect.poll(() => page.evaluate(() => (window as any).created.length)).toBe(1);
   const submission = requests.find((r) => r.path === '/api/agent-platform/comparisons')!;
   expect(submission.body).toEqual({
+    name: '版本固定测试',
     target: {
       team_id: 'team',
       agent_id: 'workflow',
@@ -704,7 +716,7 @@ test('platform A/B submits both versions to the comparison endpoint', async ({ p
     },
     dataset_id: 'dataset',
     dataset_version: 2,
-    evaluator_ids: ['judge'],
+    evaluator_refs: [{ evaluator_id: 'judge', evaluator_version: '1' }],
     timeout_seconds: 300,
   });
   expect(submission.headers['x-agent-platform-token']).toBe('form-secret');
@@ -759,6 +771,7 @@ test('abcclaw stability sends original branchId and exact settings', async ({ pa
   await start(page).click();
   await expect.poll(() => page.evaluate(() => (window as any).created.length)).toBe(1);
   expect(requests.find((r) => r.path === '/api/agent-platform/evaluations')?.body).toEqual({
+    name: '版本固定测试',
     target: {
       team_id: 'team',
       agent_id: 'claw',
@@ -768,7 +781,7 @@ test('abcclaw stability sends original branchId and exact settings', async ({ pa
     },
     dataset_id: 'dataset',
     dataset_version: 2,
-    evaluator_ids: ['judge'],
+    evaluator_refs: [{ evaluator_id: 'judge', evaluator_version: '1' }],
     max_parallel_cases: 4,
     timeout_seconds: 1200,
     max_retries: 2,
@@ -937,7 +950,10 @@ test('cancelling uncovered-case confirmation releases the lock without a creatio
   await expect(page.getByLabel('任务测评集版本', { exact: true })).toHaveValue('2');
   await page.route('**/api/datasets/dataset/versions/2', (route) =>
     reply(route, {
-      cases: [...sampleCases, { id: 'uncovered', turns: [{ input: { txt: '未覆盖' }, expectations: [] }] }],
+      cases: [
+        ...sampleCases,
+        { id: 'uncovered', turns: [{ input: { txt: '未覆盖' }, expectations: [] }] },
+      ],
     }),
   );
   await selectFormTarget(page);
@@ -960,3 +976,47 @@ test('A/B still permits explicit demo selection when the registered bank catalog
   await expect.poll(() => page.evaluate(() => (window as any).created.length)).toBe(1);
   expect(requests.some((r) => r.path === '/api/run-comparisons')).toBe(true);
 });
+
+for (const mode of ['bank', 'external'] as const)
+  test(`form pins the displayed publication when a newer one appears (${mode})`, async ({
+    page,
+  }) => {
+    const requests = await openForm(page);
+    if (mode === 'external') {
+      await page.route('**/api/local-targets', (route) =>
+        reply(route, { targets: [], unavailable: [] }),
+      );
+      await page.evaluate(() =>
+        (window as any).setAuth({ loginMode: 'external', token: '', teamId: '', teamName: '' }),
+      );
+    }
+    await choose(page, '选择智能体', '工作流 · workflow');
+    await choose(page, '智能体版本', 'v1');
+    // Publish version 2 after the form loaded version 1. The submitted reference must stay at 1.
+    await page.route('**/api/evaluators', (route) =>
+      reply(route, [
+        {
+          id: 'judge',
+          name: '质量评估',
+          kind: 'llm_judge',
+          enabled: true,
+          latest_version: '2',
+          implementation_id: 'answer_quality',
+          description: '质量',
+          source: 'custom',
+        },
+      ]),
+    );
+    await page.getByRole('button', { name: 'LLM 评估', exact: true }).click();
+    await expect(page.locator('.tile-version')).toHaveText('v1');
+    await start(page).click();
+    await expect.poll(() => page.evaluate(() => (window as any).created.length)).toBe(1);
+    const submission = requests.find((r) => r.path === '/api/agent-platform/evaluations')!;
+    expect(submission.body.evaluator_refs).toEqual([
+      { evaluator_id: 'judge', evaluator_version: '1' },
+    ]);
+    expect(submission.body).not.toHaveProperty('evaluator_ids');
+    expect(submission.headers['x-agent-platform-token']).toBe(
+      mode === 'bank' ? 'form-secret' : 'local',
+    );
+  });
