@@ -25,7 +25,7 @@ const runs = shallowRef<EvaluationRun[]>([]),
   error = ref(''),
   busy = ref(false);
 const status = ref(''),
-  days = ref(7),
+  days = ref(0),
   taskTab = ref(''),
   query = ref(''),
   from = ref(''),
@@ -189,13 +189,13 @@ onUnmounted(() => {
       <h1 class="page-title">测评任务</h1>
       <div class="tabs">
         <button
-          v-for="d in [1, 7, 30]"
+          v-for="d in [0, 1, 7, 30]"
           :key="d"
           :class="['tab', { active: days === d }]"
           :aria-pressed="days === d"
           @click="days = d"
         >
-          {{ d === 1 ? '今日' : '近' + d + '天' }}
+          {{ d === 0 ? '全部时间' : d === 1 ? '今日' : '近' + d + '天' }}
         </button>
       </div>
     </div>

@@ -251,3 +251,7 @@ The following require separate customer requirements and design checkpoints:
 - non-demo Target selection;
 - recurring experiments or traffic assignment;
 - A/B CLI and Web workflows.
+
+## 2026-10-09 Local loan evolution extension
+
+The current implementation also persists the A/B task association. `/api/bank-comparisons` now resolves exact local loan releases and reuses `create_ab_runs`, including a shared selected-case subset and task name. It validates both target definition hashes and input contracts before dispatch. The frontend uses local directory/token only in external mode; in-bank platform submission stays separate. See `docs/bank-agents/ab-version-design.md` for release behavior. Live acceptance is recorded in `docs/bank-agents/ab-version-verification.md`: 9 pairs / 360 samples completed with matching controlled manifests and positive score deltas in all groups, while preserving remaining base-agent LLM failures and one regression.

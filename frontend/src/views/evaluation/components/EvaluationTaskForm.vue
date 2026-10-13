@@ -656,7 +656,7 @@ async function submit() {
         localTarget.adapter_type === 'local_bank' ? '/bank-evaluations'
           : snapshot.repetitions > 1 ? '/stability-experiments' : '/evaluations',
         'POST', localTarget.adapter_type === 'local_bank'
-          ? { ...common, name: snapshot.name, mode: localTarget.mode,
+          ? { ...common, name: snapshot.name, mode: localTarget.mode, version: platform!.target.agentVersion,
               target_descriptor_sha256: localTarget.descriptor.content_sha256,
               repetitions: snapshot.repetitions }
           : { ...common, version: platform!.target.agentVersion,
@@ -673,7 +673,27 @@ async function submit() {
       ElMessage.success('测评任务已提交');
       return;
     }
-    if (localTarget?.adapter_type === 'local_bank') invalid('该贷款智能体仅登记一个版本，暂不支持 A/B试验。');
+    if (localTarget?.adapter_type === 'local_bank' && taskKind.value === 'ab') {
+      const versions = await localAgentDirectory.getAgentVersions({ token: 'local', agentId: platform!.target.agentId });
+      const candidate = versions.find(v => v.agentVersion === snapshot.candidate)?.localTarget;
+      if (!candidate) throw Error('候选版本已不可用，请刷新版本列表');
+      const created = await httpRequest<{ baseline: { run_id: string }; candidate: { run_id: string } }>(
+        '/bank-comparisons', { method: 'POST', headers: { Authorization: 'Bearer local' }, data: {
+          name: snapshot.name, mode: localTarget.mode,
+          baseline_version: snapshot.baseline, candidate_version: snapshot.candidate,
+          baseline_descriptor_sha256: localTarget.descriptor.content_sha256,
+          candidate_descriptor_sha256: candidate.descriptor.content_sha256,
+          dataset_id: snapshot.datasetId, dataset_version: snapshot.datasetVersion,
+          case_ids: snapshot.caseIds, evaluator_refs: snapshot.evaluatorRefs,
+          timeout_seconds: snapshot.timeout,
+        } });
+      const link: TaskLink = { id: created.baseline.run_id, name: snapshot.name, kind: 'ab',
+        runIds: [created.baseline.run_id, created.candidate.run_id], staticReports: snapshot.staticReports };
+      await saveTaskLink(link);
+      emit('created', link);
+      ElMessage.success('贷款 A/B 试验已提交');
+      return;
+    }
     if (platform && !localTarget && taskKind.value === 'ab') {
       const target = platform.target;
       const created = await httpRequest<{

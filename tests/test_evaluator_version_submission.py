@@ -83,7 +83,7 @@ def system(tmp_path, monkeypatch):
     target = dependencies._resolve_demo_target("loan-agent-v2-fixed")
     descriptor = dependencies.repository.get_target_descriptor(target.descriptor_sha256)
     monkeypatch.setattr(
-        bank_targets, "local_bank_target", lambda _client, _mode: (descriptor, target)
+        bank_targets, "local_bank_target", lambda _client, _mode, _version="v1": (descriptor, target)
     )
     with TestClient(app) as client:
         yield client, dependencies, dispatcher, dataset.id

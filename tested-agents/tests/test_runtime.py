@@ -124,7 +124,7 @@ def test_concurrent_traces_and_sessions_do_not_mix(runtime):
 
 def test_http_protocols_and_restrictions(runtime):
     client = TestClient(create_app(runtime))
-    assert len(client.get("/agents").json()) == 3
+    assert len(client.get("/agents").json()) == 9
     assert len(client.get("/test-cases").json()) == 24
     for mode in ("base", "workflow"):
         prefix = f"/agent-api/loan-{mode}-v1/chatabc"
@@ -281,7 +281,7 @@ def test_agent_directory_exposes_only_workflow_graph_without_execution(runtime, 
     with TestClient(create_app(runtime)) as client:
         response = client.get("/agents")
         assert response.status_code == 200
-        records = {record["mode"]: record for record in response.json()}
+        records = {record["mode"]: record for record in response.json() if record["agent_version"] == "v1"}
         assert set(records) == {"base", "workflow", "cloudshrimp"}
         workflow = records["workflow"]
         assert workflow["topology"] == loan_workflow_topology()

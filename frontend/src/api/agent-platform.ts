@@ -485,7 +485,8 @@ export const localAgentDirectory: AgentDirectory = {
     if (!isLocalId(input.agentId)) return mockDirectory.getAgentVersions(input);
     const catalog = await localCatalog(input.token);
     return catalog.targets.filter(t => t.descriptor.ref.external_target_id === input.agentId)
-      .map(t => ({ agentVersion: t.descriptor.ref.external_version_id, localTarget: t }));
+      .map(t => ({ agentVersion: t.descriptor.ref.external_version_id, localTarget: t,
+        status: String(t.descriptor.metadata.version_label ?? t.descriptor.ref.external_version_id) }));
   },
   async getBranches(input) {
     return isLocalId(input.agentId) ? [] : mockDirectory.getBranches(input);

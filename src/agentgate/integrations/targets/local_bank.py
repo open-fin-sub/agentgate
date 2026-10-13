@@ -119,11 +119,11 @@ def validated_workflow_topology(value):
     return value
 
 
-def local_bank_target(client, mode):
+def local_bank_target(client, mode, version="v1"):
     if mode not in {"base", "workflow", "cloudshrimp"}:
         raise ValueError("unknown bank mode")
-    record = next((r for r in client.call("/agents") if r["mode"] == mode), None)
-    if not record or record["agent_version"] != "v1" or record.get("test_only") is not True:
+    record = next((r for r in client.call("/agents") if r["mode"] == mode and r["agent_version"] == version), None)
+    if not record or record["agent_version"] != version or record.get("test_only") is not True:
         raise ValueError("unsupported local bank runtime descriptor")
     skills = tuple({"external_skill_id": s["id"], "external_version_id": s["version"],
                     "name": s["name"], "description": s["description"],
@@ -136,11 +136,13 @@ def local_bank_target(client, mode):
                 else declared_topology(display_name, skills, tools))
     metadata = {"mode": mode, "model": record["model"], "policy_version": record["policy_version"],
                 "implementation_sha256": record["implementation_sha256"],
-                "summary_prompt": record["summary_prompt"], "test_only": True}
+                "summary_prompt": record["summary_prompt"], "test_only": True,
+                "version_label": record.get("version_label", version),
+                "version_description": record.get("version_description", "")}
     if topology is not None:
         metadata["topology"] = topology
     descriptor = TargetDescriptor(
-        ref=TargetRef(source_id="local-bank-runtime", target_type="agent", external_target_id="loan-" + mode, external_version_id="v1"),
+        ref=TargetRef(source_id="local-bank-runtime", target_type="agent", external_target_id="loan-" + mode, external_version_id=version),
         display_name=display_name,
         prompt=record["prompt"],
         tools=tools,
@@ -180,7 +182,7 @@ class LocalBankAdapter:
     def _execute(self, request):
         config = request.target.invocation_config
         mode = config["mode"]
-        descriptor, snapshot = local_bank_target(self.client, mode)
+        descriptor, snapshot = local_bank_target(self.client, mode, request.target.ref.external_version_id)
         if snapshot.content_sha256 != request.target.content_sha256:
             raise TargetExecutionError("invalid_request", "bank target changed since manifest was created")
         customer = request.case.initial_state.get("customer", "test-low")
@@ -221,7 +223,7 @@ class LocalBankAdapter:
             root = next((event for event in events if event.get("event_type") == "trace"), None)
             result = (root or {}).get("output") or {}
             if (root is None or root.get("status") != "success"
-                    or result.get("mode") != mode or result.get("agent_version") != "v1"
+                    or result.get("mode") != mode or result.get("agent_version") != request.target.ref.external_version_id
                     or result.get("request_id") != rid or result.get("session_id") != session
                     or result.get("output") != chat.output):
                 raise TargetExecutionError("protocol_error", "trace server evidence correlation mismatch")

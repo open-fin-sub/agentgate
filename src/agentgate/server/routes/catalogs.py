@@ -35,9 +35,13 @@ def local_targets(dependencies: Annotated[ServerDependencies, Depends(get_depend
     unavailable = []
     for mode, name in (("base", "基础编排"), ("workflow", "工作流"), ("cloudshrimp", "云虾")):
         try:
-            descriptor, snapshot = local_bank_target(LocalBankClient(), mode)
-            dependencies.targets.register_descriptor(descriptor)
-            records.append({"descriptor": descriptor, "adapter_type": snapshot.adapter_type, "mode": mode})
+            client = LocalBankClient()
+            for record in client.call("/agents"):
+                if record["mode"] != mode:
+                    continue
+                descriptor, snapshot = local_bank_target(client, mode, record["agent_version"])
+                dependencies.targets.register_descriptor(descriptor)
+                records.append({"descriptor": descriptor, "adapter_type": snapshot.adapter_type, "mode": mode})
         except (TargetExecutionError, ValueError):
             unavailable.append({"agent_id": "loan-" + mode, "name": "贷款智能体 · " + name, "mode": mode})
     return {"targets": records, "unavailable": unavailable}

@@ -540,3 +540,21 @@ TargetStructure.vue 对工作流按有向层级展示，标注LLM/规则/工具/
 ### 2026-10-08 — 提交至 integration/baibo
 
 用户授权将当前恢复分支成果提交并推送到远程baibo分支，实际目标为origin/integration/baibo。包含标注v2恢复、完整Trace展示、贷款图谱与Skill分析、核心专项规则与v3种子数据，以及样本详情结果栏加宽与单轮轮次目录统一。主工作区另存的EvaluationTaskForm.vue与agent-topology.ts未纳入本次提交；不包含运行数据库、依赖软链接或凭据。提交前后端1381通过/35跳过，前端82通过，贷款运行时29通过；前端lint及生产构建通过。
+
+## 2026-10-09 Loan evolution A/B (implemented and live-tested)
+
+User authorized autonomous implementation of three loan Agents with paired evolution releases; no commit/push requested. Preserves legacy v1 and historical data. Added exact version discovery/execution/Trace identities, isolated sessions, local-only controlled A/B submission, frontend selection, and portable 20-case acceptance datasets. Reuses current A/B manifests and result comparisons. Design and acceptance: `docs/bank-agents/ab-version-design.md`, `docs/bank-agents/ab-version-verification.md`. After explicit user authorization to reuse the existing local loan service model connection, a separate acceptance environment was started at port 7197 with runtime/loan-ab-acceptance.db.
+
+Offline verification completed: backend 1552 passed / 40 skipped, bank runtime 38 passed including legacy-idempotency coverage, frontend unit 88 passed, production build passed, browser release-selection/submission contracts 3 passed. Real-model acceptance completed: 9 full A/B pairs, 18 runs, 360 samples, 522 reported turn receipts, and 240 deepseek-v4-pro judge records; zero execution/evaluator errors. Every pair improved its aggregate score. Rule sample passes: base 16→20, workflow 10→20, cloudshrimp 11→20 (each /20), no rule regressions. Base LLM/joint evaluations retain real answer-quality failures, including one joint pass→fail regression; see the verification report. Existing services were preserved; no commit or push was performed.
+
+## 2026-10-09 单任务与 A/B 历史统一交付
+
+在用户明确授权的自主 Goal 内，将原 6197 库的 31 个单任务合入 7197 的 12 个 A/B 任务。统一入口 http://127.0.0.1:7197/#/tasks，使用 runtime/loan-ab-acceptance.db，共 43 任务、55 次运行（49 完成、6 失败）。原库未修改；合并前两个库及合并后库的一致性备份在 runtime/history-merge-20261009/。没有重跑模型或更改原分数、时间和失败事实。
+
+新增 demo/history.py 和包内 loan-history.json.gz（约 4.4 MB），标准行外 SQLite 启动自动导入缺失记录。包含固定运行清单、391 条样本 Trace、1776 条评估结果、1 份静态分析报告；无模型密钥或环境文件。相同摘要仅导入一次，已有记录及用户删除保留，不覆盖冲突证据，不向行内/MySQL 注入测试数据。任务列表新增默认“全部时间”，避免历史日期让交付数据在页面上消失。范围和限制见 examples/loan-core/README.md。
+
+验证：10 项历史导入测试通过；全量后端 1563 通过、40 跳过，贷款服务 38 通过，前端 88 项测试、lint、类型检查和构建通过。从 wheel 独立解包、空库导入后，49 份完成报告、6 条失败状态和全部 12 组 A/B 比较 API 均可读取，无需模型凭据。页面已查看 43 个混合任务列表及原单任务的 LLM 分数、轨迹图与 JSON。本 Goal 不提交或推送，远程仓库需后续明确授权后同步这些文件。
+
+## 2026-10-13 统一交付提交验收
+
+用户明确授权将此前列出的全部未提交内容同步到 origin/integration/baibo：贷款 V1/V2 与 A/B 能力、统一历史包、测试、设计分析文档和汇报交付件。推送前目标分支与当前提交基线均为 c2f2e90，可快进更新。重新验证后端 1563 通过/40 跳过、贷款服务 38 通过、前端 88 通过、A/B 浏览器契约 3 通过，依赖一致性检查、lint、类型检查、生产构建及 git diff --check 均通过。55 个待提交文件（含压缩包内容）的凭据模式扫描无命中，历史包通过凭据字段校验；不包含 .env、本机运行数据库或模型连接配置。本次未重新调用真实模型，保留 10 月 9 日实测证据。

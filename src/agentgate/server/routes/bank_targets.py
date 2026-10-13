@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from agentgate.domain import EvaluationRun, EvaluatorRef
@@ -20,6 +20,7 @@ class BankLaunch(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name: str | None = Field(default=None, min_length=1, max_length=128)
     mode: Literal["base", "workflow", "cloudshrimp"]
+    version: str = "v1"
     dataset_id: str
     dataset_version: int = Field(ge=1)
     case_ids: list[str] | None = None
@@ -42,8 +43,8 @@ def list_targets(dependencies: Dependencies):
     client = LocalBankClient()
     try:
         records = []
-        for mode in ("base", "workflow", "cloudshrimp"):
-            descriptor, snapshot = local_bank_target(client, mode)
+        for record in client.call("/agents"):
+            descriptor, snapshot = local_bank_target(client, record["mode"], record["agent_version"])
             dependencies.targets.register_descriptor(descriptor)
             records.append({"descriptor": descriptor, "snapshot": snapshot})
         return records
@@ -54,7 +55,7 @@ def list_targets(dependencies: Dependencies):
 @router.post("/bank-evaluations", status_code=202)
 def launch(request: BankLaunch, dependencies: Dependencies):
     try:
-        descriptor, target = local_bank_target(LocalBankClient(), request.mode)
+        descriptor, target = local_bank_target(LocalBankClient(), request.mode, request.version)
         if request.target_descriptor_sha256 and request.target_descriptor_sha256 != descriptor.content_sha256:
             raise ValueError("智能体配置已变化，请刷新后重新提交，不能静默替换所选版本")
         if request.repetitions > 1 and request.scheduled_for is not None:
@@ -98,6 +99,56 @@ def launch(request: BankLaunch, dependencies: Dependencies):
         raise HTTPException(422, str(exc)) from None
     except RuntimeError:
         raise HTTPException(503, "evaluation dispatch failed") from None
+
+
+class BankComparison(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(min_length=1, max_length=128)
+    mode: Literal["base", "workflow", "cloudshrimp"]
+    baseline_version: str
+    candidate_version: str
+    baseline_descriptor_sha256: str
+    candidate_descriptor_sha256: str
+    dataset_id: str
+    dataset_version: int = Field(ge=1)
+    case_ids: list[str] | None = None
+    evaluator_refs: list[EvaluatorRef] = Field(min_length=1)
+    timeout_seconds: float = Field(default=300, gt=0, le=300)
+
+
+@router.post("/bank-comparisons", status_code=202)
+def compare_bank(request: BankComparison, dependencies: Dependencies,
+                 authorization: str | None = Header(default=None)):
+    """Local-only versioned execution; never use the in-bank session token."""
+    if authorization != "Bearer local":
+        raise HTTPException(403, "loan evolution experiments require external local mode")
+    from agentgate.application.ab_testing import create_ab_runs
+    try:
+        client = LocalBankClient()
+        targets = []
+        for version, digest in ((request.baseline_version, request.baseline_descriptor_sha256),
+                                (request.candidate_version, request.candidate_descriptor_sha256)):
+            descriptor, target = local_bank_target(client, request.mode, version)
+            if descriptor.content_sha256 != digest:
+                raise ValueError("智能体版本定义已变化，请刷新后重新提交")
+            dependencies.targets.register_descriptor(descriptor)
+            targets.append(target)
+        dataset = dependencies.runs.dataset_management.get_version(request.dataset_id, request.dataset_version)
+        for case in dataset.cases:
+            if set(case.initial_state) - {"customer"} or case.initial_state.get("customer", "test-low") not in {"test-low", "test-high", "test-blocked"}:
+                raise ValueError("only registered synthetic customer initial state is supported")
+            if any(set(t.input) != {"txt"} or not isinstance(t.input["txt"], str) or not 1 <= len(t.input["txt"].strip()) <= 4000 for t in case.turns):
+                raise ValueError("bank turns require nonblank txt up to 4000 characters")
+        pair = create_ab_runs(dependencies.runs, dependencies.dispatcher, *targets,
+            dataset_id=request.dataset_id, dataset_version=request.dataset_version,
+            evaluator_refs=request.evaluator_refs, case_ids=request.case_ids,
+            name=request.name, timeout_seconds=request.timeout_seconds)
+        return {"baseline": {"run_id": pair.baseline_run.id, "status": pair.baseline_run.status},
+                "candidate": {"run_id": pair.candidate_run.id, "status": pair.candidate_run.status}}
+    except TargetExecutionError:
+        raise HTTPException(503, "local bank runtime unavailable") from None
+    except (ValueError, LookupError) as exc:
+        raise HTTPException(422, str(exc)) from None
 
 
 @router.get("/runs/{run_id}/target-descriptor")

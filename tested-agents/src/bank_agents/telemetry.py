@@ -25,13 +25,13 @@ MASK_RULES = {
 
 
 class Evidence:
-    def __init__(self, directory: Path, trace_id: str, session_id: str, mode: str, text: str):
+    def __init__(self, directory: Path, trace_id: str, session_id: str, mode: str, text: str, version: str = "v1"):
         self.collector = Collector(SDKConfig(backend="file", project_id=PROJECT,
-            agent_name=f"loan-{mode}-v1", output_file=str(directory),
+            agent_name=f"loan-{mode}-{version}", output_file=str(directory),
             discard_on_overflow=False, flush_interval=1, mask_enabled=True,
             mask_rules=MASK_RULES))
         self.collector.start_trace(trace_id=trace_id, session_id=session_id,
-            name=f"loan.{mode}", agent_name=f"loan-{mode}-v1", input={"txt": text},
+            name=f"loan.{mode}", agent_name=f"loan-{mode}-{version}", input={"txt": text},
             tags=["test-only", "test-policy-v1"])
         self.start = monotonic()
         self.path = directory / PROJECT / session_id / f"{trace_id}.jsonl"

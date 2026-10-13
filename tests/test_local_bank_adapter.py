@@ -223,8 +223,12 @@ def test_local_catalog_preserves_sources_versions_and_offline_entries(tmp_path, 
     class Dispatcher:
         def submit(self, run_id): pass
         def cancel(self, run_id): pass
-    def resolve(client, mode):
-        return local_bank_target(Client(mode), mode)
+    class CatalogClient:
+        def call(self, path):
+            return [{"mode": mode, "agent_version": "v1"} for mode in ("base", "workflow", "cloudshrimp")]
+    monkeypatch.setattr(catalogs, "LocalBankClient", CatalogClient)
+    def resolve(client, mode, version="v1"):
+        return local_bank_target(Client(mode), mode, version)
     monkeypatch.setattr(catalogs, "local_bank_target", resolve)
     app = create_app(tmp_path / "catalog.db", dispatcher=Dispatcher())
     with TestClient(app) as http:

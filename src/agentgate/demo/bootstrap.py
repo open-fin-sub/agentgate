@@ -35,6 +35,7 @@ def ensure_demo_target_descriptors(catalog: TargetCatalog) -> None:
 def ensure_loan_core_datasets(repository: AgentGateRepository) -> None:
     """Seed portable synthetic cases without replacing any existing user data."""
     records = json.loads(files("agentgate.demo").joinpath("loan-core-datasets.json").read_text(encoding="utf-8"))
+    records += json.loads(files("agentgate.demo").joinpath("loan-ab-datasets.json").read_text(encoding="utf-8"))
     for record in records:
         if repository.get_dataset(record["id"], user_team_id="") is not None:
             continue

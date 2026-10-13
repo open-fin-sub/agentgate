@@ -17,9 +17,11 @@ from .runtime import Runtime, SKILLS, BASE_PROMPT, EXTRACT_PROMPT, ROUTER_PROMPT
 from .store import Store, Conflict
 from .telemetry import PROJECT
 from .tools import TOOLS
+from .versions import VERSIONS, session_scope, skills_for, summary_prompt
 
 Identifier = Annotated[str, Field(min_length=1, max_length=100, pattern=r"^[A-Za-z0-9_-]+$")]
-AGENTS = {f"loan-{mode}-v1": mode for mode in ("base", "workflow", "cloudshrimp")}
+AGENTS = {f"loan-{mode}-{release.id}": (mode, release.id)
+          for mode in ("base", "workflow", "cloudshrimp") for release in VERSIONS}
 
 
 class InitData(BaseModel):
@@ -71,10 +73,10 @@ def create_app(runtime=None):
     app.state.runtime = runtime
 
     def mode_of(agent_name, allowed=("base", "workflow", "cloudshrimp")):
-        mode = AGENTS.get(agent_name)
-        if mode not in allowed:
+        identity = AGENTS.get(agent_name)
+        if identity is None or identity[0] not in allowed:
             raise HTTPException(404, "unknown agent or unsupported protocol")
-        return mode
+        return identity
 
     @app.get("/health")
     def health():
@@ -82,14 +84,16 @@ def create_app(runtime=None):
 
     @app.get("/agents")
     def agents():
-        return [{"agent_id": f"loan-{mode}", "agent_version": "v1", "agent_name": name,
+        return [{"agent_id": f"loan-{mode}", "agent_version": version, "agent_name": name,
+                 "version_label": next(r.label for r in VERSIONS if r.id == version),
+                 "version_description": next(r.description for r in VERSIONS if r.id == version),
                  "mode": mode, "model": runtime.model.name, "policy_version": "test-policy-v1",
                  "implementation_sha256": implementation_sha256, "tools": TOOLS,
-                 "skills": SKILLS if mode == "cloudshrimp" else [], "test_only": True,
+                 "skills": skills_for(version) if mode == "cloudshrimp" else [], "test_only": True,
                  "prompt": BASE_PROMPT if mode == "base" else EXTRACT_PROMPT if mode == "workflow" else ROUTER_PROMPT,
-                 "summary_prompt": SUMMARY_PROMPT,
-                 **({"topology": loan_workflow_topology()} if mode == "workflow" else {})}
-                for name, mode in AGENTS.items()]
+                 "summary_prompt": summary_prompt(version),
+                 **({"topology": loan_workflow_topology(version)} if mode == "workflow" else {})}
+                for name, (mode, version) in AGENTS.items()]
 
     @app.get("/test-cases")
     def cases():
@@ -107,7 +111,7 @@ def create_app(runtime=None):
 
     @app.post("/agent-api/{agent_name}/chatabc/init_session")
     def init(agent_name: str, payload: Envelope):
-        mode = mode_of(agent_name, ("base", "workflow"))
+        mode, version = mode_of(agent_name, ("base", "workflow"))
         try:
             data = InitData.model_validate(payload.data)
             if mode == "base" and data.config_variables or mode == "workflow" and (data.prompt_variables or data.tool_variables):
@@ -117,20 +121,20 @@ def create_app(runtime=None):
                 raise ValueError("only one custID variable is supported; prompts/tools are version-pinned")
             customer = variables[0]["value"] if variables else "test-low"
             # Repeat init request returns the same conversation, not a second session.
-            session = runtime.store.create_session(mode, customer, payload.requestId)
+            session = runtime.store.create_session(session_scope(mode, version), customer, payload.requestId)
             return {"resCode": "FAIAG0000", "data": {"session_id": session}}
         except Conflict as exc:
             raise HTTPException(409, str(exc)) from None
         except ValueError:
             raise HTTPException(422, "invalid init configuration or test customer") from None
 
-    def frames(mode, session, request_id, text, debug=True):
+    def frames(mode, session, request_id, text, debug=True, version="v1"):
         def frame(event, value):
             data = value if value == "[DONE]" else json.dumps(value, ensure_ascii=False)
             return f"event: {event}\ndata: {data}\n\n"
         yield frame("start", {"session_id": session, "request_id": request_id})
         try:
-            result = runtime.execute(mode, session, request_id, text)
+            result = runtime.execute(mode, session, request_id, text, version)
             if mode == "workflow":
                 for node in result["workflow_calls"]:
                     yield frame("message", {"node_id": node["node_id"], "additional_kwargs": {"node_output": node["node_output"]}})
@@ -138,7 +142,7 @@ def create_app(runtime=None):
                 yield frame("message", result if mode == "cloudshrimp" else {"content": result["output"]})
             if debug:
                 yield frame("trace", {"project_id": PROJECT, "trace_id": result["trace_id"],
-                    "request_id": request_id, "agent_version": "v1", "final_state": result["final_state"]})
+                    "request_id": request_id, "agent_version": version, "final_state": result["final_state"]})
         except Exception as exc:
             yield frame("error" if mode == "cloudshrimp" else "failed",
                         {"error_code": type(exc).__name__, "message": "测试执行失败，请按requestId检查记录"})
@@ -146,29 +150,29 @@ def create_app(runtime=None):
 
     @app.post("/agent-api/{agent_name}/chatabc/chat")
     def chat(agent_name: str, payload: Envelope):
-        mode = mode_of(agent_name, ("base", "workflow"))
+        mode, version = mode_of(agent_name, ("base", "workflow"))
         try:
             data = ChatData.model_validate(payload.data)
-            runtime.store.session(data.session_id, mode)
+            runtime.store.session(data.session_id, session_scope(mode, version))
         except ValueError:
             raise HTTPException(422, "invalid chat input or session; files are not supported") from None
-        return StreamingResponse(frames(mode, data.session_id, payload.requestId, data.txt), media_type="text/event-stream")
+        return StreamingResponse(frames(mode, data.session_id, payload.requestId, data.txt, version=version), media_type="text/event-stream")
 
     @app.post("/agent-api/{agent_name}/api/v1/message")
     def cloud(agent_name: str, payload: CloudData, x_request_id: str | None = Header(default=None)):
-        mode_of(agent_name, ("cloudshrimp",))
+        mode, version = mode_of(agent_name, ("cloudshrimp",))
         from pydantic import TypeAdapter
         try:
             request_id = TypeAdapter(Identifier).validate_python(x_request_id or str(uuid4()))
-            session = runtime.store.create_session("cloudshrimp", payload.custID, payload.sessionId)
+            session = runtime.store.create_session(session_scope(mode, version), payload.custID, payload.sessionId)
         except Conflict as exc:
             raise HTTPException(409, str(exc)) from None
         except ValueError:
             raise HTTPException(422, "invalid request ID or test customer") from None
         if payload.stream:
-            return StreamingResponse(frames("cloudshrimp", session, request_id, payload.txt, payload.debugTrace), media_type="text/event-stream")
+            return StreamingResponse(frames("cloudshrimp", session, request_id, payload.txt, payload.debugTrace, version), media_type="text/event-stream")
         try:
-            return runtime.execute("cloudshrimp", session, request_id, payload.txt)
+            return runtime.execute("cloudshrimp", session, request_id, payload.txt, version)
         except Conflict as exc:
             raise HTTPException(409, str(exc)) from None
         except Exception:

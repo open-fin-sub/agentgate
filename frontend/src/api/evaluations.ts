@@ -106,7 +106,7 @@ export async function request<T>(
   timeoutMs = 30000,
 ): Promise<T> {
   if (method === 'POST') {
-    if (['/evaluations', '/bank-evaluations', '/stability-experiments'].includes(path)) {
+    if (['/evaluations', '/bank-evaluations', '/bank-comparisons', '/stability-experiments'].includes(path)) {
       const selection = body as {
         evaluator_ids?: string[];
         evaluator_refs?: { evaluator_id: string }[];

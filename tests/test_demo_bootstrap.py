@@ -46,7 +46,8 @@ def test_core_datasets_survive_restart_and_preserve_user_changes(tmp_path) -> No
     repository = SQLiteRepository(path)
     ensure_loan_core_datasets(repository)
     datasets = DatasetManagement(repository).list_datasets()
-    assert len(datasets) == 3
+    assert len(datasets) == 6
+    datasets = [d for d in datasets if "核心专项" in d.name]
     expected = {}
     for dataset in datasets:
         version = repository.get_published_dataset_version(dataset.id, 3, user_team_id="")
@@ -64,6 +65,6 @@ def test_core_datasets_survive_restart_and_preserve_user_changes(tmp_path) -> No
     for dataset_id, version in expected.items():
         assert repository.get_published_dataset_version(dataset_id, 3, user_team_id="") == version
     with sqlite3.connect(path) as connection:
-        assert connection.execute(f"SELECT COUNT(*) FROM {_T_DATASETS}").fetchone()[0] == 3
-        assert connection.execute(f"SELECT COUNT(*) FROM {_T_DATASET_VERSIONS}").fetchone()[0] == 3
+        assert connection.execute(f"SELECT COUNT(*) FROM {_T_DATASETS}").fetchone()[0] == 6
+        assert connection.execute(f"SELECT COUNT(*) FROM {_T_DATASET_VERSIONS}").fetchone()[0] == 6
     repository.close()

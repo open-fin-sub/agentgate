@@ -36,8 +36,9 @@ TOOLS = [
 
 
 class LoanTools:
-    def __init__(self, store, session_id, request_id, evidence):
+    def __init__(self, store, session_id, request_id, evidence, *, allowed_tools=None):
         self.store, self.session, self.request, self.evidence = store, session_id, request_id, evidence
+        self.allowed_tools = allowed_tools
 
     def invoke(self, name, arguments):
         with self.evidence.span(name, "tool", inputs=arguments, tool_name=name) as span:
@@ -52,6 +53,8 @@ class LoanTools:
             return output
 
     def _execute(self, name, arguments):
+        if self.allowed_tools is not None and name not in self.allowed_tools:
+            raise ValueError("tool is outside this Skill permission boundary")
         if name not in {t["function"]["name"] for t in TOOLS}:
             raise ValueError("unknown tool")
         if not isinstance(arguments, dict):

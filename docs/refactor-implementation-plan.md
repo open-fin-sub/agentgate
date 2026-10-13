@@ -379,3 +379,15 @@ components. This later review does not change the refactor baseline.
 ## 2026-10-07 三类贷款核心专项验收
 
 用户授权直接实施至可验收。当前分支复用多轮领域、规则/LLM/composite执行与版本发布；新增单一职责 execution_path evaluator，适配器只规范化实际SDK类型，UI保存与导出保留新断言。未修改目录/Token模式路由、未新增调度或注册框架、未改变默认内置评估器集合。goal/p1-demo、integration/p1-new本地不可解析，因此未声称复用其具体代码。共3集v2、24样本、9任务真实完成，工作流7节点10连线、云虾3 Skills覆盖。回归1380后端/82前端通过，最终结果67/72通过，5条真实原因解释失败保留，详见project-progress.md。
+
+## 2026-10-09 统一历史交付 Goal
+
+用户明确授权自主完成本地合并、无密钥数据包、幂等保护、新环境验证及回归；不自动提交或推送。在 feature/loan-history-delivery 保留已完成的 A/B 演进前置变更和其他未提交工作。
+
+基线评估：本次可读取 origin/goal/p1-demo 和 origin/integration/p1-new。前者无可直接复用的历史导入器，后者 web/src/views/runs/history.vue 属于旧契约；均不复制。适配现有 scripts/export-delivery.py 的固定快照导出思路及 verify-upstream-migration.py 的 SQLite 一致性备份方法，复用当前不可变领域模型、SQLiteRepository 和 ResultReader。
+
+职责落实：demo/history.py 只负责固定八张表的历史包校验和事务导入；loan-history.json.gz 保存终态本地测试证据；seed-loan-evaluators.py 在已有行外 SQLite 启动入口接入；tests/test_demo_history.py 验证完整结果、分数、冲突回滚、幂等、删除不恢复、凭据和行内隔离。没有修改领域、调度器、目录查询及 Token 路由。TaskList.vue 增加默认“全部时间”，解决交付历史超过 30 天便无法从页面查看的问题，不修改历史时间。
+
+归档只允许本地目标、空行内团队及终态运行，不包含凭据表；旧凭据引用仅保留不可逆的关联 ID，不提供重跑授权。已有记录不被覆盖，同 ID 不可变证据冲突则整个事务回滚。历史包摘要记录阻止启动时恢复用户已删除任务。MySQL 和行内启动不导入。
+
+完成验证：空库导入 43 任务/55 运行，重复启动和修改保留；从 wheel 解包后的独立目录验证 49 份完成报告、6 条失败状态、12 组比较接口；页面核实单任务分数与完整 Trace。后端全量 1563 通过/40 跳过，贷款服务 38 通过，前端单测 88 通过，lint、类型检查与生产构建通过。具体交付范围及备份见 examples/loan-core/README.md。

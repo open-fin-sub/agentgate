@@ -49,6 +49,8 @@ bash scripts/start-bank-integration.sh
 
 - **3 套核心专项测评集**：v3，每套 12 个样本、14 轮，共 36 个样本、42 轮。分别检查工具与审批分支、完整工作流路径、Skill 路由与实际调用。
 - **7 个专项评估器**：1 个执行路径规则、3 个 LLM、3 个规则＋LLM。完整模型配置存在时，启动器自动发布，使用接收方自己的模型；已有配置和用户编辑不会被覆盖。
+- **3 套 V1/V2 演进测评集**：每套 20 个样本，用于基础编排、工作流和云虾的 A/B 对比。
+- **43 个可在页面查看的历史任务**：31 个单任务、12 个 A/B 任务（9 个完整对比、3 个连通性检查），共 55 次运行、391 条样本 Trace、1776 条评估结果。行外 SQLite 标准启动时自动导入，无需调用模型；保留原分数、时间及 6 次失败运行。首次导入使用“历史验收”名称，已有同 ID 任务名称保留。详见[历史数据交付说明](examples/loan-core/README.md)。
 - **9 个历史验收任务的结果快照**：旧 v2、DeepSeek v4 Pro，72 次样本执行，67 通过、5 失败。打开 [历史报告](examples/loan-core/history/index.html)，或查看 [JSON 和说明](examples/loan-core/README.md)。历史文件不会伪装成本机新执行的任务。
 
 在页面“测评集”搜索“核心专项”，新建任务即可选择专项评估器。也可一次创建三种智能体 × 三种评估方式共 9 个新任务（会真实调用模型并产生费用）：
@@ -63,7 +65,7 @@ bash scripts/start-bank-integration.sh
 
 ## 数据保存和备份
 
-测评集/评估器定义在 `src/agentgate/demo/loan-core-*.json`，历史只读报告在 `examples/loan-core/history/`，随源码分发。运行后新建数据默认存储在 `runtime/agentgate.db`；贷款业务数据库、SDK 轨迹在 `runtime/bank-agents/`。智能体通过认证HTTP上传JSONL事件及模型请求附件；Trace Server独立保存到 `runtime/trace-server/received/`，查询不读取发送端目录。
+测评集/评估器定义在 `src/agentgate/demo/loan-core-*.json`，可导入历史包在 `src/agentgate/demo/loan-history.json.gz`，历史只读报告在 `examples/loan-core/history/`，均随源码分发。运行后新建数据默认存储在 `runtime/agentgate.db`；贷款业务数据库、SDK 轨迹在 `runtime/bank-agents/`。智能体通过认证HTTP上传JSONL事件及模型请求附件；Trace Server独立保存到 `runtime/trace-server/received/`，查询不读取发送端目录。
 
 启动器首次生成 `runtime/credential.key`（仅当前用户可读），API 和 Worker 共享用于加密密钥库；若手动指定 `AGENTGATE_API_KEY_ENCRYPTION_KEY`，请自己保存该值。备份前停止服务，完整备份 `runtime/` 并妥善保管密钥文件；删除运行目录会丢失本机新增数据，种子文件不能还原个人修改。`.env`、`runtime/` 和模型密钥不提交 Git。
 

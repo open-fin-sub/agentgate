@@ -121,6 +121,8 @@ def create_ab_runs(
     metric_plan: MetricPlan | None = None,
     gate_spec: ReleaseGateSpec | None = None,
     timeout_seconds: float = 300,
+    case_ids: Sequence[str] | None = None,
+    name: str | None = None,
 ) -> ABRunPair:
     """Create and independently dispatch one controlled pair of Runs."""
 
@@ -138,6 +140,7 @@ def create_ab_runs(
         "metric_plan": metric_plan,
         "gate_spec": gate_spec,
         "timeout_seconds": timeout_seconds,
+        "case_ids": case_ids,
     }
     baseline_run = run_management.create_run(baseline_target, persist=False, **run_arguments)
     candidate_run = EvaluationRun(manifest=type(baseline_run.manifest).model_validate({
@@ -145,7 +148,7 @@ def create_ab_runs(
     }))
     from agentgate.domain.evaluation_task import EvaluationTask
     run_management.repository.save_task_runs(
-        EvaluationTask(id=baseline_run.id, kind="ab", run_ids=(baseline_run.id, candidate_run.id)),
+        EvaluationTask(id=baseline_run.id, name=name, kind="ab", run_ids=(baseline_run.id, candidate_run.id)),
         [baseline_run, candidate_run],
     )
 
