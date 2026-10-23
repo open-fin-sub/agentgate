@@ -25,6 +25,25 @@ class _ErrorOnlyFilter(logging.Filter):
         return record.levelno >= logging.ERROR
 
 
+class _PollingAccessLogFilter(logging.Filter):
+    _POLLING_PATHS = frozenset({"/api/overview", "/api/runs", "/api/evaluation-tasks"})
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        args = record.args
+        if record.name != "uvicorn.access" or not isinstance(args, tuple) or len(args) < 5:
+            return True
+
+        _, method, url_path, _, status_code = args[:5]
+        path = str(url_path).split("?", 1)[0]
+        is_successful_poll = (
+            method == "GET"
+            and path in self._POLLING_PATHS
+            and isinstance(status_code, int)
+            and status_code < 400
+        )
+        return not is_successful_poll
+
+
 def setup_logging() -> None:
     log_path = Path(os.getenv("AGENTGATE_LOG_PATH", DEFAULT_LOG_PATH))
     log_path.mkdir(parents=True, exist_ok=True)
@@ -70,6 +89,7 @@ def setup_logging() -> None:
         uv_logger = logging.getLogger(name)
         uv_logger.handlers.clear()
         uv_logger.propagate = True
+    logging.getLogger("uvicorn.access").addFilter(_PollingAccessLogFilter())
 
     logging.getLogger("agentgate.server.logging_config").info(
         "Logging initialized, log_path=%s", log_path
