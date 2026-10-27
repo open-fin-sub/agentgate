@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage, ElMessageBox, ElOption, ElSelect } from 'element-plus';
 import TaskEvaluatorPicker from './TaskEvaluatorPicker.vue';
 import AgentTargetPicker, { type AgentTargetSelection } from './AgentTargetPicker.vue';
 import { agentDirectory, localAgentDirectory } from '../../../api/agent-platform';
@@ -1025,23 +1025,25 @@ onMounted(() => void openCreate(props.source));
         @selection-change="receivePlatformSelection"
       />
       <div v-if="taskKind === 'ab'" class="full platform-candidate-row">
-        <label class="field platform-candidate-field"
-          >实验 B · 候选版本<select
+        <div class="platform-candidate-field">
+          <label for="platform-candidate-version">实验 B · 候选版本</label>
+          <ElSelect
+            id="platform-candidate-version"
             v-model="platformCandidateVersion"
-            class="input"
             aria-label="平台候选版本"
+            placeholder="请选择候选版本"
+            no-data-text="暂无可选项"
+            :teleported="false"
             :disabled="!platformSelection || submitting || formLoading"
           >
-            <option value="">请选择候选版本</option>
-            <option
+            <ElOption
               v-for="v in platformCandidateVersions"
               :key="v.agentVersion"
+              :label="`${v.agentVersion}${v.status ? ' · ' + v.status : ''}`"
               :value="v.agentVersion"
-            >
-              {{ v.agentVersion }}{{ v.status ? ' · ' + v.status : '' }}
-            </option>
-          </select></label
-        >
+            />
+          </ElSelect>
+        </div>
         <p class="muted platform-candidate-hint">与基线版本同一目录加载；必须选择不同的版本。</p>
       </div>
       <p v-if="auth.loginMode === 'external' && legacyLoading" class="full" role="status">
@@ -1383,6 +1385,13 @@ onMounted(() => void openCreate(props.source));
 .platform-candidate-row .platform-candidate-field {
   grid-column: 3;
   grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.platform-candidate-field :deep(.el-select) {
+  width: 100%;
 }
 .platform-candidate-row .platform-candidate-hint {
   grid-column: 1 / 3;
