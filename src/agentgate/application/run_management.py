@@ -27,7 +27,7 @@ from agentgate.storage.repository import AgentGateRepository
 
 from .dataset_management import DatasetManagement
 from .evaluator_management import EvaluatorManagement
-from .run_scheduling import MAX_CONCURRENT_RUNS_PER_API_KEY, MAX_DISPATCH_ATTEMPTS, RunScheduling
+from .run_scheduling import MAX_CONCURRENT_RUNS_PER_TEAM, MAX_DISPATCH_ATTEMPTS, RunScheduling
 from .target_catalog import TargetCatalog
 
 LOGGER = logging.getLogger(__name__)
@@ -204,14 +204,13 @@ class RunManagement:
         if run.status is not RunStatus.PENDING:
             raise ValueError("only a pending EvaluationRun can be dispatched")
 
-        active = self.repository.count_active_runs_by_api_key(run.api_key)
-        if active > MAX_CONCURRENT_RUNS_PER_API_KEY:
+        active = self.repository.count_active_runs_by_team(run.user_team_id)
+        if active > MAX_CONCURRENT_RUNS_PER_TEAM:
             waiting = transition_run(run, RunStatus.WAITING)
             self.repository.save_run(waiting)
-            key_display = "None" if run.api_key is None else "***"
             LOGGER.warning(
-                "Run throttled to waiting: run_id=%s active_count=%d max=%d api_key=%s",
-                run.id, active, MAX_CONCURRENT_RUNS_PER_API_KEY, key_display,
+                "Run throttled to waiting: run_id=%s active_count=%d max=%d user_team_id=%r",
+                run.id, active, MAX_CONCURRENT_RUNS_PER_TEAM, run.user_team_id,
             )
             return waiting
 
@@ -246,7 +245,7 @@ class RunManagement:
             raise RuntimeError("Run dispatch failed") from exc
         LOGGER.info(
             "Run dispatched: run_id=%s active_count=%d max=%d",
-            run.id, active, MAX_CONCURRENT_RUNS_PER_API_KEY,
+            run.id, active, MAX_CONCURRENT_RUNS_PER_TEAM,
         )
         return run
 

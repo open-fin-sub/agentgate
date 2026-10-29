@@ -146,7 +146,7 @@ def test_scheduler_entry_recovers_pending_before_dispatch(tmp_path, monkeypatch,
         "AGENTGATE_DB_TYPE": "sqlite", "AGENTGATE_DB": str(repository.path),
         "AGENT_TASK_DISPATCHER_TYPE": "bjs", "AGENTGATE_BJS_SUBMIT_URL": url,
         "AGENTGATE_BJS_JOB_ID": "ai11", "AGENTGATE_PENDING_TIMEOUT_SECONDS": "60",
-        "AGENTGATE_MAX_CONCURRENT_RUNS_PER_API_KEY": "1",
+        "AGENTGATE_MAX_CONCURRENT_RUNS_PER_TEAM": "1",
     }
     if entry == "standalone":
         root = prepare_script_tree(tmp_path, config)
@@ -155,7 +155,7 @@ def test_scheduler_entry_recovers_pending_before_dispatch(tmp_path, monkeypatch,
     else:
         for name, value in config.items():
             monkeypatch.setenv(name, value)
-        monkeypatch.setattr(run_scheduling, "MAX_CONCURRENT_RUNS_PER_API_KEY", 1)
+        monkeypatch.setattr(run_scheduling, "MAX_CONCURRENT_RUNS_PER_TEAM", 1)
         assert dispatch_due_evaluation_runs.run() == 1
     assert repository.get_run(expired.id).status is RunStatus.FAILED
     assert repository.get_run(queued.id).status is RunStatus.PENDING
