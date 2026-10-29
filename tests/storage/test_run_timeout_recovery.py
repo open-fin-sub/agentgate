@@ -31,7 +31,7 @@ def test_pending_timeout_boundary_preserves_task_and_team(repository, monkeypatc
     assert failed.completed_at == start + timedelta(seconds=60)
     assert "pending deadline" in failed.error
     assert failed.timing == run.timing
-    assert repository.count_active_runs_by_api_key(run.api_key) == 0
+    assert repository.count_active_runs_by_team(run.user_team_id) == 0
     page = repository.list_evaluation_task_summaries(TaskSummaryQuery(), user_team_id="owner")
     assert page.total == 1 and page.items[0].id == task.id
     assert page.items[0].status == "failed"
@@ -106,7 +106,7 @@ def test_duplicate_recovery_and_late_completion_are_rejected(repository):
 
 def test_cancel_failure_does_not_block_other_recovery_or_waiting_dispatch(repository, monkeypatch, caplog):
     monkeypatch.setenv("AGENTGATE_PENDING_TIMEOUT_SECONDS", "60")
-    monkeypatch.setattr(run_scheduling, "MAX_CONCURRENT_RUNS_PER_API_KEY", 1)
+    monkeypatch.setattr(run_scheduling, "MAX_CONCURRENT_RUNS_PER_TEAM", 1)
     _, first = pending(repository)
     _, second = pending(repository)
     _, queued = pending(repository)
@@ -121,7 +121,7 @@ def test_cancel_failure_does_not_block_other_recovery_or_waiting_dispatch(reposi
     assert "cancellation failed" in caplog.text and "secret-not-to-log" not in caplog.text
     dispatched, = scheduler.dispatch_waiting_runs(dispatcher)
     assert dispatched.id == queued.id
-    assert repository.count_active_runs_by_api_key(queued.api_key) == 1
+    assert repository.count_active_runs_by_team(queued.user_team_id) == 1
 
 
 def test_running_budget_and_nonactive_runs_are_preserved(repository, monkeypatch):
@@ -164,8 +164,8 @@ def test_invalid_pending_configuration_uses_default(repository, monkeypatch, val
     monkeypatch.setenv("AGENTGATE_PENDING_TIMEOUT_SECONDS", value)
     _, run = pending(repository)
     scheduler = RunScheduling(repository)
-    assert scheduler.recover_stale_runs(now=run.timing.pending_started_at + timedelta(seconds=1799)) == []
-    assert len(scheduler.recover_stale_runs(now=run.timing.pending_started_at + timedelta(seconds=1800))) == 1
+    assert scheduler.recover_stale_runs(now=run.timing.pending_started_at + timedelta(seconds=86399)) == []
+    assert len(scheduler.recover_stale_runs(now=run.timing.pending_started_at + timedelta(seconds=86400))) == 1
 
 
 def test_two_reapers_only_release_a_run_once(repository):
@@ -179,4 +179,4 @@ def test_two_reapers_only_release_a_run_once(repository):
         outcomes = list(pool.map(recover, range(2)))
     assert sum(value is not None for value in outcomes) == 1
     assert repository.get_run(run.id).status is RunStatus.FAILED
-    assert repository.count_active_runs_by_api_key(run.api_key) == 0
+    assert repository.count_active_runs_by_team(run.user_team_id) == 0

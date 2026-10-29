@@ -2092,20 +2092,14 @@ class SQLiteRepository:
             projection.put_run(db, recovered)
             return recovered
 
-    def count_active_runs_by_api_key(self, api_key: str | None) -> int:
+    def count_active_runs_by_team(self, user_team_id: str) -> int:
         with self._connect() as db:
-            if api_key is None:
-                row = db.execute(
-                    f"SELECT COUNT(*) AS count FROM {_T_RUNS} "
-                    f"WHERE status IN ('pending','running') AND api_key IS NULL"
-                ).fetchone()
-            else:
-                row = db.execute(
-                    f"SELECT COUNT(*) AS count FROM {_T_RUNS} "
-                    f"WHERE status IN ('pending','running') AND api_key=?",
-                    (api_key,),
-                ).fetchone()
-        return row["count"] if row else 0
+            row = db.execute(
+                f"SELECT COUNT(*) AS count FROM {_T_RUNS} "
+                "WHERE status IN ('pending','running') AND user_team_id=?",
+                (user_team_id,),
+            ).fetchone()
+        return row["count"]
 
     def claim_waiting_run(
         self, run_id: str, claimed_at: datetime

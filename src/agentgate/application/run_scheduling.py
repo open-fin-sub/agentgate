@@ -13,7 +13,7 @@ from agentgate.storage.repository import AgentGateRepository
 
 LOGGER = logging.getLogger(__name__)
 
-DEFAULT_MAX_CONCURRENT_RUNS_PER_API_KEY = 10
+DEFAULT_MAX_CONCURRENT_RUNS_PER_TEAM = 10
 DEFAULT_MAX_DISPATCH_ATTEMPTS = 10
 
 
@@ -30,9 +30,9 @@ def _positive_int_env(name: str, default: int) -> int:
     return value
 
 
-MAX_CONCURRENT_RUNS_PER_API_KEY = _positive_int_env(
-    "AGENTGATE_MAX_CONCURRENT_RUNS_PER_API_KEY",
-    DEFAULT_MAX_CONCURRENT_RUNS_PER_API_KEY,
+MAX_CONCURRENT_RUNS_PER_TEAM = _positive_int_env(
+    "AGENTGATE_MAX_CONCURRENT_RUNS_PER_TEAM",
+    DEFAULT_MAX_CONCURRENT_RUNS_PER_TEAM,
 )
 MAX_DISPATCH_ATTEMPTS = _positive_int_env(
     "AGENTGATE_MAX_DISPATCH_ATTEMPTS",
@@ -161,14 +161,13 @@ class RunScheduling:
             LOGGER.debug("Scheduler: dispatch_due_runs starting, %d due runs", len(due_runs))
         dispatched: list[EvaluationRun] = []
         for run in due_runs:
-            active = self.repository.count_active_runs_by_api_key(run.api_key)
-            if active > MAX_CONCURRENT_RUNS_PER_API_KEY:
+            active = self.repository.count_active_runs_by_team(run.user_team_id)
+            if active > MAX_CONCURRENT_RUNS_PER_TEAM:
                 waiting = _transition_to_waiting(run)
                 self.repository.save_run(waiting)
-                key_display = "None" if run.api_key is None else "***"
                 LOGGER.warning(
-                    "Scheduled run throttled to waiting: run_id=%s active_count=%d max=%d api_key=%s",
-                    run.id, active, MAX_CONCURRENT_RUNS_PER_API_KEY, key_display,
+                    "Scheduled run throttled to waiting: run_id=%s active_count=%d max=%d user_team_id=%r",
+                    run.id, active, MAX_CONCURRENT_RUNS_PER_TEAM, run.user_team_id,
                 )
                 continue
             try:
@@ -197,12 +196,11 @@ class RunScheduling:
             LOGGER.debug("Scheduler: dispatch_waiting_runs starting, %d waiting runs", len(waiting_runs))
         dispatched: list[EvaluationRun] = []
         for run in waiting_runs:
-            active = self.repository.count_active_runs_by_api_key(run.api_key)
-            if active >= MAX_CONCURRENT_RUNS_PER_API_KEY:
-                key_display = "None" if run.api_key is None else "***"
+            active = self.repository.count_active_runs_by_team(run.user_team_id)
+            if active >= MAX_CONCURRENT_RUNS_PER_TEAM:
                 LOGGER.debug(
-                    "Waiting run still throttled: run_id=%s active_count=%d max=%d api_key=%s",
-                    run.id, active, MAX_CONCURRENT_RUNS_PER_API_KEY, key_display,
+                    "Waiting run still throttled: run_id=%s active_count=%d max=%d user_team_id=%r",
+                    run.id, active, MAX_CONCURRENT_RUNS_PER_TEAM, run.user_team_id,
                 )
                 continue
             claimed = self.repository.claim_waiting_run(run.id, utcnow())

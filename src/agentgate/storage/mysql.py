@@ -13,7 +13,7 @@ from enum import Enum
 from typing import TypeVar
 
 from pydantic import BaseModel
-from sqlalchemy import Connection, Table, and_, create_engine, select
+from sqlalchemy import Connection, Table, and_, create_engine, func, select
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DBAPIError, IntegrityError
 
@@ -1072,12 +1072,14 @@ class MySQLRepository:
             projection.put_run(db, recovered)
             return recovered
 
-    def count_active_runs_by_api_key(self, api_key: str | None) -> int:
+    def count_active_runs_by_team(self, user_team_id: str) -> int:
         with self._transaction() as db:
-            active: list[EvaluationRun] = []
-            for status in (RunStatus.PENDING, RunStatus.RUNNING):
-                active.extend(_models(db, s.runs, EvaluationRun, status=status))
-        return sum(1 for run in active if run.api_key == api_key)
+            return db.execute(
+                select(func.count()).select_from(s.runs).where(
+                    s.runs.c.user_team_key == _digest(user_team_id),
+                    s.runs.c.status.in_((RunStatus.PENDING.value, RunStatus.RUNNING.value)),
+                )
+            ).scalar_one()
 
     def claim_waiting_run(
         self, run_id: str, claimed_at: datetime
