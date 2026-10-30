@@ -847,9 +847,7 @@ for (const mode of ['bank', 'external'] as const)
       await choose(page, '智能体版本', mode === 'bank' ? bankVersionOne : 'v1');
       if (kind === 'ab') {
         await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
-        await page.getByLabel('平台候选版本', { exact: true }).selectOption(
-          mode === 'bank' ? bankVersionTwo : 'v2',
-        );
+        await choose(page, '平台候选版本', mode === 'bank' ? bankVersionTwo : 'v2');
       }
       await page.getByLabel('任务测评集', { exact: true }).selectOption('other');
       await expect(page.getByLabel('任务测评集版本', { exact: true })).toBeEnabled();
@@ -1187,7 +1185,7 @@ test('switching external A/B to in-bank discards late demo catalogs and requires
   expect(requests.some((r) => r.path === '/api/run-comparisons')).toBe(false);
   await choose(page, '选择智能体', '工作流 · workflow');
   await choose(page, '实验 A · 基线版本', bankVersionOne);
-  await page.getByLabel('平台候选版本', { exact: true }).selectOption(bankVersionTwo);
+  await choose(page, '平台候选版本', bankVersionTwo);
   await create.click();
   await expect.poll(() => page.evaluate(() => (window as any).created.length)).toBe(1);
   expect(
@@ -1239,15 +1237,53 @@ test('form submits workflow target and selected source cases with isolated token
   ).toEqual({ updates: 1, storage: '{}' });
 });
 
+for (const mode of ['bank', 'external'] as const)
+  test(`${mode} A/B version selectors share the project select styling`, async ({ page }) => {
+    await openForm(page, false, sampleCases, mode);
+    await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
+    await expect(page.locator('.platform-candidate-field .el-select__wrapper')).toHaveClass(/is-disabled/);
+    await choose(page, '选择智能体', '工作流 · workflow');
+    await choose(page, '实验 A · 基线版本', mode === 'bank' ? bankVersionOne : 'v1');
+    await page.getByRole('heading', { name: '测评对象', exact: true }).click();
+    const baseline = page.locator('.target-field').filter({ hasText: '实验 A · 基线版本' });
+    const candidate = page.locator('.platform-candidate-field');
+    await expect(candidate.locator('select')).toHaveCount(0);
+    await expect(candidate.locator('.el-select')).toHaveCount(1);
+    for (const width of [1440, 600]) {
+      await page.setViewportSize({ width, height: 1100 });
+      const appearance = (element: Element) => {
+        const style = getComputedStyle(element);
+        return {
+          height: style.height,
+          borderRadius: style.borderRadius,
+          backgroundColor: style.backgroundColor,
+          boxShadow: style.boxShadow,
+        };
+      };
+      await expect.poll(async () => ({
+        baseline: await baseline.locator('.el-select__wrapper').evaluate(appearance),
+        candidate: await candidate.locator('.el-select__wrapper').evaluate(appearance),
+      })).toEqual({
+        baseline: await baseline.locator('.el-select__wrapper').evaluate(appearance),
+        candidate: await baseline.locator('.el-select__wrapper').evaluate(appearance),
+      });
+      const fieldBox = await candidate.boundingBox();
+      const selectBox = await candidate.locator('.el-select').boundingBox();
+      expect(Math.abs(fieldBox!.width - selectBox!.width)).toBeLessThan(1);
+    }
+    await choose(page, '平台候选版本', mode === 'bank' ? bankVersionTwo : 'v2');
+    await expect(page.getByRole('button', { name: '创建 A/B试验', exact: true })).toBeEnabled();
+  });
+
 test('platform A/B submits both versions to the comparison endpoint', async ({
   page,
 }, testInfo) => {
   const requests = await openForm(page);
   await selectFormTarget(page);
   await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
-  const candidate = page.getByLabel('平台候选版本', { exact: true });
+  const candidate = page.getByRole('combobox', { name: '平台候选版本', exact: true });
   await expect(candidate).toBeEnabled();
-  await candidate.selectOption(bankVersionTwo);
+  await choose(page, '平台候选版本', bankVersionTwo);
   await page.setViewportSize({ width: 1440, height: 1100 });
   await page
     .locator('.task-create-dialog')
@@ -1294,8 +1330,7 @@ for (const mode of ['bank', 'external'] as const)
       }
       if (kind === 'ab') {
         await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
-        await page.getByLabel('平台候选版本', { exact: true })
-          .selectOption(mode === 'bank' ? bankVersionTwo : 'v2');
+        await choose(page, '平台候选版本', mode === 'bank' ? bankVersionTwo : 'v2');
       }
       let bulkReads = 0;
       await page.route('**/api/evaluation-tasks', (route) => {
@@ -1341,7 +1376,7 @@ test('A/B task refresh failure still emits creation without submitting twice', a
   const requests = await openForm(page);
   await selectFormTarget(page);
   await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
-  await page.getByLabel('平台候选版本', { exact: true }).selectOption(bankVersionTwo);
+  await choose(page, '平台候选版本', bankVersionTwo);
   await page.route('**/api/evaluation-tasks/ab-a', (route) =>
     reply(route, { detail: 'form-secret' }, 500),
   );
@@ -1361,11 +1396,11 @@ test('platform A/B requires a different candidate version before creating', asyn
   await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
   const create = page.getByRole('button', { name: '创建 A/B试验', exact: true });
   await expect(create).toBeDisabled();
-  const candidate = page.getByLabel('平台候选版本', { exact: true });
+  const candidate = page.getByRole('combobox', { name: '平台候选版本', exact: true });
   await expect(candidate).toBeEnabled();
-  await candidate.selectOption(bankVersionOne);
+  await choose(page, '平台候选版本', bankVersionOne);
   await expect(create).toBeDisabled();
-  await candidate.selectOption(bankVersionTwo);
+  await choose(page, '平台候选版本', bankVersionTwo);
   await expect(create).toBeEnabled();
 });
 
@@ -1397,8 +1432,7 @@ for (const [mode, target, kind] of [
       await expect(concurrencyInput).toHaveValue('4');
       if (kind === 'ab') {
         await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
-        await page.getByLabel('平台候选版本', { exact: true })
-          .selectOption(target === 'claw' ? 'v3' : bankVersionTwo);
+        await choose(page, '平台候选版本', target === 'claw' ? 'v3' : bankVersionTwo);
         await expect(page.getByText('A/B 两侧使用相同并发数，失败重试 0。')).toBeVisible();
         await expect(concurrencyInput).toBeEnabled();
         await expect(concurrencyInput).toHaveValue('4');
@@ -1440,7 +1474,7 @@ for (const invalid of ['0', '31', '1.5'])
     const requests = await openForm(page);
     await selectFormTarget(page);
     await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
-    await page.getByLabel('平台候选版本', { exact: true }).selectOption(bankVersionTwo);
+    await choose(page, '平台候选版本', bankVersionTwo);
     await page.getByLabel('并发样本数', { exact: true }).fill(invalid);
     await page.getByRole('button', { name: '创建 A/B试验', exact: true }).click();
     await expect(page.getByRole('alert').filter({ hasText: '并发样本数必须为 1—30 的整数' }))
@@ -1457,7 +1491,7 @@ test('switching from bank A/B to external restores its fixed concurrency', async
   await useExternalMode(page);
   await choose(page, '选择智能体', '工作流 · workflow');
   await choose(page, '实验 A · 基线版本', 'v1');
-  await page.getByLabel('平台候选版本', { exact: true }).selectOption('v2');
+  await choose(page, '平台候选版本', 'v2');
   await expect(concurrencyInput).toHaveValue('1');
   await expect(concurrencyInput).toBeDisabled();
   await page.getByRole('button', { name: '创建 A/B试验', exact: true }).click();
@@ -1484,7 +1518,7 @@ for (const kind of ['single', 'ab'] as const)
     await concurrencyInput.fill('4');
     if (kind === 'ab') {
       await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
-      await page.getByLabel('平台候选版本', { exact: true }).selectOption('v2');
+      await choose(page, '平台候选版本', 'v2');
       await expect(concurrencyInput).toHaveValue('1');
       await expect(concurrencyInput).toBeDisabled();
       await expect(page.getByText('A/B 两侧沿用固定执行参数：并发 1，失败重试 0。')).toBeVisible();
