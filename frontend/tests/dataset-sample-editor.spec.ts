@@ -1250,6 +1250,64 @@ test('editing the primary expected output preserves every visible secondary cond
   await expect(page.getByLabel('期望输出', { exact: true })).toHaveValue('new answer');
 });
 
+test('missing required input blocks switching and adding turns without losing drafts', async ({ page }) => {
+  await open(page);
+  const input = page.getByLabel('用户输入', { exact: true });
+  const rounds = page.locator('.sample-editor .round');
+  const error = page.locator('.sample-editor > [role="alert"]');
+  await input.fill('第一轮输入');
+  await page.getByRole('button', { name: '添加新轮次' }).click();
+  await expect(rounds).toHaveCount(2);
+  await page.getByLabel('期望输出', { exact: true }).fill('保留第二轮草稿');
+  for (const empty of ['', '   ']) {
+    await input.fill(empty);
+    await rounds.nth(0).click();
+    await expect(rounds.nth(1)).toHaveClass(/active/);
+    await expect(error).toContainText('第 2 轮必填项缺失：用户输入不能为空');
+    await expect(input).toHaveValue(empty);
+    await expect(page.getByLabel('期望输出', { exact: true })).toHaveValue('保留第二轮草稿');
+    await page.getByRole('button', { name: '添加新轮次' }).click();
+    await expect(rounds).toHaveCount(2);
+  }
+  await input.fill('第二轮输入');
+  await rounds.nth(0).click();
+  await expect(rounds.nth(0)).toHaveClass(/active/);
+  await expect(error).toHaveCount(0);
+  await expect(input).toHaveValue('第一轮输入');
+  await expect(page.getByLabel('期望输出', { exact: true })).toHaveValue('');
+  // Expected output is optional; it must not prevent leaving the first turn.
+  await rounds.nth(1).click();
+  await expect(input).toHaveValue('第二轮输入');
+  await input.fill('');
+  await page.getByRole('button', { name: '删除当前轮次（保存后生效）' }).click();
+  await expect(rounds).toHaveCount(1);
+  await expect(input).toHaveValue('第一轮输入');
+});
+
+test('structured input uses the same validation before leaving a turn and saving', async ({ page }) => {
+  await open(page);
+  await page.getByLabel('用户输入', { exact: true }).fill('第一轮输入');
+  await page.getByRole('button', { name: '添加新轮次' }).click();
+  await page.getByLabel('结构化 JSON 输入', { exact: true }).check();
+  const input = page.getByRole('textbox', { name: '用户输入 JSON', exact: true });
+  const rounds = page.locator('.sample-editor .round');
+  for (const raw of ['', ' ', '{}', '[]', 'null', '"text"', '{']) {
+    await input.fill(raw);
+    await rounds.nth(0).click();
+    await expect(rounds.nth(1)).toHaveClass(/active/);
+    await expect(page.locator('.sample-editor > [role="alert"]')).not.toBeEmpty();
+    await expect(input).toHaveValue(raw);
+    await page.getByRole('button', { name: '添加新轮次' }).click();
+    await expect(rounds).toHaveCount(2);
+  }
+  await input.fill('{"txt":"第二轮输入","count":0,"enabled":false}');
+  await rounds.nth(0).click();
+  await expect(rounds.nth(0)).toHaveClass(/active/);
+  await expect(page.locator('.sample-editor > [role="alert"]')).toHaveCount(0);
+  await rounds.nth(1).click();
+  await expect(input).toHaveValue('{"txt":"第二轮输入","count":0,"enabled":false}');
+});
+
 test('user input is required and expected output stays optional', async ({ page }) => {
   const datasetId = await open(page);
   const input = page.getByLabel('用户输入', { exact: true });

@@ -318,11 +318,32 @@ function validateRules() {
   }
 }
 function selectTurn(nextIndex: number) {
-  if (nextIndex === index.value || !validateRules()) return;
+  if (nextIndex === index.value || !validateCurrentTurn()) return;
   index.value = nextIndex;
 }
+function readTurnInput(i: number): JsonObject {
+  if (!inputs.value[i].trim()) throw Error(`第 ${i + 1} 轮必填项缺失：用户输入不能为空`);
+  const input = inputJson.value[i]
+    ? JSON.parse(inputs.value[i])
+    : { [inputField.value]: inputs.value[i] };
+  if (!input || typeof input !== 'object' || Array.isArray(input))
+    throw Error(`第 ${i + 1} 轮用户输入 JSON 必须为对象`);
+  if (!Object.keys(input).length)
+    throw Error(`第 ${i + 1} 轮必填项缺失：用户输入 JSON 不能为空对象`);
+  return input;
+}
+function validateCurrentTurn() {
+  if (!props.editable) return true;
+  try {
+    readTurnInput(index.value);
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : String(e);
+    return false;
+  }
+  return validateRules();
+}
 function add() {
-  if (!validateRules()) return;
+  if (!validateCurrentTurn()) return;
   form.value!.turns.push(blankSample().turns[0]);
   inputs.value.push('');
   inputJson.value.push(false);
@@ -409,13 +430,7 @@ function save() {
         initializationField.value === 'prompt_variables' ? 'config_variables' : 'prompt_variables'
       ];
     item.turns.forEach((t, i) => {
-      if (!inputs.value[i].trim()) throw Error('第 ' + (i + 1) + ' 轮用户输入不能为空');
-      t.input = inputJson.value[i]
-        ? JSON.parse(inputs.value[i])
-        : { [inputField.value]: inputs.value[i] };
-      if (!t.input || typeof t.input !== 'object' || Array.isArray(t.input))
-        throw Error('用户输入 JSON 必须为对象');
-      if (!Object.keys(t.input).length) throw Error('用户输入 JSON 不能为空对象');
+      t.input = readTurnInput(i);
       t.required_tools = requiredTools.value[i]
         .split(/[,，]/)
         .map((s) => s.trim())
@@ -599,6 +614,7 @@ defineExpose({ save, fetchingVariables });
           <p v-else class="initialization-empty">暂无初始化变量，无需配置时可留空。</p>
         </div>
       </details>
+      <p v-if="error" class="error" role="alert">{{ error }}</p>
       <div class="conversation-layout">
         <aside>
           <div class="round-title">
@@ -735,7 +751,6 @@ defineExpose({ save, fetchingVariables });
           {{ saving ? '保存中…' : '保存样本' }}
         </button>
       </div>
-      <p v-if="error" class="error" role="alert">{{ error }}</p>
       <p v-for="issue in validationIssues" :key="issue.path" class="error">
         {{ issue.path }}：{{ issue.message }}
       </p>
