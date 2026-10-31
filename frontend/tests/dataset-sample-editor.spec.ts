@@ -1296,7 +1296,7 @@ test('structured input uses the same validation before leaving a turn and saving
     await rounds.nth(0).click();
     await expect(rounds.nth(1)).toHaveClass(/active/);
     await expect(page.locator('.sample-editor > [role="alert"]')).not.toBeEmpty();
-    await expect(input).toHaveValue(raw);
+    await expect.poll(() => input.textContent()).toBe(raw);
     await page.getByRole('button', { name: '添加新轮次' }).click();
     await expect(rounds).toHaveCount(2);
   }
@@ -1305,7 +1305,7 @@ test('structured input uses the same validation before leaving a turn and saving
   await expect(rounds.nth(0)).toHaveClass(/active/);
   await expect(page.locator('.sample-editor > [role="alert"]')).toHaveCount(0);
   await rounds.nth(1).click();
-  await expect(input).toHaveValue('{"txt":"第二轮输入","count":0,"enabled":false}');
+  await expect.poll(() => input.textContent()).toBe('{"txt":"第二轮输入","count":0,"enabled":false}');
 });
 
 test('user input is required and expected output stays optional', async ({ page }) => {

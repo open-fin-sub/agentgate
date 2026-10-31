@@ -66,6 +66,9 @@ class RunManagement:
     ) -> EvaluationRun:
         """Resolve exact inputs and persist a pending or scheduled Run."""
 
+        if type(max_parallel_cases) is not int or not 1 <= max_parallel_cases <= 30:
+            raise ValueError("max_parallel_cases must be an integer from 1 to 30")
+
         self.target_catalog.resolve_descriptor(
             target.ref,
             target.descriptor_sha256,

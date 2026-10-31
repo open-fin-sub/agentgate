@@ -31,8 +31,7 @@ from agentgate.domain import (
     utcnow,
 )
 from agentgate.evaluator.models import DuplicateEvaluatorId, UnknownEvaluator
-from agentgate.integrations.observability import InMemoryTraceCapture
-from agentgate.integrations.targets import DemoLoanTargetAdapter
+from agentgate.integrations.targets import DemoLoanTargetAdapter, resolve_demo_trace
 from agentgate.storage.sqlite import SQLiteRepository
 
 
@@ -348,10 +347,9 @@ def test_execute_run_uses_engine_adapter_and_trace_resolver(tmp_path) -> None:
     seed_demo(repository)
     management, evaluators = run_management(repository)
     run = management.create_run(target(), dataset_id=LOAN_DATASET.id)
-    capture = InMemoryTraceCapture()
-    adapter = DemoLoanTargetAdapter(capture)
+    adapter = DemoLoanTargetAdapter()
 
-    completed = management.execute_run(run.id, adapter, capture.resolve)
+    completed = management.execute_run(run.id, adapter, resolve_demo_trace)
 
     assert completed.status is RunStatus.COMPLETED
     assert len(repository.list_traces(run.id)) == 1
@@ -359,7 +357,7 @@ def test_execute_run_uses_engine_adapter_and_trace_resolver(tmp_path) -> None:
     assert len(results) == len(evaluators.default_specs)
     assert all(result.outcome.value not in {"fail", "review", "error"}
                for result in results)
-    capture.shutdown()
+    adapter.close()
 
 
 def test_create_run_rejects_unknown_or_duplicate_evaluators(tmp_path) -> None:
@@ -397,13 +395,13 @@ def test_create_run_rejects_unknown_or_duplicate_evaluators(tmp_path) -> None:
 def test_execute_run_rejects_unknown_run(tmp_path) -> None:
     repository = SQLiteRepository(tmp_path / "missing-run.db")
     management, _ = run_management(repository)
-    capture = InMemoryTraceCapture()
+    adapter = DemoLoanTargetAdapter()
 
     with pytest.raises(ValueError, match="unknown EvaluationRun"):
         management.execute_run(
-            "missing", DemoLoanTargetAdapter(capture), capture.resolve
+            "missing", adapter, resolve_demo_trace
         )
-    capture.shutdown()
+    adapter.close()
 
 
 def test_create_run_requires_persisted_matching_target_descriptor(tmp_path) -> None:
@@ -767,15 +765,15 @@ def test_create_run_can_freeze_reproducible_case_subset(tmp_path) -> None:
     assert other_run.manifest.dataset == full_dataset
     assert other_run.manifest.manifest_sha256 != run.manifest.manifest_sha256
 
-    capture = InMemoryTraceCapture()
+    adapter = DemoLoanTargetAdapter()
     try:
         completed = management.execute_run(
             run.id,
-            DemoLoanTargetAdapter(capture),
-            capture.resolve,
+            adapter,
+            resolve_demo_trace,
         )
     finally:
-        capture.shutdown()
+        adapter.close()
 
     assert completed.status is RunStatus.COMPLETED
     assert len(repository.list_traces(run.id)) == len(selected_ids)
@@ -829,3 +827,13 @@ def test_created_run_records_pending_time_and_rerun_gets_new_clock(tmp_path):
     assert rerun.timing.pending_started_at > run.timing.pending_started_at
     scheduled = management.create_run(target(), dataset_id=LOAN_DATASET.id, scheduled_for=utcnow() + timedelta(hours=1))
     assert scheduled.timing.pending_started_at is None
+
+
+@pytest.mark.parametrize("value", [0, -1, 31, 32, 1.5, True, "2"])
+def test_new_runs_reject_invalid_concurrency_before_persistence(tmp_path, value):
+    repository = SQLiteRepository(tmp_path / "concurrency-range.db")
+    seed_demo(repository)
+    management, _ = run_management(repository)
+    with pytest.raises(ValueError, match="max_parallel_cases"):
+        management.create_run(target(), dataset_id=LOAN_DATASET.id, max_parallel_cases=value)
+    assert repository.list_runs(user_team_id="") == []

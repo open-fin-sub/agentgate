@@ -1242,7 +1242,8 @@ for (const mode of ['bank', 'external'] as const)
     await openForm(page, false, sampleCases, mode);
     await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
     await expect(page.locator('.platform-candidate-field .el-select__wrapper')).toHaveClass(/is-disabled/);
-    await choose(page, '选择智能体', '工作流 · workflow');
+    await page.locator('.target-field').filter({ hasText: '选择智能体' }).locator('.el-select__wrapper').click();
+    await page.getByRole('option', { name: '工作流', exact: true }).click();
     await choose(page, '实验 A · 基线版本', mode === 'bank' ? bankVersionOne : 'v1');
     await page.getByRole('heading', { name: '测评对象', exact: true }).click();
     const baseline = page.locator('.target-field').filter({ hasText: '实验 A · 基线版本' });
@@ -1251,6 +1252,7 @@ for (const mode of ['bank', 'external'] as const)
     await expect(candidate.locator('.el-select')).toHaveCount(1);
     for (const width of [1440, 600]) {
       await page.setViewportSize({ width, height: 1100 });
+      await page.getByRole('heading', { name: '测评对象', exact: true }).click();
       const appearance = (element: Element) => {
         const style = getComputedStyle(element);
         return {
@@ -1260,13 +1262,11 @@ for (const mode of ['bank', 'external'] as const)
           boxShadow: style.boxShadow,
         };
       };
-      await expect.poll(async () => ({
-        baseline: await baseline.locator('.el-select__wrapper').evaluate(appearance),
-        candidate: await candidate.locator('.el-select__wrapper').evaluate(appearance),
-      })).toEqual({
-        baseline: await baseline.locator('.el-select__wrapper').evaluate(appearance),
-        candidate: await baseline.locator('.el-select__wrapper').evaluate(appearance),
-      });
+      await expect(async () => {
+        const baselineAppearance = await baseline.locator('.el-select__wrapper').evaluate(appearance);
+        const candidateAppearance = await candidate.locator('.el-select__wrapper').evaluate(appearance);
+        expect(candidateAppearance).toEqual(baselineAppearance);
+      }).toPass({ timeout: 5000 });
       const fieldBox = await candidate.boundingBox();
       const selectBox = await candidate.locator('.el-select').boundingBox();
       expect(Math.abs(fieldBox!.width - selectBox!.width)).toBeLessThan(1);
@@ -1433,7 +1433,7 @@ for (const [mode, target, kind] of [
       if (kind === 'ab') {
         await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
         await choose(page, '平台候选版本', target === 'claw' ? 'v3' : bankVersionTwo);
-        await expect(page.getByText('A/B 两侧使用相同并发数，失败重试 0。')).toBeVisible();
+        await expect(page.getByText('A/B 两侧分别使用所设并发上限，失败重试 0。')).toBeVisible();
         await expect(concurrencyInput).toBeEnabled();
         await expect(concurrencyInput).toHaveValue('4');
         await concurrencyInput.fill('5');
@@ -1482,7 +1482,7 @@ for (const invalid of ['0', '31', '1.5'])
     expect(requests.some((request) => request.path === '/api/agent-platform/comparisons')).toBe(false);
   });
 
-test('switching from bank A/B to external restores its fixed concurrency', async ({ page }) => {
+test('switching from bank A/B to external retains editable concurrency', async ({ page }) => {
   const requests = await openForm(page);
   await selectFormTarget(page);
   await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
@@ -1492,17 +1492,17 @@ test('switching from bank A/B to external restores its fixed concurrency', async
   await choose(page, '选择智能体', '工作流 · workflow');
   await choose(page, '实验 A · 基线版本', 'v1');
   await choose(page, '平台候选版本', 'v2');
-  await expect(concurrencyInput).toHaveValue('1');
-  await expect(concurrencyInput).toBeDisabled();
+  await expect(concurrencyInput).toHaveValue('5');
+  await expect(concurrencyInput).toBeEnabled();
   await page.getByRole('button', { name: '创建 A/B试验', exact: true }).click();
   await expect.poll(() => page.evaluate(() => (window as any).created.length)).toBe(1);
   const submission = requests.find((request) => request.path === '/api/agent-platform/comparisons')!;
-  expect(submission.body).not.toHaveProperty('max_parallel_cases');
+  expect(submission.body.max_parallel_cases).toBe(5);
   expect(submission.headers['x-agent-platform-token']).toBe('local');
 });
 
 for (const kind of ['single', 'ab'] as const)
-  test(`external platform ${kind} retains its existing concurrency and token routing`, async ({ page }) => {
+  test(`external platform ${kind} submits editable concurrency and retains token routing`, async ({ page }) => {
     const requests = await openForm(page);
     await useExternalMode(page);
     const directoryRequests: { origin: string; authorization?: string }[] = [];
@@ -1519,9 +1519,9 @@ for (const kind of ['single', 'ab'] as const)
     if (kind === 'ab') {
       await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
       await choose(page, '平台候选版本', 'v2');
-      await expect(concurrencyInput).toHaveValue('1');
-      await expect(concurrencyInput).toBeDisabled();
-      await expect(page.getByText('A/B 两侧沿用固定执行参数：并发 1，失败重试 0。')).toBeVisible();
+      await expect(concurrencyInput).toHaveValue('4');
+      await expect(concurrencyInput).toBeEnabled();
+      await expect(page.getByText('A/B 两侧分别使用所设并发上限，失败重试 0。')).toBeVisible();
     }
     await expect(page.getByLabel('稳定性测试', { exact: true })).toHaveCount(0);
     await expect(page.getByLabel('失败重试次数', { exact: true })).toHaveCount(0);
@@ -1532,7 +1532,7 @@ for (const kind of ['single', 'ab'] as const)
     const endpoint = kind === 'ab'
       ? '/api/agent-platform/comparisons' : '/api/agent-platform/evaluations';
     const submission = requests.find((request) => request.path === endpoint)!;
-    if (kind === 'ab') expect(submission.body).not.toHaveProperty('max_parallel_cases');
+    if (kind === 'ab') expect(submission.body.max_parallel_cases).toBe(4);
     else {
       expect(submission.body.max_parallel_cases).toBe(4);
       expect(submission.body.repetitions).toBe(1);
@@ -1671,10 +1671,12 @@ test('external A/B keeps legacy endpoint and association, returning to single re
   const requests = await openForm(page, false, sampleCases, 'external');
   // 不预选平台目标：内置 Demo 的 A/B 走 legacy 端点；预选平台目标会切换到平台 A/B 分支。
   await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
-  await expect(page.getByLabel('执行超时（秒）', { exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: '创建 A/B试验', exact: true })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Skill 静态分析', exact: true })).toHaveCount(0);
-  await expect(page.getByLabel('并发样本数', { exact: true })).toBeDisabled();
+  await expect(page.getByLabel('并发样本数', { exact: true })).toBeEnabled();
+  await page.getByLabel('并发样本数', { exact: true }).fill('6');
+  await expect(page.getByLabel('执行超时（秒）', { exact: true })).toBeEnabled();
+  await page.getByLabel('执行超时（秒）', { exact: true }).fill('222');
   await expect(page.getByLabel('稳定性测试', { exact: true })).toHaveCount(0);
   await expect(page.getByLabel('失败重试次数', { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: '创建 A/B试验', exact: true }).click();
@@ -1684,6 +1686,8 @@ test('external A/B keeps legacy endpoint and association, returning to single re
     candidate_version: 'old-2',
     dataset_id: 'dataset',
     dataset_version: 2,
+    timeout_seconds: 222,
+    max_parallel_cases: 6,
     evaluators: [{ id: 'judge', version: '1' }],
   });
   expect(requests.some((r) => r.method === 'PUT' && r.path === '/api/evaluation-tasks/a')).toBe(

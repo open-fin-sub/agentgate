@@ -117,10 +117,12 @@ def create_ab_runs(
     *,
     dataset_id: str,
     dataset_version: int | None = None,
+    case_ids: Sequence[str] | None = None,
     evaluator_refs: Sequence[EvaluatorRef] | None = None,
     metric_plan: MetricPlan | None = None,
     gate_spec: ReleaseGateSpec | None = None,
     timeout_seconds: float = 300,
+    max_parallel_cases: int = 1,
 ) -> ABRunPair:
     """Create and independently dispatch one controlled pair of Runs."""
 
@@ -134,10 +136,12 @@ def create_ab_runs(
     run_arguments = {
         "dataset_id": dataset_id,
         "dataset_version": dataset_version,
+        "case_ids": case_ids,
         "evaluator_refs": evaluator_refs,
         "metric_plan": metric_plan,
         "gate_spec": gate_spec,
         "timeout_seconds": timeout_seconds,
+        "max_parallel_cases": max_parallel_cases,
     }
     baseline_run = run_management.create_run(baseline_target, persist=False, **run_arguments)
     candidate_run = EvaluationRun(timing=baseline_run.timing, manifest=type(baseline_run.manifest).model_validate({
