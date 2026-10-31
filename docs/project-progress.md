@@ -1,6 +1,88 @@
 # AgentGate Project Progress
 
-Last updated: 2026-10-30
+Last updated: 2026-10-31
+
+## 2026-10-31 — Delivery to release_20261102
+
+The user subsequently authorized committing, pushing and opening a PR for both the
+editable-rerun and unified-concurrency changes, targeting `release_20261102`; merging
+is not authorized. Prepare delivery on `feature/rerun-concurrency-release-20261102`
+from fetched release head `50888af24ea437872a7fb06035f9101d607b4f6e`, with separate
+rerun and concurrency commits. Preserve the original dirty checkouts and their live
+verification services.
+
+Three-way integration preserves the release branch's team-level dispatch limits,
+pending/running timeout recovery, base-agent initialization fields, required sample
+inputs and Element Plus A/B version selector. Adapt browser interactions to the
+release selector and retain both its Run-timing tests and the new concurrency tests.
+The earlier verification counts below describe the original implementation worktrees;
+delivery verification against the release base is recorded separately here.
+
+Fresh release-base verification: backend **2983 passed / 124 skipped**;
+tested-Agent suite **32 passed**; frontend units **126 passed**; related browser
+checks cover **241 distinct cases**, plus **19** task-summary cases (260 distinct
+browser cases). The main related-browser run passed 239 cases. The two selector
+style tests were adapted to the visible Element Plus wrapper and live computed-style
+comparison, then each passed three serial repeats (six checks); no production fix
+was required for those test interactions. The release's structured-input test now
+reads exact contenteditable text, including whitespace, instead of using input.value.
+
+Type checking, production build, changed-source ESLint and whitespace checks pass.
+Ruff comparison across 15 production Python files introduces no findings (release
+baseline 14, current 10). Four existing TaskList.vue formatting differences match the
+release baseline; all other changed production frontend files pass Prettier. Preserve
+the existing CI configuration, whose PR trigger targets refactor-1 only. Local skipped
+checks and the absence of live in-bank acceptance are not claimed as CI coverage.
+
+## 2026-10-31 — Unified configurable Case concurrency
+
+Completed the user-authorized autonomous implementation Goal on
+`feature/unified-case-concurrency`; its initial scope excluded commit, push and merge.
+The later delivery authorization above permits commit, push and PR creation only.
+New task inputs and RunManagement validate integer concurrency 1–30, default 1.
+The same value flows through single, stability and supported A/B launch paths in
+both login modes. A/B applies the limit independently to each side. Remove local
+loan and external/mock A/B overrides without changing directory/token routing,
+retry restrictions, independent timeout limits or exact target/version selection.
+Historical immutable manifests retain their serialization and remain readable.
+
+LocalBankAdapter, PlatformAdapter and DemoLoanTargetAdapter now own bounded Case
+execution in their existing modules. Turns within a Case remain sequential; local
+loan sessions and mock instances stay separate. Demo owns one private OTel capture
+per Case and returns its completed inline Trace; update its CLI, server, Worker and
+test composition accordingly. Cancellation prevents later Turns; cleanup waits for
+in-flight work before releasing resources or wiping credentials. Keep the existing
+Engine, adapter protocol, in-bank executors and tested-Agent runtime unchanged.
+
+Verification: full backend **2958 passed / 102 skipped**; tested-Agent suite
+**32 passed**; frontend units **126 passed**; related login/directory/task/detail/
+rerun browser cases **168 passed**; task-summary browser cases **19 passed**.
+Type checking, production build, affected frontend lint/format and diff checks pass.
+The 15 affected production Python files introduce no Ruff findings compared with
+the original checkout; 11 pre-existing findings remain and four import findings
+were resolved. Tests cover 1/2/3/30 bounded overlap, multi-turn order, private Trace
+captures, real local HTTP sessions, cancellation/cleanup, range/default/persistence
+contracts and historical snapshot readability. No live in-bank acceptance is claimed.
+
+Live acceptance uses a separate loopback stack on web **5297**, API **8197**.
+Base, workflow and cloudshrimp each processed three synthetic Cases at concurrency 3;
+actual SDK execution spans show peak 3 in every mode, and all 36 evaluator Results pass.
+The page rerun form restored 3, accepted a change to 2 with timeout 200, and created a
+new completed base task whose actual peak is 2. Demo A/B rerun accepted upper limit 30
+with three Cases per side and timeout 200, persisted 30 on both new Runs and completed.
+These six tasks/eight Runs generated 96 Results and **24 distinct real deepseek-flash
+Judge requests**, with no execution/evaluator ERROR. Demo quality fail/review verdicts
+remain visible; completion does not mean all business evaluations passed. All source
+reports and all copied settings other than the explicit edits remain unchanged.
+Measure overlap using actual SDK execution spans, excluding synthesized Turn envelopes;
+the SDK trace envelope's existing timestamp behavior is outside this change.
+
+Evidence: `runtime/concurrency-live-acceptance/acceptance-summary.json` and
+`live-overlap.json`, with original/copied reports, Trace evidence and UI screenshots.
+The original rerun checkout and 5197 stack are preserved. Its uncommitted rerun changes
+were copied only as a dependency for this isolated implementation. Remote refresh timed
+out; the feature starts at local refactor-1 **c1f2139**. Use the feature-only patch in
+`runtime/feature-unified-concurrency.patch` to review changes against that dependency.
 
 ## 2026-10-30 — Editable rerun creates a new task
 

@@ -4,6 +4,33 @@ Current implementation status is tracked in
 [`project-progress.md`](project-progress.md). This document remains the migration and
 sequencing authority rather than a claim that every target file already exists.
 
+## Release delivery checkpoint — 2026-10-31
+
+The user subsequently authorized separate commits for editable rerun and configurable
+concurrency, a feature-branch push and PR creation against `release_20261102`.
+Integrate on `feature/rerun-concurrency-release-20261102` from release head `50888af`;
+preserve release-owned behavior and the original implementation worktrees. This
+supersedes the earlier no-commit/no-push limits for delivery only. Do not merge.
+See project-progress.md for fresh verification against the release base.
+
+## Unified Case concurrency checkpoint — 2026-10-31
+
+The user authorized autonomous implementation and verification of 1–30 configurable
+Case concurrency (default 1) for both login modes and all supported single/A/B targets.
+This supersedes the local-loan/external-A/B serial restrictions in older plans.
+See docs/run/implementation-plan.md for ownership and source assessment; the behavior
+baseline is goal/p1-demo (4e6d8b4), with integration/p1-new (d1112e7) inspected as reference.
+The current refactor supplies the manifest/protocol/Engine/in-bank concurrency contracts.
+Adapt external scheduling in the existing three adapters; do not introduce an executor
+module or change the Engine. Demo Trace captures are per Case. Validate new configuration
+at launch/application boundaries without rewriting historical immutable snapshots.
+
+The implementation is on feature/unified-case-concurrency at local refactor-1 c1f2139;
+remote refresh timed out. Existing uncommitted rerun work is a copied dependency and
+must stay separate from any future concurrency commit. No commit, push or merge is
+performed. Full regression and local real-model acceptance pass; precise counts,
+limits and evidence locations are recorded in project-progress.md.
+
 ## 1. Scope And Authority
 
 This plan reorganizes the working behavior on Git branch `goal/p1-demo` into the

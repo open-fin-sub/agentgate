@@ -1,9 +1,9 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from agentgate.demo.loan import LOAN_DATASET, LOAN_DATASET_VERSION
 from agentgate.domain import EvaluatorKind, EvaluatorSeverity
-from agentgate.integrations.observability import InMemoryTraceCapture
-from agentgate.integrations.targets import DemoLoanTargetAdapter
+from agentgate.integrations.targets import DemoLoanTargetAdapter, resolve_demo_trace
 from agentgate.server.app import create_app
 
 
@@ -297,13 +297,13 @@ def test_copy_comparison_preserves_source_and_applies_sample_scope_and_timeout(t
         source = client.post("/api/run-comparisons", json=_launch_payload()).json()["data"]
         source_ids = [source[side]["run_id"] for side in ("baseline", "candidate")]
         def execute(identity):
-            capture = InMemoryTraceCapture()
+            adapter = DemoLoanTargetAdapter(state_store={})
             try:
                 return application.state.dependencies.runs.execute_run(
-                    identity, DemoLoanTargetAdapter(capture, state_store={}), capture.resolve,
+                    identity, adapter, resolve_demo_trace,
                 )
             finally:
-                capture.shutdown()
+                adapter.close()
         for identity in source_ids:
             assert execute(identity).status == "completed"
         source_runs = [repository.get_run(identity) for identity in source_ids]
@@ -336,3 +336,23 @@ def test_comparison_invalid_sample_scope_creates_no_task(tmp_path) -> None:
     assert application.state.dependencies.repository.list_runs(user_team_id="") == []
     assert application.state.dependencies.repository.list_evaluation_tasks() == []
     assert dispatcher.run_ids == []
+
+
+@pytest.mark.parametrize("value", [1, 3, 30, 0, 31, 1.5, True, "2"])
+@pytest.mark.parametrize("endpoint", ["/api/evaluations", "/api/run-comparisons"])
+def test_all_demo_launch_paths_validate_case_concurrency(tmp_path, value, endpoint):
+    application = create_app(tmp_path / "concurrency.db", RecordingDispatcher())
+    body = _launch_payload() if endpoint.endswith("comparisons") else {
+        "version": "loan-agent-v2-fixed", "dataset_id": LOAN_DATASET.id, "dataset_version": 1,
+    }
+    body["max_parallel_cases"] = value
+    valid = type(value) is int and 1 <= value <= 30
+    with TestClient(application) as client:
+        response = client.post(endpoint, json=body)
+        assert response.status_code == (202 if valid else 422), response.text
+        if valid:
+            data = response.json()["data"]
+            ids = [data[side]["run_id"] for side in ("baseline", "candidate")] if endpoint.endswith("comparisons") else [data["run_id"]]
+            assert all(application.state.dependencies.repository.get_run(rid).manifest.max_parallel_cases == value for rid in ids)
+        else:
+            assert application.state.dependencies.repository.list_evaluation_tasks() == []

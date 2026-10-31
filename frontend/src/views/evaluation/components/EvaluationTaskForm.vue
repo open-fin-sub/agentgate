@@ -52,13 +52,6 @@ const localBankSelected = computed(
   () => platformSelection.value?.localTarget?.adapter_type === 'local_bank',
 );
 const auth = useAuthStore();
-const inbankPlatformSelected = computed(
-  () =>
-    auth.usesPlatformDirectory && !!platformSelection.value && !platformSelection.value.localTarget,
-);
-watch(inbankPlatformSelected, (selected) => {
-  if (taskKind.value === 'ab' && !selected) concurrency.value = 1;
-});
 const platformDirectory = computed(() =>
   auth.usesPlatformDirectory ? agentDirectory : localAgentDirectory,
 );
@@ -72,7 +65,6 @@ function receivePlatformSelection(selection: AgentTargetSelection | null) {
     timeout.value = PLATFORM_DEFAULT_TIMEOUT_SECONDS;
   if (selection?.localTarget?.adapter_type === 'demo_loan') timeout.value = 300;
   if (selection?.localTarget?.adapter_type === 'local_bank') {
-    concurrency.value = 1;
     timeout.value = 180;
     retries.value = 0;
   }
@@ -281,7 +273,6 @@ watch(selectedAgent, (agent) => {
       : (bankTarget.value?.descriptor.ref.external_version_id ?? '');
   if (agent === 'demo') timeout.value = 300;
   if (agent !== 'demo') {
-    if (!inbankPlatformSelected.value) concurrency.value = 1;
     timeout.value = 180;
     retries.value = 0;
     includeStatic.value = false;
@@ -504,11 +495,8 @@ async function submit() {
     formError.value = '本地智能体仅支持行外模式。';
     return;
   }
-  if (
-    localTarget?.adapter_type === 'local_bank' &&
-    (concurrency.value !== 1 || retries.value !== 0 || timeout.value > 300)
-  ) {
-    formError.value = '贷款智能体要求并发 1、重试 0、超时不超过 300 秒。';
+  if (localTarget?.adapter_type === 'local_bank' && (retries.value !== 0 || timeout.value > 300)) {
+    formError.value = '贷款智能体要求重试 0、超时不超过 300 秒。';
     return;
   }
   if ((taskKind.value === 'single' || auth.loginMode !== 'external') && !platform) {
@@ -602,7 +590,6 @@ async function submit() {
       evaluator_version: evaluators.value.find((e) => e.id === id)?.latest_version!,
     })),
     concurrency: concurrency.value,
-    inbankPlatform: inbankPlatformSelected.value,
     timeout: timeout.value,
     retries: retries.value,
     repetitions: repetitions.value,
@@ -795,6 +782,7 @@ async function submit() {
               ...common,
               name: snapshot.name,
               mode: localTarget.mode,
+              max_parallel_cases: snapshot.concurrency,
               target_descriptor_sha256: localTarget.descriptor.content_sha256,
               repetitions: snapshot.repetitions,
             }
@@ -848,7 +836,7 @@ async function submit() {
           dataset_version: snapshot.datasetVersion,
           ...(caseIds ? { case_ids: caseIds } : {}),
           evaluator_refs: snapshot.evaluatorRefs,
-          ...(snapshot.inbankPlatform ? { max_parallel_cases: snapshot.concurrency } : {}),
+          max_parallel_cases: snapshot.concurrency,
           timeout_seconds: snapshot.timeout,
         },
       });
@@ -922,6 +910,7 @@ async function submit() {
       '/run-comparisons',
       'POST',
       {
+        max_parallel_cases: snapshot.concurrency,
         baseline_version: snapshot.baseline,
         candidate_version: snapshot.candidate,
         dataset_id: snapshot.datasetId,
@@ -1003,7 +992,6 @@ watch(taskKind, (kind) => {
     repetitions.value = 1;
     scope.value = 'all';
     launchMode.value = 'now';
-    if (!inbankPlatformSelected.value) concurrency.value = 1;
     if (!platformSelection.value || platformSelection.value.localTarget) timeout.value = 300;
     retries.value = 0;
   }
@@ -1400,8 +1388,7 @@ onMounted(async () => {
           >并发样本数<input
             class="input"
             v-model.number="concurrency"
-            :disabled="(taskKind === 'ab' && !inbankPlatformSelected) || localBankSelected"
-            title="最多 30 个样本并发"
+            title="1–30 个样本并发，默认 1；同一样本内按轮次顺序执行"
             aria-label="并发样本数"
             type="number"
             min="1"
@@ -1423,13 +1410,7 @@ onMounted(async () => {
         /></label>
       </div>
 
-      <p v-if="taskKind === 'ab'" class="muted full">
-        {{
-          inbankPlatformSelected
-            ? 'A/B 两侧使用相同并发数，失败重试 0。'
-            : 'A/B 两侧沿用固定执行参数：并发 1，失败重试 0。'
-        }}
-      </p>
+      <p v-if="taskKind === 'ab'" class="muted full">A/B 两侧分别使用所设并发上限，失败重试 0。</p>
     </fieldset>
     <p class="task-summary">
       本次：{{

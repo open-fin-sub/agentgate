@@ -339,8 +339,6 @@ def submit_platform_comparison(
     platform_mode = os.getenv("AGENTGATE_AGENT_PLATFORM_MODE", "").strip().lower()
     if platform_mode not in {"mock", "inbank"}:
         raise ConnectionError("agent platform mode must be mock or inbank")
-    if platform_mode == "mock":
-        max_parallel_cases = 1
     client = PlatformClient.from_environment() if platform_mode == "mock" else None
 
     task_id = str(uuid4())

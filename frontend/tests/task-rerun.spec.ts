@@ -159,7 +159,7 @@ async function open(page: Page, options: Options = {}) {
     metric_plan: {},
     gate_spec: {},
     timeout_seconds: 147,
-    max_parallel_cases: options.adapter ? 1 : bank ? 3 : kind === 'ab' ? 1 : 4,
+    max_parallel_cases: bank ? 3 : 4,
     max_retries: !options.adapter && !bank && kind === 'single' ? 2 : 0,
   };
   const original = {
@@ -456,6 +456,7 @@ for (const mode of ['external', 'bank', 'integrated'] as const) {
         expect(write.headers['x-agent-platform-token']).toBe(
           mode === 'external' ? 'local' : 'current-bank-token',
         );
+        expect(write.body.max_parallel_cases).toBe(state.manifest.max_parallel_cases);
         if (kind === 'single')
           expect(write.body).toMatchObject({
             max_parallel_cases: state.manifest.max_parallel_cases,
@@ -569,11 +570,15 @@ for (const adapter of ['demo_loan', 'local_bank'] as const) {
   }) => {
     const state = await open(page, { adapter });
     const dialog = await rerun(page);
+    await expect(dialog.getByLabel('并发样本数', { exact: true })).toHaveValue('4');
+    await dialog.getByLabel('并发样本数', { exact: true }).fill('7');
+    await dialog.getByLabel('执行超时（秒）', { exact: true }).fill('200');
     await dialog.getByRole('button', { name: /^(开始测评|创建 A\/B试验|正在处理…)$/ }).click();
     await expect(page).toHaveURL(/#\/tasks\/new-task$/);
     expect(state.writes[0].path).toBe(
       adapter === 'local_bank' ? '/api/bank-evaluations' : '/api/evaluations',
     );
+    expect(state.writes[0].body).toMatchObject({ max_parallel_cases: 7, timeout_seconds: 200 });
     expect(state.writes[0].body.evaluator_refs[0]).toEqual({
       evaluator_id: 'judge-2',
       evaluator_version: '2',
@@ -593,6 +598,7 @@ test('A/B demo restores both local versions', async ({ page }) => {
       candidate_version: oldB,
       case_ids: ['case-2'],
       timeout_seconds: 147,
+      max_parallel_cases: 4,
     },
   });
 });

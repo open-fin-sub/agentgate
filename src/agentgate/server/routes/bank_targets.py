@@ -26,6 +26,7 @@ class BankLaunch(BaseModel):
     evaluator_ids: list[str] | None = None
     evaluator_refs: list[EvaluatorRef] | None = Field(default=None, min_length=1)
     timeout_seconds: float = Field(default=180, gt=0, le=300)
+    max_parallel_cases: int = Field(default=1, ge=1, le=30, strict=True)
     repetitions: int = Field(default=1, ge=1, le=20, strict=True)
     scheduled_for: datetime | None = None
     target_descriptor_sha256: str | None = None
@@ -67,7 +68,7 @@ def launch(request: BankLaunch, dependencies: Dependencies):
             dataset_version=request.dataset_version, case_ids=request.case_ids,
             evaluator_ids=selected_ids,
             evaluator_refs=request.evaluator_refs, timeout_seconds=request.timeout_seconds,
-            max_parallel_cases=1, max_retries=0, scheduled_for=request.scheduled_for, persist=False)
+            max_parallel_cases=request.max_parallel_cases, max_retries=0, scheduled_for=request.scheduled_for, persist=False)
         for case in run.manifest.execution_cases:
             if set(case.initial_state) - {"customer"}:
                 raise ValueError("only test customer initial_state is supported")
