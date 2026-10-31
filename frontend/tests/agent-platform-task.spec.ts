@@ -1684,6 +1684,7 @@ test('external A/B keeps legacy endpoint and association, returning to single re
     candidate_version: 'old-2',
     dataset_id: 'dataset',
     dataset_version: 2,
+    timeout_seconds: 300,
     evaluators: [{ id: 'judge', version: '1' }],
   });
   expect(requests.some((r) => r.method === 'PUT' && r.path === '/api/evaluation-tasks/a')).toBe(

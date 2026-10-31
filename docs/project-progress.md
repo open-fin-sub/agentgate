@@ -1,6 +1,60 @@
 # AgentGate Project Progress
 
-Last updated: 2026-10-19
+Last updated: 2026-10-30
+
+## 2026-10-30 — Editable rerun creates a new task
+
+Completed the user-authorized autonomous Goal on `feature/rerun-as-new-task`.
+The single-task and A/B list actions now open the existing editable task creation
+form. Restore the source task name with an `_重跑` suffix (within 128 characters),
+agent and branch, exact agent versions on both A/B sides, dataset publication,
+selected Case IDs, primary evaluator versions and order, execution settings, and
+immutable static-analysis associations. Users can submit unchanged or edit first.
+Only submission creates fresh task/run identities. Cancellation, source-loading
+failure and rejected submissions leave the source task and its results intact.
+
+RerunDialog reads task associations and manifests; EvaluationTaskForm owns restored
+form state and ordinary creation requests; AgentTargetPicker restores selections
+through its injected directory and rejects unavailable saved versions. In-bank and
+integrated modes retain the configured directory and current session token;
+external mode retains localAgentDirectory and the synthetic `local` token. Saved
+credential references are not reused as session tokens. Identity changes close the
+copy form and prevent an in-flight validation from creating a task afterwards.
+Unavailable/disabled original evaluators require an explicit selection change.
+Published hybrid evaluators already selected by the source task are restored with
+their exact versions and editable checkboxes, while ordinary new-task catalog
+selection retains its existing scope.
+
+Forward Case selection and timeout through the existing Demo A/B HTTP ->
+ServerDependencies -> create_ab_runs path, keeping both sides controlled and
+preserving existing concurrency/retry restrictions. The existing immutable Run
+manifest, adapters, persistence and dispatcher remain in use. No new production
+module, endpoint, compatibility schema or database migration is introduced. Source
+assessment for goal/p1-demo, integration/p1-new and the current branch is recorded
+in refactor-implementation-plan.md; their incompatible old rerun contracts are not
+ported. Update stale picker labels and replace same-task rerun expectations in the
+browser fixtures. Keep the existing detail-navigation/history/summary regressions.
+
+Verification: full backend **2902 passed / 102 skipped**; tested-Agent suite
+**32 passed**; frontend unit suite **126 passed**; related login, directory, task
+creation, detail and rerun browser suite **166 passed**, followed by two supplemental hybrid-evaluator cases; the final
+rerun suite has **40 passed**. Task-summary browser suite **19 passed**
+(187 distinct browser cases overall). Three
+existing visibility/late-response polling tests were stabilized by advancing the
+fake clock until the next network-backed poll occurs; each passed three repeats.
+Vue type checking, affected ESLint, production build and diff whitespace checks
+passed. Ruff comparison against HEAD confirmed four pre-existing findings and no
+new findings (UP037, two I001, TRY004); existing dependency deprecations and large
+bundle warnings remain. Backend acceptance executes both original and copied Demo
+A/B runs and compares the original complete reports afterwards. Browser network
+fixtures verify bank/external/integrated routing; no live in-bank gateway or paid
+model acceptance is claimed.
+
+The local eight-service stack was gracefully restarted only after confirming no
+active or queued evaluations. Frontend/API/directory/loan runtime/Trace health
+checks returned HTTP 200, Redis returned PONG, both Celery nodes responded, and the
+running API schema exposes the new A/B fields. Runtime data is retained. No commit,
+push or merge was performed; unrelated work in the original checkout is preserved.
 
 ## 2026-10-19 — Restore complete sample expectations
 

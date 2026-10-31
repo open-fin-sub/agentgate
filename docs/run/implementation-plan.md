@@ -1,6 +1,26 @@
 # Run Implementation Plan
 
-Last updated: 2026-10-19
+Last updated: 2026-10-30
+
+## Editable task copies and controlled A/B inputs — 2026-10-30
+
+Status: implemented and verified under the user-authorized rerun Goal. Task-list
+and single-task-detail rerun entries open the ordinary creation form with exact
+saved selections. Submission creates a new task, including a fresh A/B pair, and
+preserves the source runs, reports and Trace evidence. Keep source-manifest reads
+and UI form hydration in their existing frontend owners; use the current login
+mode for all directory and credential routing. No new rerun workflow is added to
+the Engine or dispatcher, and the existing in-place API is not used by these UI
+entries.
+
+The existing Demo run-comparisons endpoint now accepts case_ids and timeout_seconds
+and forwards them through ServerDependencies to create_ab_runs/RunManagement.
+Reuse manifest Case validation and the shared-control signature for both sides.
+Invalid selections create no task. Existing in-bank concurrency, external A/B
+concurrency 1 and retry 0 restrictions remain. API tests execute original and new
+pairs, verify separate identities and copied settings, and compare source reports
+and persisted runs after execution. See project-progress.md for full regression
+counts and local service verification. No commit, push or merge is authorized.
 
 ## Frontend-owned concurrency and adapter ownership — 2026-10-19
 

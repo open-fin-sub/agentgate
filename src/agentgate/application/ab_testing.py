@@ -117,6 +117,7 @@ def create_ab_runs(
     *,
     dataset_id: str,
     dataset_version: int | None = None,
+    case_ids: Sequence[str] | None = None,
     evaluator_refs: Sequence[EvaluatorRef] | None = None,
     metric_plan: MetricPlan | None = None,
     gate_spec: ReleaseGateSpec | None = None,
@@ -134,6 +135,7 @@ def create_ab_runs(
     run_arguments = {
         "dataset_id": dataset_id,
         "dataset_version": dataset_version,
+        "case_ids": case_ids,
         "evaluator_refs": evaluator_refs,
         "metric_plan": metric_plan,
         "gate_spec": gate_spec,

@@ -159,6 +159,8 @@ class ServerDependencies:
         *,
         dataset_id: str = LOAN_DATASET.id,
         dataset_version: int | None = None,
+        case_ids: list[str] | None = None,
+        timeout_seconds: float = 300,
         evaluator_refs: list[EvaluatorRef] | None = None,
     ) -> ABRunPair:
         """Create and dispatch one controlled pair of POC Loan Agent Runs."""
@@ -171,6 +173,8 @@ class ServerDependencies:
             dataset_id=dataset_id,
             dataset_version=dataset_version,
             evaluator_refs=evaluator_refs,
+            case_ids=case_ids,
+            timeout_seconds=timeout_seconds,
         )
 
     def execute_demo_run(
