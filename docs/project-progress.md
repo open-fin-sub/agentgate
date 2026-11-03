@@ -2,6 +2,29 @@
 
 Last updated: 2026-10-19
 
+## 2026-11-02 — Yunxia post-health startup delay
+
+Implement the customer-requested startup buffer in the existing Yunxia adapter:
+after a newly created Pod passes its health check, wait before starting Case
+execution. `AGENTGATE_INBANK_YUNXIA_POST_HEALTH_SLEEP_SECONDS` defaults to 15 seconds;
+0 disables it and fractional seconds are supported. Reuse the existing injected
+sleep function and log the delay's start and completion with Run and Pod identifiers.
+The delay runs once per Pod, before the first Case, not once per Case or Turn.
+It belongs to Pod preparation; existing health and conversation timeout budgets
+retain their current meanings. Both in-bank and integrated tasks use this adapter;
+ChatABC base/workflow and external targets do not gain a delay.
+
+The production change is confined to `yunxia.py` and the environment sample.
+Focused regression tests use a fake clock; shared test helpers explicitly disable
+the new delay to preserve existing timing assertions. Five related backend modules
+passed **673 tests**, with **28 skipped**. Six HTTP tests required a separate run
+with local loopback binding enabled after the sandbox denied opening their test
+server. Ruff and whitespace checks passed. Coverage includes default and configured
+delays, zero disablement, health-before-delay-before-message ordering, reuse across
+two Cases with two Turns each, cleanup after failed health checks, unaffected
+ChatABC execution, and independent execution timeout budgets. These are local
+contract tests; customer in-bank acceptance has not been performed.
+
 ## 2026-10-19 — Restore complete sample expectations
 
 The current sample page replaces the two simplified state/tool controls with the
@@ -1049,3 +1072,40 @@ Continued the same interface feature branch. Import templates now appear only on
 The export dialog uses the same supported-format list and adds UTF-8 CSV with a BOM, quoted fields, and the complete 12-column sample schema. Both full and selected exports retain the existing version/scope controls. CSV preserves multi-turn grouping, initial state, structured input, all expectation kinds, and multiline text. No tested-Agent directory or token routing was changed.
 
 Validation: 32 focused import/export and evaluator-group tests passed, including three-format round trips, all seven expectation kinds, CSV quoting/Unicode, ZIP rejection, and equality of the three shipped templates. Typechecking, changed-source lint, and production build passed; the existing bundle-size warning remains. Local browser checks confirmed no template links on step one, all three downloads on step two, JSON guidance, CSV export selection/download, and reimport preview of that actual exported file (four samples, five turns, 22 checks). Preview was cancelled without adding duplicate records. No commit, push, or merge was performed.
+
+## 2026-11-02 — Chinese Judge output instructions
+
+Make the existing answer-quality Judge output instructions and correction prompts
+explicit in Chinese. The five-field verdict and per-dimension contracts remain
+separate. Explain valid JSON syntax, exact fields, numeric ranges, the configured
+threshold, and the existing character/item limits using the parser constants.
+Require Simplified Chinese for reasons, criterion labels and violation details in the prompt, while
+preserving tool names, code, identifiers, necessary source quotations and JSON field
+names/fixed values. Do not introduce backend language detection or rejection rules.
+Clarify lowercase English verdict values, non-null required fields, literal JSON
+booleans for per-dimension review, and unchanged configured dimension IDs. Criterion
+labels are display text; dimension names and weights in results remain populated
+from configuration by the backend, rather than added to the model output contract.
+Derive the recommended output budgets from half of each existing parser limit:
+300 characters for reasons and violation details (hard limit 600), 100 characters
+for a criterion (hard limit 200), 10 violation entries (hard limit 20) and 32,000
+characters for the complete response (hard limit 64,000). These are prompt targets only:
+preserve independent violations, and allow a larger response when needed to cover
+every configured dimension and required field.
+
+Reuse each contract's instructions for the first request and the single correction;
+include the actual validation error as quoted diagnostic data. Preserve configured
+business criteria, evidence, scoring, parsers, timeout budgets and attempt records.
+Both SDK and HTTP providers receive the same strengthened system instructions.
+No frontend, persistence, transport-parameter or scheduler changes are introduced.
+
+Nine related backend modules passed **325 tests**, including malformed JSON, extra
+fields, overlong reasons/details, invalid scores, correction success and repeated
+failure. This total includes **183 tests** in the four focused Judge modules, covering all required
+fields being missing/null, translated or incorrectly cased verdicts, numeric strings,
+invalid violation objects, mismatched dimension IDs and non-boolean review values.
+They also verify acceptance above the prompt targets while still within parser limits.
+Independent review verified both JSON examples against their parsers.
+Whitespace checks passed; Ruff introduces no findings beyond the existing baseline.
+These are local contract tests, not live in-bank model acceptance; prompt changes
+cannot guarantee model compliance.
