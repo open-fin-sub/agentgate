@@ -149,4 +149,7 @@ def test_unknown_run_returns_nonzero_exit_without_traceback(tmp_path):
     )
     result = run_script(root, "execute-run", "missing")
     assert result.returncode == 1
-    assert result.stderr.strip() == "Run execution failed: ValueError"
+    assert result.stderr.strip().endswith("Run execution failed: ValueError")
+    assert "run_id='missing'" in result.stderr
+    assert "exit_code=1" in result.stderr
+    assert "Traceback (most recent call last)" not in result.stderr

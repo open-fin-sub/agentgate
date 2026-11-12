@@ -21,7 +21,7 @@ ACCESS_FORMAT = '%s - "%s %s HTTP/%s" %d'
 def configured_logging(tmp_path, monkeypatch):
     output = io.StringIO()
     monkeypatch.setenv("AGENTGATE_LOG_PATH", str(tmp_path))
-    monkeypatch.setattr(logging_config, "sys", SimpleNamespace(stdout=output))
+    monkeypatch.setattr(logging_config, "sys", SimpleNamespace(stdout=output, executable="/test/python", version="3.11.0"))
     monkeypatch.setattr(logging_config, "monotonic", lambda: 0.0)
     for name in ("", "agentgate", "uvicorn", "uvicorn.access"):
         logger = logging.getLogger(name)

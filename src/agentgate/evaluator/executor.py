@@ -379,8 +379,9 @@ def execute_evaluators(
 
             resolver: ResultResolver = resolve_dependency
             LOGGER.info(
-                "Evaluator started: run_id=%s case_id=%s evaluator_id=%s kind=%s dimension=%s metric=%s",
+                "Evaluator started: run_id=%s case_id=%s evaluator_id=%s kind=%s dimension=%s metric=%s version=%s trace_id=%s implementation_id=%s implementation_version=%s",
                 trace.run_id, case.id, spec.id, spec.kind.value, spec.dimension, spec.metric,
+                spec.version, trace.trace_id, spec.implementation_id, spec.implementation_version,
             )
             whole_trace_code = (spec.implementation_id == "code_rule"
                                 and spec.config.get("input_format") == "trace-v1")

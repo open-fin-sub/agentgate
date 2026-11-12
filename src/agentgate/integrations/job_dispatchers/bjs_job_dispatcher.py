@@ -8,6 +8,7 @@ import math
 import os
 from collections.abc import Callable
 from http.client import responses
+from time import monotonic
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
@@ -65,6 +66,7 @@ class BjsJobDispatcher:
             "endpoint=%s timeout_seconds=%s",
             run_id, job_id.strip(), submit_url, self._timeout_seconds,
         )
+        started = monotonic()
         try:
             with self._opener(request, timeout=self._timeout_seconds) as response:
                 response_body = response.read()
@@ -84,19 +86,27 @@ class BjsJobDispatcher:
             reason = exc.reason if isinstance(exc, URLError) else exc
             LOGGER.warning(
                 "BJS submission transport failed: run_id=%s job_id=%s endpoint=%s "
-                "error_type=%s reason_type=%s",
+                "error_type=%s reason_type=%s acceptance=unknown timeout_seconds=%s latency_ms=%.1f",
                 run_id, job_id.strip(), submit_url,
-                type(exc).__name__, type(reason).__name__,
+                type(exc).__name__, type(reason).__name__, self._timeout_seconds, (monotonic() - started) * 1000,
             )
             raise RuntimeError(
                 "BJS submission transport failed; acceptance is unconfirmed"
             ) from None
 
+        LOGGER.info(
+            "BJS response received: run_id=%r job_id=%r latency_ms=%.1f body_bytes=%d",
+            run_id, job_id, (monotonic() - started) * 1000, len(response_body) if isinstance(response_body, (str, bytes, bytearray)) else 0,
+        )
         try:
             payload = json.loads(response_body)
         except (TypeError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            LOGGER.error("BJS response decode failed: run_id=%r error_type=%s acceptance=unknown",
+                         run_id, type(exc).__name__)
             raise RuntimeError("BJS submission returned invalid JSON") from exc
         if not isinstance(payload, dict):
+            LOGGER.error("BJS response shape invalid: run_id=%r payload_type=%s acceptance=unknown",
+                         run_id, type(payload).__name__)
             raise RuntimeError("BJS submission returned an invalid response")  # noqa: TRY004
 
         data = payload.get("data")
@@ -113,6 +123,12 @@ class BjsJobDispatcher:
                 and str(data.get("errorCode", "")) == "0"
             )
         if not accepted:
+            # Only numeric protocol codes are safe; remote messages may contain credentials.
+            codes = {key: str(value)[:16] if str(value).isascii() and str(value).lstrip("-").isdigit() else "non_numeric"
+                     for key, value in {"code": payload.get("code"),
+                        "result": data.get("result") if isinstance(data, dict) else None,
+                        "errorCode": data.get("errorCode") if isinstance(data, dict) else None}.items()}
+            LOGGER.error("BJS submission rejected: run_id=%r job_id=%r codes=%s", run_id, job_id, codes)
             raise RuntimeError("BJS submission rejected")
         details = data.get("data") if isinstance(data, dict) else None
         batch_number = details.get("onlineBatchSeqNum") if isinstance(details, dict) else None

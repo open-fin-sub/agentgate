@@ -27,8 +27,9 @@ class EvaluationQueries:
             result = self.repository.get_evaluation_overview_summary(
                 query, user_team_id=info.user_team_id if info else ""
             )
-        except Exception:
-            LOGGER.exception("Evaluation overview summary query failed")
+        except Exception as exc:
+            LOGGER.error("Evaluation overview summary query failed: team_id=%r error_type=%s latency_ms=%.1f",
+                         info.user_team_id if info else "", type(exc).__name__, (monotonic() - start) * 1000)
             raise
         LOGGER.debug(
             "Evaluation overview summary loaded: latency_ms=%.1f", (monotonic() - start) * 1000
@@ -60,8 +61,9 @@ class EvaluationQueries:
             result = self.repository.list_evaluation_task_summaries(
                 query, user_team_id=info.user_team_id if info else ""
             )
-        except Exception:
-            LOGGER.exception("Evaluation task summary query failed")
+        except Exception as exc:
+            LOGGER.error("Evaluation task summary query failed: team_id=%r error_type=%s latency_ms=%.1f",
+                         info.user_team_id if info else "", type(exc).__name__, (monotonic() - start) * 1000)
             raise
         LOGGER.debug(
             "Evaluation task summaries loaded: count=%d latency_ms=%.1f",

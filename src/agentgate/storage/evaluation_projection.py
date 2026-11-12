@@ -551,9 +551,9 @@ def task_page(db, query, team):
     pending_ids = [item.id for item in items if item.summary_pending]
     if pending_ids:
         LOGGER.warning(
-            "Evaluation summaries pending: scope=task_page count=%d task_ids=%s reason=missing_or_invalid_summary",
+            "Evaluation summaries pending: scope=task_page count=%d task_ids=%s team_id=%r reason=missing_or_invalid_summary",
             len(pending_ids),
-            pending_ids[:10],
+            pending_ids[:10], team,
         )
     return TaskSummaryPage(
         items=tuple(items), total=total, page=query.page, page_size=query.page_size
@@ -596,9 +596,9 @@ def overview(db, query, team):
     )[0]
     if tasks["pending"] or datasets["missing"]:
         LOGGER.warning(
-            "Evaluation summaries pending: scope=overview task_count=%d dataset_count=%d reason=missing_or_invalid_summary",
+            "Evaluation summaries pending: scope=overview task_count=%d dataset_count=%d team_id=%r reason=missing_or_invalid_summary",
             tasks["pending"],
-            datasets["missing"] or 0,
+            datasets["missing"] or 0, team,
         )
     return OverviewSummary(
         task_count=tasks["n"],

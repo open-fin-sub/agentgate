@@ -69,6 +69,12 @@ http.interceptors.response.use(
   },
   (error) => {
     if (axios.isAxiosError(error)) {
+      // Never log Axios config/error objects: they contain identity headers and bodies.
+      const path = String(error.config?.url ?? '').split(/[?#]/, 1)[0].slice(0, 256);
+      console.warn('Evaluation API request failed', {
+        path, method: error.config?.method, status: error.response?.status ?? 0,
+        errorCode: error.code, secureContext: globalThis.isSecureContext,
+      });
       if (error.code === 'ECONNABORTED')
         return Promise.reject(new ApiError(0, '请求超时，请先查询保存或运行状态，避免重复提交。'));
       return Promise.reject(

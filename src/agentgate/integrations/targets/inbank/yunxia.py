@@ -63,6 +63,10 @@ def _request_failure(exc: Exception) -> dict[str, Any]:
         code = "unavailable"
     else:
         code = "protocol_error"
+    response = getattr(exc, "response", None)
+    LOGGER.warning("inbank_request_failed adapter=yunxia category=%s error_type=%s cause_type=%s http_status=%s",
+                   code, type(exc).__name__, type(exc.__cause__).__name__ if exc.__cause__ else None,
+                   getattr(response, "status_code", None))
     return {
         "success": False,
         "error_code": code,
@@ -127,7 +131,11 @@ def create_agent_pod(
             return _request_failure(exc)
 
     for attempt in range(1, 4):
+        started = time.monotonic()
         result = _attempt()
+        LOGGER.info("inbank_create_result adapter=yunxia task_id=%r agent_id=%r agent_version=%r attempt=%d success=%s error_code=%s latency_ms=%.1f",
+                    task_id, agent_id, agent_version, attempt, result["success"], result.get("error_code"),
+                    (time.monotonic() - started) * 1000)
         if result["success"]:
             return result
         if attempt < 3:
@@ -284,9 +292,13 @@ def call_api_via_pod(
             resp.raise_for_status()
             resp.encoding = "utf-8-sig"
             events = parse_sse_stream(resp, deadline=start + timeout)
+        LOGGER.info("inbank_chat_response adapter=yunxia pod_name=%r events=%d latency_ms=%.1f timeout_seconds=%s",
+                    agent_name, len(events), (time.time() - start) * 1000, timeout)
         return events, "", time.time() - start
     except Exception as exc:  # noqa: BLE001 - retain customer retry/cleanup boundary.
         failure = _request_failure(exc)
+        LOGGER.warning("inbank_chat_failed adapter=yunxia pod_name=%r category=%s latency_ms=%.1f timeout_seconds=%s",
+                       agent_name, failure["error_code"], (time.time() - start) * 1000, timeout)
         return [], f"{failure['error_code']}: {failure['error']}", time.time() - start
 
 
@@ -485,7 +497,7 @@ class InbankYunxiaTargetAdapter:
                 try:
                     previous.result()
                 except (TargetExecutionError, CancelledError):
-                    LOGGER.debug("Continuing session %r after a prior failure", session_id)
+                    LOGGER.debug("Continuing Case %r after a prior failure", request.case.id)
             self._check_cancelled(handle)
             LOGGER.info("inbank_case_start adapter=%s run_id=%r case_id=%r execution_id=%r",
                         self.adapter_type, request.run_id, request.case.id, handle)
@@ -499,6 +511,8 @@ class InbankYunxiaTargetAdapter:
             except TargetExecutionError:
                 raise
             except Exception as exc:  # noqa: BLE001 - sanitize at the adapter boundary.
+                LOGGER.error("inbank_case_exception adapter=yunxia run_id=%r case_id=%r error_type=%s",
+                             request.run_id, request.case.id, type(exc).__name__)
                 raise TargetExecutionError(
                     "protocol_error", f"Case execution failed ({type(exc).__name__})"
                 ) from None

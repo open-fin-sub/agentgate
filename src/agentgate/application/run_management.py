@@ -134,13 +134,13 @@ class RunManagement:
             self.record_created_run(run)
         key_display = "None" if run.api_key is None else "***"
         LOGGER.info(
-            "Run created: run_id=%s status=%s dataset_id=%s case_count=%d user_id=%s api_key=%s",
+            "Run created: run_id=%s status=%s dataset_id=%s case_count=%d user_id=%s api_key=%s persisted=%s team_id=%r adapter=%s",
             run.id,
             run.status.value,
             dataset.dataset_id,
             len(run.manifest.execution_cases),
             user_id,
-            key_display,
+            key_display, persist, user_team_id, run.manifest.target.adapter_type,
         )
         return run
 
