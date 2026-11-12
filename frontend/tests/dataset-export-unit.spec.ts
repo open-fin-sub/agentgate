@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { webcrypto } from 'node:crypto';
+import ExcelJS from 'exceljs';
 import {
   blankSample,
   parseSampleFile,
@@ -25,6 +26,11 @@ const version = {
 for (const { value: format } of sampleFileFormats)
   test('workflow initialization and typed multi-turn inputs survive ' + format, async () => {
     const sample = blankSample('Workflow business inputs');
+    sample.category = 'boundary';
+    sample.difficulty = 'hard';
+    sample.tags = ['中文', '多轮'];
+    sample.notes = '样本备注';
+    sample.turns[0].notes = '第一轮备注';
     sample.initial_state = {
       config_variables: [
         { name: 'centreId', value: '810000' },
@@ -40,6 +46,7 @@ for (const { value: format } of sampleFileFormats)
       ...structuredClone(sample.turns[0]),
       id: crypto.randomUUID(),
       input: { user_input_text: '第二轮', collected_data: {} },
+      notes: '第二轮备注',
     });
     const before = JSON.stringify(sample);
     const blob = await sampleExportBlob({ ...version, cases: [sample] }, undefined, format);
@@ -49,10 +56,33 @@ for (const { value: format } of sampleFileFormats)
       arrayBuffer: () => blob.arrayBuffer(),
     });
     expect(parsed[0].initial_state).toEqual(sample.initial_state);
+    expect(parsed[0]).toMatchObject({
+      name: sample.name, category: 'boundary', difficulty: 'hard', tags: ['中文', '多轮'],
+      notes: '样本备注',
+    });
     expect(parsed[0].turns.map((turn) => turn.input)).toEqual(
       sample.turns.map((turn) => turn.input),
     );
+    expect(parsed[0].turns.map((turn) => turn.notes)).toEqual(['第一轮备注', '第二轮备注']);
     expect(JSON.stringify(sample)).toBe(before);
+  });
+
+for (const format of ['xlsx', 'csv'] as const)
+  test(format + ' exports the same 12 Chinese headers as the downloadable templates', async () => {
+    const expected = [
+      '样本编号', '样本名称', '样本分类', '难度', '标签', '样本备注', '初始状态',
+      '轮次编号', '轮次顺序', '输入内容', '期望结果', '轮次备注',
+    ];
+    const blob = await sampleExportBlob(version, [a.id], format);
+    if (format === 'csv') {
+      const headers = (await blob.text()).replace(/^\uFEFF/, '').split(/\r?\n/, 1)[0]
+        .split(',').map((header) => header.replace(/^"|"$/g, ''));
+      expect(headers).toEqual(expected);
+    } else {
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(await blob.arrayBuffer());
+      expect((workbook.getWorksheet('Cases')!.getRow(1).values as string[]).slice(1)).toEqual(expected);
+    }
   });
 test('selected exports preserve expectations and never impersonate published version hashes', () => {
   const before = JSON.stringify(version),
@@ -257,6 +287,103 @@ test('CSV preserves Chinese text, commas, quotes, multiline notes and every expe
   expect(normalized(toApiCase(parsed[0]))).toEqual(normalized(toApiCase(sample)));
 });
 
+test('expectation snapshots remain independent without native structuredClone', async () => {
+  const { toEditorCase, toApiCase } = await import('../src/api/datasets');
+  const raw = toApiCase(blankSample('旧浏览器样本'));
+  raw.turns[0].expectations = [
+    {
+      id: 'nested-output',
+      name: '嵌套期望',
+      kind: 'output',
+      path: null,
+      condition: {
+        kind: 'equals',
+        expected: { values: [0, false, null, '中文'], nested: { status: 'ready' } },
+      },
+    },
+    {
+      id: 'execution-path',
+      name: null,
+      kind: 'execution_path',
+      scope: 'workflow',
+      expected: ['start', 'end'],
+      allowed_tools: null,
+    },
+  ];
+  const original = JSON.parse(JSON.stringify(raw.turns[0].expectations));
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'structuredClone');
+  try {
+    Reflect.deleteProperty(globalThis, 'structuredClone');
+    const edited = toEditorCase(raw);
+    expect(toApiCase(edited).turns[0].expectations).toEqual(original);
+    const editable = edited.turns[0].expectations[0];
+    if (editable.condition.kind !== 'equals') throw Error('Expected an equality condition');
+    const expected = editable.condition.expected as {
+      values: unknown[];
+      nested: { status: string };
+    };
+    expected.values[0] = 'changed';
+    expected.nested.status = 'changed';
+    raw.turns[0].expectations.reverse();
+    const path = raw.turns[0].expectations[0];
+    if (path.kind !== 'execution_path') throw Error('Expected an execution path');
+    path.expected.push('changed');
+    expect(edited.turns[0].original_expectations).toEqual(original);
+  } finally {
+    if (descriptor) Object.defineProperty(globalThis, 'structuredClone', descriptor);
+  }
+});
+
+test('dataset reads and sample write responses work without native structuredClone', async () => {
+  const { datasetApi, toApiCase } = await import('../src/api/datasets');
+  const raw = toApiCase(blankSample('兼容性样本'));
+  const dataset = {
+    id: 'compatibility',
+    name: '兼容性测评集',
+    description: '',
+    archived: false,
+    created_at: '2026-11-10T00:00:00Z',
+    updated_at: '2026-11-10T00:00:00Z',
+  };
+  const draft = {
+    id: 'compatibility-draft',
+    dataset_id: dataset.id,
+    dataset_name: dataset.name,
+    dataset_description: '',
+    version: null,
+    status: 'draft',
+    based_on_version: null,
+    cases: [raw],
+    notes: '',
+    created_at: dataset.created_at,
+    updated_at: dataset.updated_at,
+    published_at: null,
+    content_sha256: 'original',
+  };
+  const previousAdapter = http.defaults.adapter;
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'structuredClone');
+  try {
+    Reflect.deleteProperty(globalThis, 'structuredClone');
+    http.defaults.adapter = async (config) => ({
+      data: config.url === '/datasets/compatibility' ? { dataset, versions: [draft] } : draft,
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config,
+    });
+    const detail = await datasetApi.detail('compatibility');
+    const current = await datasetApi.currentDraft('compatibility');
+    const added = await datasetApi.addCase('compatibility', a, 'original');
+    const updated = await datasetApi.updateCase('compatibility', a, 'original');
+    for (const result of [detail.versions[0], current, added, updated]) {
+      expect(result.cases).toHaveLength(1);
+      expect(toApiCase(result.cases[0])).toEqual(raw);
+    }
+  } finally {
+    http.defaults.adapter = previousAdapter;
+    if (descriptor) Object.defineProperty(globalThis, 'structuredClone', descriptor);
+  }
+});
 
 test('request diagnostics omit credentials, payloads and URL query values', async () => {
   const previous = http.defaults.adapter;
