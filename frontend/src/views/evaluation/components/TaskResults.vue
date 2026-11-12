@@ -464,6 +464,7 @@ watch(sampleId, () => {
         <nav class="tabs" aria-label="测评任务详情页签">
           <button
             v-for="t in detailTabs"
+            v-show="t[0] !== 'flow'"
             :key="t[0]"
             class="tab"
             :class="{ active: tab === t[0] }"

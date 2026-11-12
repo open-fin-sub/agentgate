@@ -519,6 +519,7 @@ const templateLabels1: Record<string, string> = {
       </div>
       <button
         v-if="category === 'rule'"
+        v-show="false"
         class="asset-primary"
         :disabled="busy"
         @click="
