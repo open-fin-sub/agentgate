@@ -85,13 +85,16 @@ class RunEngine:
             target_adapter.adapter_type,
             target_adapter.adapter_version,
         )
+        stage = "validation"
         try:
             with recorder.operation("validation", "校验执行配置"):
                 self._validate_execution(running, target_adapter)
+            stage = "cases"
             self._execute_cases(running, target_adapter)
             self._raise_if_cancelled(running.id)
 
             completed = transition_run(running, RunStatus.COMPLETED)
+            stage = "summary_persistence"
             with recorder.operation("summary", "汇总并保存测评报告"):
                 summary = build_completed_run_summary(completed, self.repository.list_results(completed.id))
                 self.repository.save_completed_run(completed, summary)
@@ -103,7 +106,12 @@ class RunEngine:
             )
             return completed
         except Exception as exc:
+            # Record the original failure before cleanup or a concurrent terminal write can fail.
+            LOGGER.error("Run execution boundary failed: run_id=%r stage=%s error_type=%s duration_ms=%.1f",
+                         running.id, stage, type(exc).__name__, (time.monotonic() - start_time) * 1000)
             current = self.repository.get_run(running.id)
+            LOGGER.warning("Run failure state: run_id=%r stored_status=%s execution_status=%s",
+                           running.id, current.status if current else "missing", running.status)
             if current is not None and current.status is RunStatus.CANCELLED:
                 recorder.finish_open(None, status="cancelled", message="任务已取消")
                 LOGGER.warning("Run execution cancelled: run_id=%s", run.id)

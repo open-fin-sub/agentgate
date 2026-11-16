@@ -384,3 +384,24 @@ test('dataset reads and sample write responses work without native structuredClo
     if (descriptor) Object.defineProperty(globalThis, 'structuredClone', descriptor);
   }
 });
+
+test('request diagnostics omit credentials, payloads and URL query values', async () => {
+  const previous = http.defaults.adapter;
+  const previousWarn = console.warn;
+  const logs: unknown[][] = [];
+  console.warn = (...args: unknown[]) => { logs.push(args); };
+  try {
+    http.defaults.adapter = async (config) => {
+      throw { isAxiosError: true, code: 'ECONNABORTED', message: 'private-secret',
+        config: { ...config, headers: { token: 'private-secret' }, data: 'private-secret' } };
+    };
+    await expect(httpRequest('/datasets?token=private-secret', {method: 'POST'}))
+      .rejects.toMatchObject({status: 0});
+    expect(logs).toHaveLength(1);
+    expect(JSON.stringify(logs)).not.toContain('private-secret');
+    expect(logs[0][1]).toMatchObject({path: '/datasets', method: 'post', status: 0});
+  } finally {
+    http.defaults.adapter = previous;
+    console.warn = previousWarn;
+  }
+});

@@ -317,14 +317,14 @@ class AnswerQualityJudge:
                 response = client.complete(request)
                 LOGGER.info(
                     "Judge model response: provider_id=%s, model=%s, attempt=%d, "
-                    "chars=%d, finish_reason=%s, truncated=%s, text=%.6000s",
+                    "chars=%d, finish_reason=%s, truncated=%s, run_id=%r case_id=%r evaluator_id=%r version=%s",
                     client.provider_id,
                     response.resolved_model_id,
                     attempt,
                     len(response.text),
                     response.finish_reason,
                     response.truncated,
-                    response.text,
+                    trace.run_id, case.id, spec.id, spec.version,
                 )
             except Exception as exc:
                 if attempts:
@@ -343,6 +343,8 @@ class AnswerQualityJudge:
                 verdict = parse_verdict(response.text, config.pass_threshold)
                 break
             except (JudgeContractError, JudgeModelInvalidResponse) as exc:
+                LOGGER.warning("Judge response validation failed: run_id=%r case_id=%r evaluator_id=%r attempt=%d error_type=%s chars=%d truncated=%s",
+                               trace.run_id, case.id, spec.id, attempt, type(exc).__name__, len(response.text), response.truncated)
                 remaining = deadline - monotonic()
                 if attempt or remaining <= 0 or response.truncated:
                     error = JudgeModelInvalidResponse(str(exc))

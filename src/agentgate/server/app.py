@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import logging
 import re
+import traceback
+from time import monotonic
 from uuid import uuid4
 from starlette.concurrency import run_in_threadpool
 from agentgate.run.events import RunEventRecorder, request_id_context, request_started_at_context
@@ -223,17 +225,21 @@ def create_app(
 
     class RequestLogMiddleware(BaseHTTPMiddleware):
         async def dispatch(self, request: Request, call_next):
+            started = monotonic()
             if request.method == "POST" and request.url.path not in SKIP_ENVELOPE_PATHS:
-                client_ip = request.client.host if request.client else "unknown"
-                user_id = request.headers.get("X-User-Id") or "anonymous"
-                LOGGER.info(
-                    "API request: %s %s user_id=%s ip=%s",
-                    request.method,
-                    request.url.path,
-                    user_id,
-                    client_ip,
-                )
-            return await call_next(request)
+                LOGGER.info("API request: %s %s user_id=%s", request.method, request.url.path[:256],
+                            (request.headers.get("X-User-Id") or "anonymous")[:128])
+            status = 500
+            try:
+                response = await call_next(request)
+                status = response.status_code
+                return response
+            finally:
+                log = LOGGER.warning if status >= 400 else LOGGER.debug
+                log("API request finished: method=%s path=%r status=%d latency_ms=%.1f team_id=%r user_id=%r request_id=%r",
+                    request.method, request.url.path[:256], status, (monotonic() - started) * 1000,
+                    request.headers.get("X-Team-Id", "")[:128], request.headers.get("X-User-Id", "")[:128],
+                    getattr(getattr(request.state, "execution_event", None), "request_id", None))
 
     application.add_middleware(RequestLogMiddleware)
 
@@ -284,6 +290,9 @@ def create_app(
 
     @application.exception_handler(RequestValidationError)
     async def handle_validation_exception(request: Request, exc: RequestValidationError):
+        LOGGER.warning("API validation failed: method=%s path=%r errors=%r",
+                       request.method, request.url.path[:256],
+                       [(e["loc"], e["type"]) for e in exc.errors()][:20])
         # Pydantic errors include raw input/ctx; only persist field locations and messages.
         message = "; ".join(f"{'.'.join(map(str, e['loc']))}: {e['msg']}" for e in exc.errors())
         await record_request_failure(request, code="HTTP_422", message=message)
@@ -298,11 +307,9 @@ def create_app(
     @application.exception_handler(Exception)
     async def handle_unexpected_exception(request: Request, exc: Exception) -> JSONResponse:
         await record_request_failure(request, code=type(exc).__name__, message=str(exc))
-        LOGGER.exception(
-            "Unhandled error on %s %s",
-            request.method,
-            request.url.path,
-        )
+        LOGGER.error("Unhandled API error: method=%s path=%r error_type=%s frames=%r",
+                     request.method, request.url.path[:256], type(exc).__name__,
+                     [(f.filename, f.lineno, f.name) for f in traceback.extract_tb(exc.__traceback__)][-12:])
         return JSONResponse(
             status_code=500,
             content={"detail": _safe_message(exc)},
