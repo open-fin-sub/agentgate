@@ -28,6 +28,9 @@ import {
   evaluatorCatalog,
   evaluatorDetails,
   loadReviewAssets,
+  loadReviewDetails,
+  detailsError,
+  detailsLoading,
   assetsLoading,
   assetsError,
   copy,
@@ -447,6 +450,9 @@ function viewVersion(value: Definition) {
   error.value = '';
   notice.value = '已发布版本只读；编辑会创建草稿，原版本保持不变。';
 }
+watch([promptOpen, groupOpen, design, evaluatorCatalog], () => {
+  if (promptOpen.value || groupOpen.value || design.value) void loadReviewDetails(false);
+});
 function beforeUnload(event: BeforeUnloadEvent) {
   if (dirty.value || busy.value) {
     event.preventDefault();
@@ -476,6 +482,9 @@ const templateLabels1: Record<string, string> = {
 };
 </script>
 <template>
+  <p v-if="detailsError" class="asset-error" role="alert">
+    {{ detailsError }} <button :disabled="detailsLoading" @click="loadReviewDetails(false)">重试</button>
+  </p>
   <LLMGroupEditor
     v-if="groupOpen"
     :initial-id="groupInitialId"
@@ -537,7 +546,9 @@ const templateLabels1: Record<string, string> = {
         ＋ 新建 LLM 评估器
       </button>
     </div>
-    <p v-if="assetsError" role="alert" class="asset-error">{{ assetsError }}</p>
+    <p v-if="assetsError" role="alert" class="asset-error">
+      {{ assetsError }} <button :disabled="assetsLoading" @click="loadReviewAssets()">重试</button>
+    </p>
     <p v-if="error && !design" role="alert" class="asset-error">{{ error }}</p>
     <div class="asset-filters">
       <input v-model="query" aria-label="搜索评估器" placeholder="搜索评估器名称" />
@@ -582,14 +593,30 @@ const templateLabels1: Record<string, string> = {
             </el-dropdown>
           </template>
         </LLMGroupTemplateCard>
-        <article v-else class="asset-card">
+        <article v-else class="asset-card rule-evaluator-card">
           <span class="asset-chip"
             >{{ e.source === 'builtin' ? '预置' : '自建' }} ·
             {{ e.latest_version ? 'v' + e.latest_version : '未发布' }}</span
           >
           <span v-if="e.has_draft" class="asset-chip preview">草稿</span>
-          <h2>{{ displayName(e) }}</h2>
-          <p v-if="e.source !== 'builtin'">{{ e.description || e.metric }}</p>
+          <el-tooltip
+            :content="displayName(e)"
+            placement="top"
+            :show-after="200"
+            popper-class="full-text-popper"
+          >
+            <h2>{{ displayName(e) }}</h2>
+          </el-tooltip>
+          <el-tooltip
+            v-if="e.source !== 'builtin'"
+            :content="e.description || e.metric"
+            :disabled="!(e.description || e.metric)"
+            placement="top"
+            :show-after="200"
+            popper-class="full-text-popper"
+          >
+            <p class="rule-evaluator-description">{{ e.description || e.metric }}</p>
+          </el-tooltip>
           <div class="asset-card-actions">
             <button class="asset-link" :disabled="busy" @click="open(e)">查看详情</button
             ><span class="asset-small">{{
@@ -900,6 +927,20 @@ const templateLabels1: Record<string, string> = {
 }
 .llm-catalogue-grid > .catalogue-template-card {
   align-self: stretch;
+}
+.rule-evaluator-card h2 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+}
+.rule-evaluator-description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  min-height: 3.4em;
+  overflow-wrap: anywhere;
 }
 
 .design-fields {

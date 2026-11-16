@@ -6,6 +6,7 @@ import logging
 from agentgate.run.events import RunEventRecorder
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
+from time import perf_counter
 from types import MappingProxyType
 from typing import Any
 from uuid import uuid4
@@ -162,6 +163,27 @@ class EvaluatorManagement:
             *(item for item in users if item.owner_evaluator_id is None and not item.archived),
         )
 
+    def list_catalog(
+        self, include_disabled: bool = False
+    ) -> list[tuple[Evaluator, EvaluatorSpec | None, EvaluatorDraft | None]]:
+        started = perf_counter()
+        LOGGER.debug("Evaluator catalog query started: include_disabled=%s", include_disabled)
+        try:
+            evaluators = self.list_evaluators(include_disabled)
+            info = get_user_info()
+            team = info.user_team_id if info else ""
+            ids = [item.id for item in evaluators if item.source != EvaluatorSource.BUILTIN]
+            versions, drafts = self.repository.get_evaluator_catalog_definitions(ids, user_team_id=team)
+            rows = [(item, self._builtin_specs_by_id.get(item.id) or versions.get(item.id),
+                     None if item.source == EvaluatorSource.BUILTIN else drafts.get(item.id))
+                    for item in evaluators]
+        except Exception:
+            LOGGER.exception("Evaluator catalog query failed")
+            raise
+        LOGGER.info("Evaluator catalog query completed: count=%d latency_ms=%.1f",
+                    len(rows), (perf_counter() - started) * 1000)
+        return rows
+
     def get_evaluator(self, evaluator_id: str) -> Evaluator:
         builtin = self._builtin_evaluators.get(evaluator_id)
         if builtin is not None:
@@ -172,6 +194,23 @@ class EvaluatorManagement:
         if evaluator is None:
             raise EvaluatorNotFound(f"unknown Evaluator: {evaluator_id}")
         return evaluator
+
+    def _reject_duplicate_evaluator_name(self, name: str) -> None:
+        cleaned = name.strip()
+        if not cleaned:
+            return
+        info = get_user_info()
+        user_team_id = info.user_team_id if info else ""
+        existing = {evaluator.name for evaluator in self._builtin_evaluators.values()}
+        existing.update(
+            evaluator.name
+            for evaluator in self.repository.list_evaluators(
+                include_disabled=True, user_team_id=user_team_id
+            )
+            if evaluator.owner_evaluator_id is None
+        )
+        if cleaned in existing:
+            raise EvaluatorCatalogConflict(f"评估器名称已存在：{cleaned}，请修改名称后重试。")
 
     def create_evaluator(
         self,
@@ -190,6 +229,7 @@ class EvaluatorManagement:
     ) -> tuple[Evaluator, EvaluatorDraft]:
         if kind == EvaluatorKind.LLM_GROUP:
             raise EvaluatorCatalogConflict("use the LLM group workflow to create a group")
+        self._reject_duplicate_evaluator_name(name)
         created_at = utcnow()
         info = get_user_info()
         user_team_id = info.user_team_id if info else ""
