@@ -24,6 +24,7 @@ from agentgate.application import (
 )
 from agentgate.application.credential_management import ApiKeyManagement
 from agentgate.application.evaluation_queries import EvaluationQueries
+from agentgate.application.evaluation_task_management import EvaluationTaskManagement
 from agentgate.application.evaluator_management import (
     EvaluatorManagement,
     build_default_evaluator_management,
@@ -118,6 +119,7 @@ class ServerDependencies:
         self,
         version: str,
         *,
+        name: str | None = None,
         dataset_id: str = LOAN_DATASET.id,
         dataset_version: int | None = None,
         case_ids: list[str] | None = None,
@@ -146,7 +148,11 @@ class ServerDependencies:
             persist=False,
             api_key=api_key,
         )
-        self.repository.save_task_runs(EvaluationTask(id=run.id, kind="single", run_ids=(run.id,)), [run])
+        task = EvaluationTask(id=run.id, kind="single", name=name, run_ids=(run.id,))
+        EvaluationTaskManagement(self.repository).require_available_name(
+            task.name, user_team_id=run.user_team_id,
+        )
+        self.repository.save_task_runs(task, [run])
         self.runs.record_created_run(run)
         if run.status is RunStatus.SCHEDULED:
             return run
@@ -157,6 +163,7 @@ class ServerDependencies:
         baseline_version: str,
         candidate_version: str,
         *,
+        name: str | None = None,
         dataset_id: str = LOAN_DATASET.id,
         dataset_version: int | None = None,
         case_ids: list[str] | None = None,
@@ -171,6 +178,7 @@ class ServerDependencies:
             self.dispatcher,
             self._resolve_demo_target(baseline_version),
             self._resolve_demo_target(candidate_version),
+            name=name,
             dataset_id=dataset_id,
             dataset_version=dataset_version,
             evaluator_refs=evaluator_refs,
@@ -208,7 +216,9 @@ class ServerDependencies:
         finally:
             adapter.close()
 
-    def submit_stability_runs(self, version: str, repetitions: int, **settings):
+    def submit_stability_runs(
+        self, version: str, repetitions: int, *, name: str | None = None, **settings
+    ):
         from agentgate.domain.evaluation_task import EvaluationTask
         if isinstance(repetitions, bool) or not 2 <= repetitions <= 20:
             raise ValueError("repetitions must be 2 to 20")
@@ -219,7 +229,12 @@ class ServerDependencies:
             user_team_id=template.user_team_id, user_id=template.user_id,
             user_name=template.user_name, api_key=template.api_key)
             for _ in range(repetitions - 1))]
-        task = EvaluationTask(id=template.id, kind="stability", run_ids=tuple(r.id for r in runs))
+        task = EvaluationTask(
+            id=template.id, kind="stability", name=name, run_ids=tuple(r.id for r in runs)
+        )
+        EvaluationTaskManagement(self.repository).require_available_name(
+            task.name, user_team_id=template.user_team_id,
+        )
         self.repository.save_task_runs(task, runs)
         for run in runs:
             self.runs.record_created_run(run)

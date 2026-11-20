@@ -1,8 +1,18 @@
 from fastapi.testclient import TestClient
 
 from agentgate.domain import (
-    Case, CaseCategory, CaseDifficulty, CaseTurn, Equals, OutputExpectation,
-    PolicyExpectation, SkillRouteExpectation, StateExpectation, ToolCallExpectation,
+    Case,
+    CaseCategory,
+    CaseDifficulty,
+    CaseTurn,
+    Dataset,
+    DatasetVersion,
+    Equals,
+    OutputExpectation,
+    PolicyExpectation,
+    SkillRouteExpectation,
+    StateExpectation,
+    ToolCallExpectation,
 )
 from agentgate.integrations.job_dispatchers.celery import execute_evaluation_run
 from agentgate.server.app import create_app
@@ -102,6 +112,35 @@ def test_publish_returns_domain_validation_message(tmp_path):
         assert "requires at least one Case" in response.json()["message"]
 
 
+def test_draft_rejects_duplicate_sample_names_on_create_and_rename(tmp_path):
+    with TestClient(create_app(tmp_path / "duplicate-sample-names.db")) as client:
+        dataset = client.post("/api/datasets", json={"name": "样本重名校验"}).json()["data"]["dataset"]
+        path = f"/api/datasets/{dataset['id']}/drafts"
+        first = Case(
+            id="one", name="第一项",
+            turns=(CaseTurn(input={"txt": "hello"}), CaseTurn(input={"txt": "again"})),
+        )
+        second = Case(id="two", name="第二项", turns=(CaseTurn(input={"txt": "second"}),))
+        assert client.post(f"{path}/cases", json=first.model_dump(mode="json")).status_code == 201
+
+        duplicate = second.model_copy(update={"name": " 第一项 "}).model_dump(mode="json")
+        rejected = client.post(f"{path}/cases", json=duplicate)
+        assert rejected.status_code == 422
+        assert "样本名称已存在：第一项" in rejected.json()["message"]
+        assert client.post(f"{path}/cases", json=second.model_dump(mode="json")).status_code == 201
+
+        rejected = client.put(f"{path}/cases/two", json=duplicate)
+        assert rejected.status_code == 422
+        assert "样本名称已存在：第一项" in rejected.json()["message"]
+
+        edited = first.model_copy(update={"notes": "编辑自己的内容"}).model_dump(mode="json")
+        saved = client.put(f"{path}/cases/one", json=edited)
+        assert saved.status_code == 200
+        cases = saved.json()["data"]["cases"]
+        assert [(case["name"], len(case["turns"])) for case in cases] == [("第一项", 2), ("第二项", 1)]
+        assert cases[0]["notes"] == "编辑自己的内容"
+
+
 def test_create_and_copy_reject_duplicate_dataset_names(tmp_path):
     with TestClient(create_app(tmp_path / "duplicate-names.db")) as client:
         created = client.post("/api/datasets", json={"name": "同名测评集"})
@@ -142,6 +181,59 @@ def test_create_and_copy_reject_duplicate_dataset_names(tmp_path):
             f"/api/datasets/{dataset_id}/copy", json={"name": "同名测评集 副本"}
         )
         assert copied_renamed.status_code == 201
+
+
+def test_rename_rejects_duplicate_dataset_name_within_team(tmp_path):
+    headers = {"X-Team-Id": "dataset-team"}
+    with TestClient(create_app(tmp_path / "rename-dataset.db")) as client:
+        created = client.post("/api/datasets", json={"name": "原名称"}, headers=headers)
+        assert created.status_code == 201
+        dataset_id = created.json()["data"]["dataset"]["id"]
+        path = f"/api/datasets/{dataset_id}"
+
+        imported = Dataset(name=" 已归档名称 ")
+        version = DatasetVersion(dataset_id=imported.id, dataset_name=imported.name)
+        result = client.post(
+            "/api/datasets/import",
+            json={
+                "format": "agentgate.dataset",
+                "format_version": 1,
+                "dataset": imported.model_dump(mode="json"),
+                "version": version.model_dump(mode="json"),
+            },
+            headers=headers,
+        )
+        assert result.status_code == 201
+        assert client.delete(f"/api/datasets/{imported.id}", headers=headers).status_code == 200
+
+        duplicate = client.patch(path, json={"name": "已归档名称"}, headers=headers)
+        assert duplicate.status_code == 422
+        assert "测评集名称已存在" in duplicate.json()["message"]
+        assert client.get(path, headers=headers).json()["data"]["dataset"]["name"] == "原名称"
+
+        other_team = client.post(
+            "/api/datasets", json={"name": "新名称"}, headers={"X-Team-Id": "other-team"}
+        )
+        assert other_team.status_code == 201
+        renamed = client.patch(path, json={"name": " 新名称 "}, headers=headers)
+        assert renamed.status_code == 200
+        assert renamed.json()["data"]["name"] == "新名称"
+
+
+def test_keep_dataset_name_when_an_existing_record_already_has_same_name(tmp_path):
+    app = create_app(tmp_path / "existing-duplicate-dataset.db")
+    with TestClient(app) as client:
+        created = client.post("/api/datasets", json={"name": "已重名"})
+        assert created.status_code == 201
+        dataset_id = created.json()["data"]["dataset"]["id"]
+        app.state.dependencies.repository.save_dataset(Dataset(name="已重名"))
+
+        saved = client.patch(
+            f"/api/datasets/{dataset_id}", json={"name": " 已重名 ", "description": "更新说明"}
+        )
+        assert saved.status_code == 200
+        assert saved.json()["data"]["name"] == "已重名"
+        assert saved.json()["data"]["description"] == "更新说明"
 
 
 def test_json_export_and_import_routes_round_trip(tmp_path):

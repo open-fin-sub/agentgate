@@ -11,6 +11,7 @@ from typing import Literal
 from uuid import uuid4
 
 from agentgate.application.credential_management import ApiKeyManagement
+from agentgate.application.evaluation_task_management import EvaluationTaskManagement
 from agentgate.application.evaluator_management import EvaluatorManagement
 from agentgate.application.run_management import RunManagement
 from agentgate.domain import (
@@ -199,6 +200,7 @@ def submit_platform_evaluation(
         raise ValueError("invalid repetitions")
     if repository.get_dataset(dataset_id, user_team_id=user_team_id) is None:
         raise LookupError("dataset unavailable to caller")
+    EvaluationTaskManagement(repository).require_available_name(name, user_team_id=user_team_id)
     platform_mode = os.getenv("AGENTGATE_AGENT_PLATFORM_MODE", "").strip().lower()
     if platform_mode not in {"mock", "inbank"}:
         raise ConnectionError("agent platform mode must be mock or inbank")
@@ -344,6 +346,7 @@ def submit_platform_comparison(
         raise ValueError("A/B requires two different agent versions")
     if repository.get_dataset(dataset_id, user_team_id=user_team_id) is None:
         raise LookupError("dataset unavailable to caller")
+    EvaluationTaskManagement(repository).require_available_name(name, user_team_id=user_team_id)
     platform_mode = os.getenv("AGENTGATE_AGENT_PLATFORM_MODE", "").strip().lower()
     if platform_mode not in {"mock", "inbank"}:
         raise ConnectionError("agent platform mode must be mock or inbank")

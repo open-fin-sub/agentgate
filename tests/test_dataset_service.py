@@ -1,5 +1,7 @@
+import pytest
+
 from agentgate.application import DatasetManagement
-from agentgate.domain import Case, CaseTurn
+from agentgate.domain import Case, CaseTurn, DatasetVersion, DatasetVersionStatus, utcnow
 from agentgate.storage.sqlite import SQLiteRepository
 
 
@@ -114,3 +116,49 @@ def test_copy_reorder_remove_cases_and_discard_draft(tmp_path):
     assert [item.id for item in removed.cases] == ["second", copied.id]
     service.discard_draft(dataset.id)
     assert service.repository.get_dataset(dataset.id, user_team_id="") is None
+
+
+def test_repeated_sample_copy_chooses_an_unused_name(tmp_path):
+    service = DatasetManagement(SQLiteRepository(tmp_path / "repeated-copy.db"))
+    dataset = service.create_dataset("Sample copies")
+    service.create_draft(dataset.id)
+    first = Case(id="source", name=" 样本 ", turns=(CaseTurn(input={"txt": "test"}),))
+    service.save_case(dataset.id, first)
+    service.copy_case(dataset.id, first.id)
+    copied = service.copy_case(dataset.id, first.id)
+
+    assert [case.name for case in copied.cases] == [" 样本 ", "样本（副本）", "样本（副本 2）"]
+
+
+def test_legacy_same_name_samples_can_be_repaired_in_a_new_version(tmp_path):
+    repository = SQLiteRepository(tmp_path / "legacy-same-names.db")
+    service = DatasetManagement(repository)
+    dataset = service.create_dataset("历史重名样本")
+    now = utcnow()
+    cases = tuple(
+        Case(id=f"sample-{index}", name=name, turns=(CaseTurn(input={"txt": str(index)}),))
+        for index, name in enumerate(("第一组", " 第一组 ", "第二组", "第二组"), 1)
+    )
+    historical = DatasetVersion(
+        dataset_id=dataset.id, dataset_name=dataset.name, version=1,
+        status=DatasetVersionStatus.PUBLISHED, cases=cases,
+        created_at=now, updated_at=now, published_at=now,
+    )
+    repository.save_dataset_version(historical)
+
+    with pytest.raises(ValueError, match="样本名称已存在：第一组"):
+        service.copy_dataset(dataset.id, "历史副本")
+    assert all(item.name != "历史副本" for item in service.list_datasets())
+
+    service.create_draft(dataset.id, based_on_version=1)
+    with pytest.raises(ValueError, match="样本名称已存在：第一组"):
+        service.publish_draft(dataset.id)
+    service.save_case(dataset.id, cases[1].model_copy(update={"name": "第一组第二个样本"}))
+    with pytest.raises(ValueError, match="样本名称已存在：第二组"):
+        service.publish_draft(dataset.id)
+    service.remove_case(dataset.id, cases[3].id)
+    corrected = service.publish_draft(dataset.id)
+
+    assert corrected.version == 2
+    assert [item.name for item in corrected.cases] == ["第一组", "第一组第二个样本", "第二组"]
+    assert service.get_version(dataset.id, 1) == historical

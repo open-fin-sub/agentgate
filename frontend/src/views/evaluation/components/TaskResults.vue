@@ -34,10 +34,10 @@ import { taskTitle } from '../utils/dashboard-data';
 import { formatTaskDuration } from '../utils/task-timing';
 const detailTabs = [
   ['results', '执行结果'],
-  ['flow', '执行流程'],
   ['low-samples', '低分样本'],
   ['iteration', '优化迭代'],
   ['config', '任务快照'],
+  ['flow', '任务日志'],
 ] as const;
 type DetailTab = (typeof detailTabs)[number][0];
 const props = defineProps<{ id: string; taskId?: string; returnPage?: string }>(),

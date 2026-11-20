@@ -389,6 +389,25 @@ test('catalog deletion removes unpublished single and group records with their o
   await expect(presetRules.getByRole('button', { name: /更多操作|删除/ })).toHaveCount(0);
 });
 
+test('rule catalog hides creation and still opens rule details', async ({ page }) => {
+  await page.goto('/agentgate/#/welcome');
+  await page.getByRole('button', { name: '行外Login' }).click();
+  await page.getByRole('link', { name: '评估器', exact: true }).click();
+  await expect(page.getByRole('button', { name: '规则评估', exact: true })).toHaveClass('active');
+  await expect(page.getByRole('button', { name: /新建规则评估器/ })).toHaveCount(0);
+
+  const card = page.locator('.rule-evaluator-card').filter({
+    has: page.getByRole('heading', { name: '最终输出', exact: true }),
+  });
+  await card.getByRole('button', { name: '查看详情', exact: true }).click();
+  const details = page.getByRole('dialog', { name: '规则评估器详情', exact: true });
+  await expect(details.getByRole('heading', { name: '最终输出', exact: true })).toBeVisible();
+  await details.getByRole('button', { name: '关闭', exact: true }).click();
+
+  await page.getByRole('button', { name: 'LLM 评估', exact: true }).click();
+  await expect(page.getByRole('button', { name: /新建 LLM 评估器/ })).toBeVisible();
+});
+
 test('rule catalog uses Chinese preset names and hides Policy without changing API identities or custom names', async ({
   page,
   request,
@@ -1224,6 +1243,7 @@ test('recorded official-model report displays one parent score and version-pinne
     '低分样本',
     '优化迭代',
     '任务快照',
+    '任务日志',
   ]);
   await expect(tabs.getByRole('button', { name: '执行结果', exact: true })).toHaveAttribute(
     'aria-pressed',
