@@ -1328,18 +1328,48 @@ test('user input is required and expected output stays optional', async ({ page 
   expect(saved.turns[0].expectations).toEqual([]);
 });
 
-test('classification saves negative, reopens, changes to boundary and becomes read-only when published', async ({ page }) => {
+test('file import fills omitted fields and the sample editor reads the saved draft', async ({ page }) => {
+  const datasetId = await open(page);
+  await page.getByRole('button', { name: 'Open manual sample wizard' }).click();
+  const wizard = page.getByRole('dialog');
+  await wizard.getByRole('button', { name: /导入测评集/ }).click();
+  await wizard.getByRole('button', { name: '下一步', exact: true }).click();
+  await wizard.getByLabel('样本导入文件').setInputFiles({
+    name: '最少字段.json', mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({ cases: [{ name: '导入的样本', turns: [{ input: { txt: '你好' } }] }] })),
+  });
+  await expect(wizard.getByTestId('import-validation-summary')).toContainText('1 个样本、1 轮对话');
+  await wizard.getByRole('button', { name: '确认导入到草稿' }).click();
+  await expect(wizard.getByRole('heading', { name: /导入完成/ })).toBeVisible();
+  const response = await page.request.get(baseUrl + `/api/datasets/${datasetId}/drafts/current`);
+  expect(response.ok()).toBeTruthy();
+  expect((await response.json()).data.cases).toMatchObject([{
+    id: expect.any(String), name: '导入的样本', category: 'positive', difficulty: 'medium',
+    tags: [], initial_state: {}, turns: [{ id: expect.any(String), input: { txt: '你好' }, expectations: [] }],
+  }]);
+  await page.reload();
+  await expect(page.getByLabel('样本名称', { exact: true })).toHaveValue('导入的样本');
+  await expect(page.getByLabel('用户输入', { exact: true })).toHaveValue('你好');
+  await expect(page.getByLabel('难度', { exact: true })).toHaveValue('medium');
+});
+
+test('Chinese classification and difficulty options persist and become read-only when published', async ({ page }) => {
   const datasetId = await open(page);
   const category = page.getByLabel('样本分类', { exact: true });
+  const difficulty = page.getByLabel('难度', { exact: true });
   await expect(category).toHaveValue('positive');
-  await category.selectOption('negative');
+  await expect(difficulty).toHaveValue('medium');
+  await category.selectOption({ label: '负例' });
+  await difficulty.selectOption({ label: '困难' });
   await expect(page.getByTestId('dirty')).toHaveText('true');
   await page.getByLabel('用户输入', { exact: true }).fill('请拒绝此请求');
-  expect((await save(page, datasetId, 'POST')).category).toBe('negative');
+  expect(await save(page, datasetId, 'POST')).toMatchObject({ category: 'negative', difficulty: 'hard' });
   await page.reload();
   await expect(category).toHaveValue('negative');
-  await category.selectOption('boundary');
-  expect((await save(page, datasetId)).category).toBe('boundary');
+  await expect(difficulty).toHaveValue('hard');
+  await category.selectOption({ label: '边界' });
+  await difficulty.selectOption({ label: '简单' });
+  expect(await save(page, datasetId)).toMatchObject({ category: 'boundary', difficulty: 'easy' });
   await page.reload();
   await expect(category).toHaveValue('boundary');
   const publication = page.waitForResponse(response => response.url().endsWith('/drafts/publish'));
@@ -1347,10 +1377,14 @@ test('classification saves negative, reopens, changes to boundary and becomes re
   expect((await publication).ok()).toBeTruthy();
   await expect(category).toBeDisabled();
   await expect(category).toHaveValue('boundary');
+  await expect(difficulty).toBeDisabled();
+  await expect(difficulty).toHaveValue('easy');
   await expect(page.getByRole('button', { name: '保存样本', exact: true })).toHaveCount(0);
   await page.reload();
   await expect(category).toBeDisabled();
   await expect(category).toHaveValue('boundary');
+  await expect(difficulty).toBeDisabled();
+  await expect(difficulty).toHaveValue('easy');
   await test.info().attach('published-boundary-sample', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
 });
 
@@ -1572,14 +1606,21 @@ test('all three expectation kinds are created through the editor, reloaded and p
   expect((await published.json()).data.cases[0]).toEqual(saved);
 });
 
-test('manual creation wizard saves the same full expectation controls', async ({ page }) => {
+test('manual creation wizard gives user input the full row and saves advanced expectations', async ({ page }) => {
   const datasetId = await open(page);
   await page.getByRole('button', { name: 'Open manual sample wizard', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('button', { name: '下一步', exact: true }).click();
   await dialog.getByLabel('样本名称', { exact: true }).fill('向导完整期望');
-  await dialog.getByLabel('用户输入', { exact: true }).fill('通过向导创建');
-  await dialog.getByLabel('期望输出', { exact: true }).fill('向导基本输出');
+  const basic = dialog.getByRole('region', { name: '基本测评项', exact: true });
+  await basic.getByLabel('用户输入', { exact: true }).fill('通过向导创建');
+  await expect(basic.getByLabel('期望输出', { exact: true })).toHaveCount(0);
+  const inputCard = basic.locator('.message-card.user');
+  const width = await inputCard.evaluate(card => ({
+    input: card.getBoundingClientRect().width,
+    row: card.parentElement!.getBoundingClientRect().width,
+  }));
+  expect(width.input).toBeCloseTo(width.row);
   await expect(dialog.getByText('期望结果', { exact: true })).toBeVisible();
   const stateIndex = await dialog.locator('.expectation-row').count();
   await dialog.getByTestId('add-expectation').click();
@@ -1591,6 +1632,10 @@ test('manual creation wizard saves the same full expectation controls', async ({
   await page.getByRole('menuitem', { name: '最终输出', exact: true }).click();
   await dialog.getByTestId(`expectation-path-${outputIndex}`).fill('answer');
   await dialog.getByTestId(`expectation-value-${outputIndex}`).fill('"附加答案"');
+  const fullOutputIndex = await dialog.locator('.expectation-row').count();
+  await dialog.getByTestId('add-expectation').click();
+  await page.getByRole('menuitem', { name: '最终输出', exact: true }).click();
+  await dialog.getByTestId(`expectation-value-${fullOutputIndex}`).fill('"向导完整输出"');
   const response = page.waitForResponse(response => response.request().method() === 'POST' &&
     response.url().includes(`/api/datasets/${datasetId}/drafts/cases`));
   await dialog.getByRole('button', { name: '保存样本', exact: true }).click();
@@ -1604,7 +1649,7 @@ test('manual creation wizard saves the same full expectation controls', async ({
   expect(saved[0].turns[0].expectations).toEqual(expect.arrayContaining([
     expect.objectContaining({ kind: 'state', path: 'status', condition: { kind: 'equals', expected: 'done' } }),
     expect.objectContaining({ kind: 'output', path: 'answer', condition: { kind: 'equals', expected: '附加答案' } }),
-    expect.objectContaining({ kind: 'output', path: null, condition: { kind: 'equals', expected: '向导基本输出' } }),
+    expect.objectContaining({ kind: 'output', path: null, condition: { kind: 'equals', expected: '向导完整输出' } }),
   ]));
 });
 

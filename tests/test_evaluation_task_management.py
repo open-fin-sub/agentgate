@@ -42,6 +42,22 @@ def test_single_task_survives_new_app_and_idempotent_save(tmp_path):
         assert len(c.get("/api/evaluation-tasks").json()["data"]) == 1
 
 
+def test_task_association_rejects_duplicate_name_but_keeps_own(tmp_path):
+    with client(tmp_path / "task-names.db") as c:
+        first, second = launch(c), launch(c)
+        original = {"kind": "single", "run_ids": [first], "name": "日常测评"}
+        for _ in range(2):
+            response = c.put(f"/api/evaluation-tasks/{first}", json=original)
+            assert response.status_code == 200, response.text
+
+        duplicate = {**original, "run_ids": [second], "name": " 日常测评 "}
+        response = c.put(f"/api/evaluation-tasks/{second}", json=duplicate)
+        assert response.status_code == 409, response.text
+        assert "任务名称已存在" in response.json()["message"]
+        assert c.get(f"/api/evaluation-tasks/{first}").json()["data"]["name"] == "日常测评"
+        assert c.get(f"/api/evaluation-tasks/{second}").json()["data"]["name"] != "日常测评"
+
+
 def test_unknown_and_wrong_report_rejected(tmp_path):
     with client(tmp_path / "test.db") as c:
         assert c.get("/api/evaluation-tasks/missing").status_code == 404

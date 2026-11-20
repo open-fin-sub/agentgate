@@ -190,17 +190,19 @@ onUnmounted(() => clearTimeout(debounce));
       <div class="table-wrap">
         <table class="data-table">
           <colgroup>
-            <col style="width: 20%" />
-            <col style="width: 20%" />
+            <col style="width: 18%" />
+            <col style="width: 15%" />
+            <col style="width: 15%" />
+            <col style="width: 8%" />
             <col style="width: 10%" />
-            <col style="width: 14%" />
             <col style="width: 10%" />
             <col style="width: 10%" />
-            <col style="width: 6%" />
-            <col style="width: 10%" />
+            <col style="width: 5%" />
+            <col style="width: 9%" />
           </colgroup>
           <thead>
             <tr>
+              <th>任务名称</th>
               <th>被测Agent</th>
               <th>测评集</th>
               <th>评估方式</th>
@@ -215,6 +217,16 @@ onUnmounted(() => clearTimeout(debounce));
           </thead>
           <tbody>
             <tr v-for="r in rows" :key="r.id">
+              <td class="name-cell" data-label="任务名称">
+                <button
+                  type="button"
+                  class="link"
+                  :title="r.name"
+                  @click="emit('navigate', taskPath(r))"
+                >
+                  {{ r.name }}
+                </button>
+              </td>
               <td
                 v-for="column in identityColumns"
                 :key="column"
@@ -501,12 +513,18 @@ onUnmounted(() => clearTimeout(debounce));
   white-space: normal;
   overflow-wrap: anywhere;
 }
-.primary-text {
+.primary-text,
+.name-cell .link {
   display: block;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.name-cell .link {
+  text-align: left;
+  font-weight: 500;
+  line-height: inherit;
 }
 .data-table small {
   display: block;
@@ -698,29 +716,32 @@ footer > span:first-child {
     font-size: 11px;
     font-weight: 400;
   }
-  .row-actions {
-    grid-area: 4 / 2;
+  .name-cell {
+    grid-area: 1 / 1 / 2 / -1;
   }
   .identity-target {
-    grid-area: 1 / 1;
-  }
-  .identity-dataset {
-    grid-area: 1 / 2;
-  }
-  .method-cell {
     grid-area: 2 / 1;
   }
-  .progress-cell {
+  .identity-dataset {
     grid-area: 2 / 2;
   }
-  .time-start {
+  .method-cell {
     grid-area: 3 / 1;
   }
-  .time-end {
+  .progress-cell {
     grid-area: 3 / 2;
   }
-  .task-score {
+  .time-start {
     grid-area: 4 / 1;
+  }
+  .time-end {
+    grid-area: 4 / 2;
+  }
+  .task-score {
+    grid-area: 5 / 1;
+  }
+  .row-actions {
+    grid-area: 5 / 2;
   }
   .task-score p {
     display: inline-block;

@@ -14,6 +14,7 @@ from agentgate.integrations.credentials.encryption import ApiKeyEncryptor
 from agentgate.integrations.job_dispatchers.execution import _execute
 from agentgate.integrations.targets.agent_platform import PlatformClient, resolve_platform_target
 from agentgate.server.app import create_app
+from agentgate.server.user_context import UserInfo, reset_user_info, set_user_info
 
 mock_peer = peer_fixtures.mock_peer
 
@@ -29,9 +30,9 @@ class RecordingDispatcher:
             raise RuntimeError("dispatch unavailable")
 
 
-def seed(dependencies):
+def seed(dependencies, name="平台本地验收"):
     manager = dependencies.datasets
-    dataset = manager.create_dataset("平台本地验收", "文本回显测试")
+    dataset = manager.create_dataset(name, "文本回显测试")
     manager.create_draft(dataset.id)
     manager.save_case(
         dataset.id,
@@ -644,6 +645,90 @@ def test_platform_comparison_persists_user_task_name(
         for side in ("baseline", "candidate"):
             run_id = response.json()["data"][side]["run_id"]
             assert deps.repository.get_run(run_id).manifest.max_parallel_cases == (requested_parallelism or 1)
+
+
+@pytest.fixture(params=["inbank", "mock"])
+def platform_submission_token(request, monkeypatch):
+    monkeypatch.setenv("AGENTGATE_AGENT_PLATFORM_MODE", request.param)
+    if request.param == "inbank":
+        yield "test-inbank-token"
+        return
+
+    monkeypatch.setenv("AGENTGATE_AGENT_PLATFORM_ORIGIN", "http://127.0.0.1:8119")
+    with TestClient(peer_fixtures.load_peer()) as peer:
+        def call(_client, path, token, *, query=None, timeout=30):
+            response = peer.get(path, params=query, headers={"Authorization": f"Bearer {token}"})
+            response.raise_for_status()
+            return response.json()
+
+        monkeypatch.setattr(PlatformClient, "call", call)
+        yield "local"
+
+
+@pytest.mark.parametrize(
+    "first_endpoint,duplicate_endpoint",
+    [("evaluations", "comparisons"), ("comparisons", "evaluations")],
+)
+def test_platform_submissions_reject_duplicate_task_names(
+    platform_submission_token, first_endpoint, duplicate_endpoint, tmp_path,
+):
+    dispatcher = RecordingDispatcher()
+    app = create_app(tmp_path / "duplicate-task-name.db", dispatcher, ApiKeyEncryptor(b"k" * 32))
+    deps = app.state.dependencies
+    team_id = "evaluation-team"
+    user = set_user_info(UserInfo(team_id, "owner", "Owner"))
+    try:
+        first_dataset = seed(deps, "平台本地验收一")
+        second_dataset = seed(deps, "平台本地验收二")
+    finally:
+        reset_user_info(user)
+
+    other_team_id = "another-evaluation-team"
+    other_user = set_user_info(UserInfo(other_team_id, "other-owner", "Other Owner"))
+    try:
+        other_dataset = seed(deps)
+    finally:
+        reset_user_info(other_user)
+
+    builders = {"evaluations": submission, "comparisons": comparison_submission}
+    headers = {"X-Team-Id": team_id, "X-Agent-Platform-Token": platform_submission_token}
+    first_body = builders[first_endpoint](first_dataset, "base")
+    duplicate_body = builders[duplicate_endpoint](second_dataset, "base")
+    first_body["name"] = "重复测评任务"
+    duplicate_body["name"] = "  重复测评任务  "
+
+    with TestClient(app) as client:
+        accepted = client.post(
+            f"/api/agent-platform/{first_endpoint}",
+            json=first_body,
+            headers={**headers, "X-User-Id": "owner"},
+        )
+        assert accepted.status_code == 202, accepted.text
+        (first_task,) = deps.repository.list_evaluation_tasks()
+
+        duplicate = client.post(
+            f"/api/agent-platform/{duplicate_endpoint}",
+            json=duplicate_body,
+            headers={**headers, "X-User-Id": "teammate"},
+        )
+        assert duplicate.status_code == 409, duplicate.text
+        assert duplicate.json()["message"] == "任务名称已存在，请修改名称后重试。"
+        assert deps.repository.list_evaluation_tasks() == [first_task]
+        assert {run.id for run in deps.repository.list_runs(user_team_id=team_id)} == set(
+            first_task.run_ids
+        )
+        assert [key.id for key in deps.api_keys.list_api_keys()] == [first_task.credential_id]
+        assert dispatcher.ids == list(first_task.run_ids)
+
+        other_headers = {**headers, "X-Team-Id": other_team_id, "X-User-Id": "other-owner"}
+        other_team = client.post(
+            f"/api/agent-platform/{duplicate_endpoint}",
+            json={**duplicate_body, "dataset_id": other_dataset},
+            headers=other_headers,
+        )
+        assert other_team.status_code == 202, other_team.text
+        (other_task,) = client.get("/api/evaluation-tasks", headers=other_headers).json()["data"]
+        assert other_task["name"] == first_task.name
 
 
 @pytest.mark.parametrize('mode', ['base', 'workflow', 'claw'])

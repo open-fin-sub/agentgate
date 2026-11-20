@@ -161,6 +161,14 @@ async function runAction({ runId: id, taskId, action }: TaskAction) {
   }
 }
 const identity = () => [auth.loginMode, auth.teamId, auth.userId, auth.token, auth.platformReady];
+const evaluatorSession = ref(0);
+watch(
+  identity,
+  () => {
+    evaluatorSession.value++;
+  },
+  { flush: 'sync' },
+);
 const overviewQuery = useSummaryQuery({
   source: () => [page.value, overviewDays.value],
   identity,
@@ -391,7 +399,7 @@ async function taskRerunCreated(taskId: string) {
     />
     <JudgeSystem
       v-else-if="page === 'evaluators'"
-      :key="route"
+      :key="`${route}:${evaluatorSession}`"
       :initial-id="runId"
       @dirty-change="evaluatorDirty = $event"
       @launch="openCreate({ id: '', version: 0, evaluatorId: $event })"

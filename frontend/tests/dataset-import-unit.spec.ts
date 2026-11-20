@@ -20,6 +20,7 @@ const chineseHeaders = [
   '样本编号', '样本名称', '样本分类', '难度', '标签', '样本备注', '初始状态',
   '轮次编号', '轮次顺序', '输入内容', '期望结果', '轮次备注',
 ];
+const templateHeaders = ['样本名称', '输入内容', '样本分类', '难度', '初始变量', '期望结果', '轮次顺序'];
 const englishHeaders = [
   'case_id', 'case_name', 'category', 'difficulty', 'tags_json', 'case_notes',
   'initial_state_json', 'turn_id', 'turn_order', 'input_json', 'expectations_json', 'turn_notes',
@@ -75,6 +76,38 @@ for (const format of ['xlsx', 'csv'] as const) {
     ]);
     await expect(parseSampleFile(input)).rejects.toThrow(/表头.*重复/);
   });
+
+  test(format + ' groups numbered rows by trimmed sample name and keeps a different unnumbered sample', async () => {
+    const input = await tableFile(format, ['样本名称', '轮次顺序', '输入内容'], [
+      [' 客户咨询 ', 3, '{"txt":"第三轮"}'],
+      ['借记卡咨询', '', '{"txt":"独立样本"}'],
+      ['开户咨询', 1, '{"txt":"另一个样本"}'],
+      ['客户咨询', 1, '{"txt":"第一轮"}'],
+    ]);
+    const samples = await parseSampleFile(input);
+    expect(samples.map((sample) => ({
+      name: sample.name,
+      texts: sample.turns.map((turn) => turn.input.txt),
+    }))).toEqual([
+      { name: '客户咨询', texts: ['第一轮', '第三轮'] },
+      { name: '借记卡咨询', texts: ['独立样本'] },
+      { name: '开户咨询', texts: ['另一个样本'] },
+    ]);
+  });
+
+  test(format + ' locates a second independent sample with the same trimmed name', async () => {
+    const input = await tableFile(format, ['样本名称', '轮次顺序', '输入内容'], [
+      [' 客户咨询 ', 1, '{"txt":"第一条"}'],
+      ['客户咨询', '', '{"txt":"第二条"}'],
+    ]);
+    await expect(parseSampleFile(input)).rejects.toMatchObject({
+      issues: [expect.objectContaining({
+        row: 3,
+        field: '样本名称',
+        message: expect.stringContaining('第 2 行重复'),
+      })],
+    });
+  });
 }
 
 test('parseCsv preserves the original trimmed Chinese headers', () => {
@@ -124,7 +157,7 @@ test('canonical JSON preserves route, tools, policy, output and complex checks',
   );
   expect(() =>
     normalizeCases([
-      { name: 'bad', turns: [{ input: {}, expectations: [{ kind: 'skill_route' }] }] },
+      { name: 'bad', turns: [{ input: { txt: '你好' }, expectations: [{ kind: 'skill_route' }] }] },
     ]),
   ).toThrow('condition');
 });
@@ -156,48 +189,68 @@ test('ZIP imports are rejected even when they contain a valid supported sample',
   );
 });
 
-test('downloadable template imports single and multi-turn cases with documented fields and checks', async () => {
+test('downloadable Excel template contains one single-turn sample and field instructions', async () => {
   const bytes = readFileSync(
     new URL('../src/assets/dataset-import-template.xlsx', import.meta.url),
   );
   const samples = await parseSampleFile(file('template.xlsx', bytes));
-  expect(samples).toHaveLength(4);
-  expect(samples.map((sample) => sample.turns.length)).toEqual([1, 1, 2, 1]);
-  expect(
-    samples.every((sample) => sample.turns.every((turn) => typeof turn.input.txt === 'string')),
-  ).toBe(true);
-  const cases = samples.map(toApiCase);
-  expect(cases.flatMap((sample) => sample.turns.flatMap((turn) => turn.expectations))).toHaveLength(
-    22,
-  );
-  expect(cases[0].initial_state).toEqual({ customer: 'test-low' });
-  expect(cases[1].initial_state).toEqual({ customer: 'test-high' });
-  expect(cases[1].turns[0].expectations).toContainEqual(
-    expect.objectContaining({ kind: 'tool_call', mode: 'forbidden', tool: 'approve_loan' }),
-  );
-  expect(cases[2].turns[0].expectations).toContainEqual(
-    expect.objectContaining({ kind: 'execution_path', scope: 'tool', expected: [] }),
-  );
-  expect(cases[3].turns[0].expectations).toEqual([]);
+  expect(samples).toHaveLength(1);
+  expect(samples[0].turns).toHaveLength(1);
+  expect(samples[0]).toMatchObject({ category: 'positive', difficulty: 'medium', initial_state: {} });
+  expect(samples[0].turns[0]).toMatchObject({ input: { txt: '你好' },
+    expectations: [{ kind: 'output', path: null }] });
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(bytes);
   const data = workbook.getWorksheet('Cases')!;
   const guide = workbook.getWorksheet('填写说明')!;
   const examples = workbook.getWorksheet('测评项示例')!;
-  expect((data.getRow(1).values as string[]).slice(1)).toEqual(chineseHeaders);
+  expect((data.getRow(1).values as string[]).slice(1)).toEqual(templateHeaders);
+  expect(data.getCell('C2').text).toBe('正例');
+  expect(data.getCell('D2').text).toBe('中等');
+  expect(data.getCell('G2').value).toBe(1);
+  const emptyRowHeight = data.getRow(7).height ?? data.properties.defaultRowHeight;
+  for (const number of [3, 4, 5, 6]) {
+    const row = data.getRow(number);
+    expect(row.hasValues).toBe(false);
+    expect(row.height ?? data.properties.defaultRowHeight).toBe(emptyRowHeight);
+  }
   expect(guide).toBeTruthy();
   expect(examples).toBeTruthy();
   const guidance = JSON.stringify(guide.getSheetValues());
   data.getRow(1).eachCell((cell) => expect(guidance).toContain(cell.text));
+  for (const status of ['必填', '可选', '系统生成']) expect(guidance).toContain(status);
+  expect(guide.getCell('B7').text).toContain('同一多轮样本的各行填写相同的样本名称');
+  expect(guide.getCell('B8').text).toContain('从表格顶部往下首次出现的一行');
+  expect(guide.getCell('B23').text).toContain('单轮填 1，留空按 1 导入');
+  expect(JSON.parse(examples.getCell('C5').text)).toMatchObject({
+    kind: 'output', path: 'output', condition: { kind: 'matches_pattern' },
+  });
 });
 
-test('downloadable CSV template uses the same 12 Chinese headers', () => {
+test('downloaded Excel template sorts turns while reading case fields from the first physical row', async () => {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(readFileSync(new URL('../src/assets/dataset-import-template.xlsx', import.meta.url)));
+  const data = workbook.getWorksheet('Cases')!;
+  data.getRow(3).values = ['乱序多轮示例', '{"txt":"第二轮"}', '边界', '困难', '{"ready":true}', '', 2];
+  data.getRow(4).values = ['乱序多轮示例', '{"txt":"第一轮"}', '', '', '', '', 1];
+  const bytes = await workbook.xlsx.writeBuffer();
+  const samples = await parseSampleFile(file('filled-template.xlsx', new Uint8Array(bytes)));
+  const multiTurn = samples.find((sample) => sample.name === '乱序多轮示例');
+  expect(multiTurn).toMatchObject({ category: 'boundary', difficulty: 'hard', initial_state: { ready: true } });
+  expect(multiTurn?.turns.map((turn) => turn.input.txt)).toEqual(['第一轮', '第二轮']);
+});
+
+test('downloadable CSV template documents required fields and defaults in the Chinese headers', () => {
   const csv = readFileSync(
     new URL('../src/assets/dataset-import-template.csv', import.meta.url), 'utf8',
   );
   const headers = csv.replace(/^\uFEFF/, '').split(/\r?\n/, 1)[0]
     .split(',').map((header) => header.replace(/^"|"$/g, ''));
-  expect(headers).toEqual(chineseHeaders);
+  expect(headers.map((header) => header.split('｜')[0])).toEqual(templateHeaders);
+  expect(headers.filter((header) => header.includes('必填'))).toHaveLength(2);
+  expect(headers).toContain('期望结果｜选填，默认 []');
+  const orderHeader = headers.find((header) => header.startsWith('轮次顺序｜'))!;
+  expect(parseCsv(csv)[0][orderHeader]).toBe('1');
 });
 
 test('JSON and CSV templates match the complete Excel sample content', async () => {

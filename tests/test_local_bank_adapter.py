@@ -171,6 +171,48 @@ def test_launch_persists_task_before_dispatch_and_rejects_demo_payload(tmp_path,
         assert invalid.status_code == 422
 
 
+@pytest.mark.parametrize("repetitions", [1, 2])
+def test_local_bank_rejects_duplicate_name_before_dispatch(tmp_path, monkeypatch, repetitions):
+    from agentgate.server.routes import bank_targets
+
+    class Dispatcher:
+        def __init__(self):
+            self.ids = []
+
+        def submit(self, run_id):
+            self.ids.append(run_id)
+
+    monkeypatch.setattr(bank_targets, "LocalBankClient", Client)
+    dispatcher = Dispatcher()
+    app = create_app(tmp_path / "bank-task-names.sqlite3", dispatcher=dispatcher)
+    deps = app.state.dependencies
+    with TestClient(app) as client:
+        dataset_ids = []
+        for label in ("Local loan samples", "Other local loan samples"):
+            dataset = deps.datasets.create_dataset(label)
+            deps.datasets.create_draft(dataset.id)
+            deps.datasets.save_case(dataset.id, Case(name="text", turns=[CaseTurn(input={"txt": "hello"})]))
+            deps.datasets.publish_draft(dataset.id)
+            dataset_ids.append(dataset.id)
+
+        def submit(name, dataset_id):
+            return client.post("/api/bank-evaluations", json={
+                "name": name, "mode": "base", "dataset_id": dataset_id,
+                "dataset_version": 1, "repetitions": repetitions,
+            })
+
+        accepted = submit("重复测评", dataset_ids[0])
+        assert accepted.status_code == 202, accepted.text
+        rejected = submit(" 重复测评 ", dataset_ids[1])
+        assert rejected.status_code == 409, rejected.text
+        assert rejected.json()["message"] == "任务名称已存在，请修改名称后重试。"
+        (task,) = deps.repository.list_evaluation_tasks()
+        assert task.name == "重复测评"
+        assert len(task.run_ids) == repetitions
+        assert dispatcher.ids == list(task.run_ids)
+        assert {run.id for run in deps.repository.list_runs(user_team_id="")} == set(task.run_ids)
+
+
 def test_model_metadata_never_exposes_credentials(tmp_path,monkeypatch):
     from types import SimpleNamespace
     from agentgate.server.routes import bank_targets

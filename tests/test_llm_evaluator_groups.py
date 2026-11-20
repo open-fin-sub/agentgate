@@ -463,3 +463,42 @@ def test_group_creation_rejects_duplicate_names_but_resave_keeps_own(system):
         f"/api/evaluators/{group_id}/llm-group/draft", json=edit_payload(draft)
     )
     assert resaved.status_code == 200, resaved.text
+
+
+@pytest.mark.parametrize("published", [False, True])
+def test_group_rename_rejects_an_existing_standalone_evaluator_name(system, published):
+    client, _, _ = system
+    standalone = client.post(
+        "/api/evaluators",
+        json={
+            "name": "Taken output",
+            "draft": {
+                "dimension": "answer",
+                "metric": "taken_output",
+                "implementation_id": "final_output",
+            },
+        },
+    )
+    assert standalone.status_code == 201, standalone.text
+    group = create(client)
+    if published:
+        group = publish(client, group)
+    group_id = group["evaluator"]["id"]
+    path = f"/api/evaluators/{group_id}/llm-group"
+
+    duplicate = client.put(
+        f"{path}/draft",
+        json=edit_payload(group) | {"name": " Taken output ", "description": "Rejected"},
+    )
+    assert duplicate.status_code == 409
+    assert "评估器名称已存在" in duplicate.json()["detail"]
+    assert client.get(path).json() == group
+
+    renamed = client.put(
+        f"{path}/draft",
+        json=edit_payload(group) | {"name": "New group name"},
+    )
+    assert renamed.status_code == 200, renamed.text
+    assert renamed.json()["evaluator"]["name"] == "New group name"
+    if published:
+        assert client.get(path, params={"version": "1"}).json()["definition"] == group["definition"]

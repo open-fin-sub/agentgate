@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, model_validator
 
 from agentgate.application import RunActivity, RunProgress
+from agentgate.application.evaluation_task_management import DuplicateTaskNameError
 from agentgate.application.skill_analysis import SkillAnalysisUnavailable
 from agentgate.domain import (
     EvaluationRun,
@@ -34,6 +35,7 @@ from agentgate.domain.evaluation_task import EvaluationTask
 
 class LaunchRequest(BaseModel):
     version: str
+    name: str | None = Field(default=None, min_length=1, max_length=128)
     dataset_id: str
     dataset_version: int = Field(ge=1)
     evaluator_ids: list[str] | None = None
@@ -84,6 +86,7 @@ def launch_evaluation(
     try:
         run = dependencies.submit_demo_run(
             request.version,
+            name=request.name,
             dataset_id=request.dataset_id,
             dataset_version=request.dataset_version,
             case_ids=request.case_ids,
@@ -96,6 +99,8 @@ def launch_evaluation(
             api_key=request.api_key,
         )
         return dependencies.results.get_run_progress(run.id)
+    except DuplicateTaskNameError:
+        raise HTTPException(409, "任务名称已存在，请修改名称后重试。") from None
     except RuntimeError as error:
         raise_service_unavailable(error)
     except (ValueError, LookupError) as error:
