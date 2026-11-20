@@ -186,6 +186,7 @@ async function setup(page: Page, options: { status?: string; associationStatus?:
       });
     const id = path.split('/')[3];
     if (path.endsWith('/manifest')) return reply(manifest);
+    if (path.endsWith('/events')) return reply([]);
     if (path.endsWith('/status'))
       return reply({
         run_id: id,
@@ -519,6 +520,14 @@ test('query-only tab navigation updates the tab without reloading the report', a
   const state = await setup(page);
   await open(page);
   await expect(page.getByRole('button', { name: '样本详情', exact: true })).toHaveCount(7);
+  const tabs = page.getByRole('navigation', { name: '测评任务详情页签', exact: true });
+  await expect(tabs.getByRole('button')).toHaveText([
+    '执行结果',
+    '低分样本',
+    '优化迭代',
+    '任务快照',
+    '任务日志',
+  ]);
   await page.evaluate(() =>
     (window as any).detailHarness.router.push('/tasks/task?tab=low-samples'),
   );
@@ -531,6 +540,11 @@ test('query-only tab navigation updates the tab without reloading the report', a
     'aria-pressed',
     'true',
   );
+  const taskLog = tabs.getByRole('button', { name: '任务日志', exact: true });
+  await taskLog.click();
+  await expect(taskLog).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText(/暂无执行流程记录/)).toBeVisible();
+  expect(count(state.calls, '/api/runs/task-run/events')).toBeGreaterThan(0);
   expect(count(state.calls, '/api/runs/task-run')).toBe(1);
   expect(state.errors).toEqual([]);
 });

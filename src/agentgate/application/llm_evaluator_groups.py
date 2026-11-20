@@ -192,6 +192,7 @@ def save_llm_group(
             if base is None or base.kind != EvaluatorKind.LLM_GROUP:
                 raise ValueError("Evaluator is not a published LLM group")
             allowed_child_ids = {ref.evaluator_id for ref in base.children}
+        management._reject_duplicate_evaluator_name(name, current=existing_parent)
         parent = Evaluator.model_validate(
             {
                 **existing_parent.model_dump(),

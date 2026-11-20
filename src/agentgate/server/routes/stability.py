@@ -5,7 +5,10 @@ from statistics import mean, stdev, variance
 from fastapi import APIRouter, HTTPException
 from pydantic import ConfigDict, Field
 
-from agentgate.application.evaluation_task_management import EvaluationTaskManagement
+from agentgate.application.evaluation_task_management import (
+    DuplicateTaskNameError,
+    EvaluationTaskManagement,
+)
 from agentgate.server.routes.runs import Dependencies, LaunchRequest
 
 router = APIRouter(prefix="/api/stability-experiments", tags=["stability"])
@@ -24,6 +27,8 @@ def launch(body: StabilityRequest, dependencies: Dependencies):
         settings = body.model_dump()
         settings["evaluator_refs"] = body.evaluator_refs
         return dependencies.submit_stability_runs(**settings)
+    except DuplicateTaskNameError:
+        raise HTTPException(409, "任务名称已存在，请修改名称后重试。") from None
     except (ValueError, LookupError) as exc:
         raise HTTPException(422, str(exc)) from exc
 

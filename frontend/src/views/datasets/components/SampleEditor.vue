@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { caseCategoryLabels, caseDifficultyLabels } from '../types/index';
 import type { EvaluationCase, ValidationIssue, Expectation, JsonObject } from '../types/index';
-import { blankSample } from '../utils/sample-import';
+import { blankSample, draftSampleNameConflict } from '../utils/sample-import';
 import { outputEditorValue, outputCondition } from '../utils/sample-output';
 import JsonCodeEditor from '../../../components/JsonCodeEditor.vue';
 import ExpectationEditor from './ExpectationEditor.vue';
@@ -16,7 +17,9 @@ const props = defineProps<{
   saving?: boolean;
   persisted?: boolean;
   hideSaveButton?: boolean;
+  hideBasicExpectedOutput?: boolean;
   validationIssues?: ValidationIssue[];
+  draftCases?: readonly Pick<EvaluationCase, 'id' | 'name'>[];
 }>();
 const emit = defineEmits<{ save: [item: EvaluationCase]; dirtyChange: [dirty: boolean] }>();
 const auth = useAuthStore();
@@ -378,8 +381,15 @@ function save() {
     error.value = '请输入样本名称';
     return;
   }
+  const { id } = form.value;
+  const name = form.value.name.trim();
+  if (props.draftCases?.some((sample) => sample.id !== id && sample.name.trim() === name)) {
+    error.value = draftSampleNameConflict(name);
+    return;
+  }
   try {
     const item: EvaluationCase = JSON.parse(JSON.stringify(form.value));
+    item.name = name;
     for (const { key } of initializationGroups.value) {
       const variables =
         configVariablesRaw.value[key] !== null
@@ -490,9 +500,17 @@ defineExpose({ save, fetchingVariables });
           title="正例：应正常完成；负例：应正确拒绝或处理异常；边界：临界条件。分类不会直接决定测评通过与否。"
           >分类
           <select v-model="form.category" :disabled="!editable" aria-label="样本分类">
-            <option value="positive">正例</option>
-            <option value="negative">负例</option>
-            <option value="boundary">边界</option>
+            <option v-for="(label, value) in caseCategoryLabels" :key="value" :value="value">
+              {{ label }}
+            </option>
+          </select>
+        </label>
+        <label>
+          难度
+          <select v-model="form.difficulty" :disabled="!editable" aria-label="难度">
+            <option v-for="(label, value) in caseDifficultyLabels" :key="value" :value="value">
+              {{ label }}
+            </option>
           </select>
         </label>
       </div>
@@ -658,7 +676,7 @@ defineExpose({ save, fetchingVariables });
                   placeholder="请输入用户提问内容"
                 />
               </div>
-              <div class="message-card expected">
+              <div v-if="!hideBasicExpectedOutput" class="message-card expected">
                 <header>
                   <b>期望输出</b><span>{{ outputs[index].length }} 字</span>
                 </header>
@@ -1016,6 +1034,9 @@ aside {
 }
 .basic-messages > .message-card {
   min-width: 0;
+}
+.basic-messages > .message-card:only-child {
+  grid-column: 1 / -1;
 }
 .message-card {
   background: #fff;

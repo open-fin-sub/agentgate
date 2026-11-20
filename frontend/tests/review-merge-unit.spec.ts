@@ -4,6 +4,9 @@ import {weightError} from '../src/views/evaluation/utils/evaluator-design'
 import {modelRefError,readModelRef,modelRefLabel} from '../src/views/evaluation/utils/evaluator-model'
 import {createTaskComposite} from '../src/views/evaluation/utils/task-composite'
 import type {EvaluatorSummary} from '../src/api/evaluations'
+import { pinia } from '../src/stores';
+import { useAuthStore } from '../src/stores/modules/auth';
+import { useReviewStore } from '../src/stores/modules/review';
 const items=[{id:'rule-a',kind:'rule',latest_version:'3',enabled:true},{id:'llm-b',kind:'llm_judge',latest_version:'7',enabled:true}] as EvaluatorSummary[]
 test('model selection requires a valid provider/model and rejects credential values',()=>{
  for(const key of ['', '{}','null',JSON.stringify({provider_id:'p',model_id:''}),JSON.stringify({provider_id:'p',model_id:'m',credential_ref:'sk-example'})])expect(modelRefError(key)).not.toBe('')
@@ -43,3 +46,111 @@ test('publication failure reports created id without deleting the asset or enabl
  await expect(createTaskComposite(items,{'rule-a':50,'llm-b':50},'test')).rejects.toThrow('pending-combo')
  expect(count).toBe(2)
 })
+
+test('evaluator reads discard previous identities and reload the legacy catalog for the current mode', async () => {
+  const auth = useAuthStore(pinia);
+  const originalAuth = { ...auth.$state };
+  auth.loginBank('bank-token', 'bank-team', '行内团队');
+  const review = useReviewStore(pinia);
+  const calls: {
+    path: string | undefined;
+    headers: Record<string, unknown>;
+    finish: (data: unknown) => void;
+    fail: (cause: Error) => void;
+  }[] = [];
+  http.defaults.adapter = (config) => new Promise((resolve, reject) => {
+    calls.push({
+      path: config.url,
+      headers: { ...config.headers },
+      finish: data => resolve({ data, status: 200, statusText: 'OK', headers: {}, config }),
+      fail: reject,
+    });
+  });
+  const item = (id: string) => ({
+    id, name: id, kind: 'llm_judge', source: 'user', enabled: true, latest_version: '1',
+  });
+  const detail = (id: string) => ({
+    evaluator: item(id),
+    latest: {
+      kind: 'llm_judge', version: '1', dimension: 'answer', metric: 'quality',
+      config: { instruction: id + ' prompt' },
+    },
+    draft: null,
+  });
+  const listPath = '/evaluators?include_disabled=true';
+  try {
+    const first = review.loadReviewAssets();
+    await expect.poll(() => calls.length).toBe(1);
+    expect(calls[0]).toMatchObject({ path: listPath, headers: { token: 'bank-token', 'X-Team-Id': 'bank-team' } });
+    calls[0].finish([item('bank')]);
+    await expect.poll(() => calls[1]?.path).toBe('/evaluators/bank');
+    calls[1].finish(detail('bank'));
+    await first;
+    expect(review.extractedTemplates[0].instruction).toBe('bank prompt');
+    review.scoringDrafts.push({ ...review.extractedTemplates[0], preview: true });
+
+    const oldBankRefresh = review.loadReviewAssets();
+    await expect.poll(() => calls[2]?.path).toBe(listPath);
+    calls[2].finish([item('bank')]);
+    await expect.poll(() => calls[3]?.path).toBe('/evaluators/bank');
+    auth.logout();
+    expect(review.evaluatorCatalog).toEqual([]);
+    expect(review.evaluatorDetails).toEqual({});
+    expect(review.extractedTemplates).toEqual([]);
+    expect(review.scoringDrafts).toEqual([]);
+    expect(review.assetsLoading).toBe(false);
+    await review.loadReviewAssets();
+    expect(calls).toHaveLength(4);
+
+    auth.loginExternal();
+    await expect.poll(() => calls[4]?.path).toBe(listPath);
+    expect(calls[4].headers.token).toBeUndefined();
+    expect(calls[4].headers['X-Team-Id']).toBeUndefined();
+    calls[3].finish(detail('bank'));
+    await oldBankRefresh;
+    expect(review.evaluatorCatalog).toEqual([]);
+    expect(review.evaluatorDetails).toEqual({});
+    expect(review.extractedTemplates).toEqual([]);
+    expect(review.assetsLoading).toBe(true);
+
+    calls[4].finish([item('external')]);
+    await expect.poll(() => calls[5]?.path).toBe('/evaluators/external');
+    calls[5].finish(detail('external'));
+    await expect.poll(() => review.extractedTemplates.map(template => template.instruction)).toEqual(['external prompt']);
+    const oldExternalRefresh = review.loadReviewAssets();
+    await expect.poll(() => calls[6]?.path).toBe(listPath);
+    auth.initializePlatform({
+      token: 'host-token', teamId: 'host-team', teamName: '集成团队', userId: 'host-user', userName: '集成用户',
+    });
+    expect(review.evaluatorCatalog).toEqual([]);
+    await expect.poll(() => calls[7]?.path).toBe(listPath);
+    expect(calls[7].headers).toMatchObject({ token: 'host-token', 'X-Team-Id': 'host-team', 'X-User-Id': 'host-user' });
+    calls[6].finish([item('stale-external')]);
+    await oldExternalRefresh;
+    expect(calls).toHaveLength(8);
+    expect(review.assetsLoading).toBe(true);
+    calls[7].finish([item('integrated')]);
+    await expect.poll(() => calls[8]?.path).toBe('/evaluators/integrated');
+    calls[8].finish(detail('integrated'));
+    await expect.poll(() => review.evaluatorCatalog.map(entry => entry.id)).toEqual(['integrated']);
+    expect(Object.keys(review.evaluatorDetails)).toEqual(['integrated']);
+    expect(review.extractedTemplates.map(template => template.instruction)).toEqual(['integrated prompt']);
+
+    const oldIntegratedRefresh = review.loadReviewAssets();
+    await expect.poll(() => calls[9]?.path).toBe(listPath);
+    auth.loginBank('new-token', 'new-team', '另一个团队');
+    await expect.poll(() => calls[10]?.path).toBe(listPath);
+    expect(calls[10].headers).toMatchObject({ token: 'new-token', 'X-Team-Id': 'new-team' });
+    calls[9].fail(Error('old request failed'));
+    await oldIntegratedRefresh;
+    expect(review.assetsError).toBe('');
+    expect(review.assetsLoading).toBe(true);
+    calls[10].finish([]);
+    await expect.poll(() => review.assetsLoading).toBe(false);
+    expect(calls).toHaveLength(11);
+  } finally {
+    review.$dispose();
+    delete pinia.state.value[review.$id];
+    auth.$patch(originalAuth);
+  }
+});

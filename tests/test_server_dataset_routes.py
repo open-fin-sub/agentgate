@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from agentgate.dataset.formats.xlsx import dump as dump_xlsx
-from agentgate.domain import Case, CaseDifficulty, CaseTurn
+from agentgate.domain import Case, CaseDifficulty, CaseTurn, Dataset, DatasetVersion
 from agentgate.server.dependencies import build_dependencies
 from agentgate.server.routes.datasets import router
 
@@ -103,6 +103,33 @@ def test_xlsx_routes_import_draft_and_stream_published_version(tmp_path) -> None
             "content-disposition"
         ]
         assert downloaded.headers["etag"] == f'"{published.json()["content_sha256"]}"'
+
+
+def test_whole_dataset_import_rejects_distinct_samples_with_same_name(tmp_path) -> None:
+    dataset = Dataset(name="导入重名校验")
+    cases = (
+        Case(id="first", name="样本", turns=(CaseTurn(input={"txt": "first"}),)),
+        Case(id="second", name=" 样本 ", turns=(CaseTurn(input={"txt": "second"}),)),
+    )
+    draft = DatasetVersion(dataset_id=dataset.id, dataset_name=dataset.name, cases=cases)
+    with _client(tmp_path) as client:
+        imported_json = client.post(
+            "/api/datasets/import",
+            json={
+                "format": "agentgate.dataset", "format_version": 1,
+                "dataset": dataset.model_dump(mode="json"),
+                "version": draft.model_dump(mode="json"),
+            },
+        )
+        content = dump_xlsx([case.model_dump(mode="json") for case in cases])
+        imported_xlsx = client.post(
+            "/api/datasets/import/xlsx", data={"name": dataset.name},
+            files={"file": ("cases.xlsx", content)},
+        )
+        for result in (imported_json, imported_xlsx):
+            assert result.status_code == 422
+            assert "样本名称已存在：样本" in result.json()["detail"]
+        assert all(item["name"] != dataset.name for item in client.get("/api/datasets").json())
 
 
 def test_case_difficulty_and_notes_update_creates_traceable_dataset_version(

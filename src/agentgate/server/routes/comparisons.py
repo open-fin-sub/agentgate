@@ -2,9 +2,10 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
+from agentgate.application.evaluation_task_management import DuplicateTaskNameError
 from agentgate.domain import EvaluatorRef, RunStatus
 from agentgate.result import EvaluationComparison
 from agentgate.server.dependencies import ServerDependencies, get_dependencies
@@ -32,6 +33,7 @@ class RunComparisonLaunchRequest(BaseModel):
 
     baseline_version: str = Field(min_length=1)
     candidate_version: str = Field(min_length=1)
+    name: str | None = Field(default=None, min_length=1, max_length=128)
     dataset_id: str = Field(min_length=1)
     dataset_version: int = Field(ge=1)
     evaluators: list[EvaluatorVersionSelection] | None = None
@@ -62,6 +64,7 @@ def launch_run_comparison(
         pair = dependencies.submit_ab_runs(
             request.baseline_version,
             request.candidate_version,
+            name=request.name,
             dataset_id=request.dataset_id,
             dataset_version=request.dataset_version,
             case_ids=request.case_ids,
@@ -79,6 +82,8 @@ def launch_run_comparison(
                 else None
             ),
         )
+    except DuplicateTaskNameError:
+        raise HTTPException(409, "任务名称已存在，请修改名称后重试。") from None
     except RuntimeError as error:
         raise_service_unavailable(error)
     except (LookupError, ValueError) as error:

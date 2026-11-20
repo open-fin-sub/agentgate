@@ -5,6 +5,7 @@ from agentgate.demo.loan import LOAN_DATASET, LOAN_DATASET_VERSION
 from agentgate.domain import EvaluatorKind, EvaluatorSeverity
 from agentgate.integrations.targets import DemoLoanTargetAdapter, resolve_demo_trace
 from agentgate.server.app import create_app
+from agentgate.server.user_context import UserInfo, reset_user_info, set_user_info
 
 
 class RecordingDispatcher:
@@ -59,6 +60,71 @@ def test_launch_run_comparison_creates_and_dispatches_controlled_pair(
     assert candidate is not None
     assert baseline.manifest.dataset == candidate.manifest.dataset
     assert baseline.manifest.evaluator_specs == candidate.manifest.evaluator_specs
+
+
+@pytest.mark.parametrize(
+    ("endpoint", "kind", "extra", "run_count"),
+    [
+        ("/api/evaluations", "single", {"version": "loan-agent-v1-risky"}, 1),
+        (
+            "/api/stability-experiments",
+            "stability",
+            {"version": "loan-agent-v1-risky", "repetitions": 2},
+            2,
+        ),
+        ("/api/run-comparisons", "ab", _launch_payload(), 2),
+    ],
+)
+def test_named_demo_creation_rejects_duplicate_before_dispatching(
+    tmp_path, endpoint, kind, extra, run_count
+):
+    class NamedDispatcher(RecordingDispatcher):
+        def submit(self, run_id: str) -> None:
+            [task] = [item for item in repository.list_evaluation_tasks() if run_id in item.run_ids]
+            assert task.name == "重复测评"
+            assert all(repository.get_run(item) is not None for item in task.run_ids)
+            super().submit(run_id)
+
+    dispatcher = NamedDispatcher()
+    app = create_app(tmp_path / "named-demo.db", dispatcher)
+    dependencies = app.state.dependencies
+    repository = dependencies.repository
+    dataset_ids = {}
+    for team in ("team-a", "team-b"):
+        token = set_user_info(UserInfo(team, "fixture-user", "Fixture user"))
+        try:
+            dataset = dependencies.datasets.create_dataset(f"Dataset {team}")
+            dependencies.datasets.create_draft(dataset.id)
+            dependencies.datasets.save_case(dataset.id, LOAN_DATASET_VERSION.cases[0])
+            dependencies.datasets.publish_draft(dataset.id)
+            dataset_ids[team] = dataset.id
+        finally:
+            reset_user_info(token)
+
+    with TestClient(app) as client:
+        def submit(team, name):
+            return client.post(
+                endpoint,
+                headers={"X-Team-Id": team, "X-User-Id": f"user-{team}"},
+                json={**extra, "name": name, "dataset_id": dataset_ids[team], "dataset_version": 1},
+            )
+
+        accepted = submit("team-a", "重复测评")
+        assert accepted.status_code == 202, accepted.text
+        conflict = submit("team-a", " 重复测评 ")
+        assert conflict.status_code == 409, conflict.text
+        assert conflict.json()["message"] == "任务名称已存在，请修改名称后重试。"
+        assert len(dispatcher.run_ids) == run_count
+
+        assert submit("team-b", "重复测评").status_code == 202
+        for team in ("team-a", "team-b"):
+            [task] = client.get("/api/evaluation-tasks", headers={"X-Team-Id": team}).json()["data"]
+            assert task["name"] == "重复测评" and task["kind"] == kind
+            assert len(task["run_ids"]) == run_count
+            runs = repository.list_runs(user_team_id=team)
+            assert {run.id for run in runs} == set(task["run_ids"])
+            assert {run.user_id for run in runs} == {f"user-{team}"}
+        assert len(dispatcher.run_ids) == run_count * 2
 
 
 def test_launch_run_comparison_selects_exact_historical_evaluator_version(

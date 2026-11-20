@@ -24,13 +24,11 @@ import {
   type LLMGroupDetail,
 } from '../utils/evaluator-group';
 import { isPromptEvaluator } from '../utils/evaluator-templates';
+import { useAuthStore } from '../../../stores/modules/auth';
 import {
   evaluatorCatalog,
   evaluatorDetails,
   loadReviewAssets,
-  loadReviewDetails,
-  detailsError,
-  detailsLoading,
   assetsLoading,
   assetsError,
   copy,
@@ -46,6 +44,14 @@ import {
 import '../../../styles/review-assets.scss';
 const props = defineProps<{ initialId?: string }>(),
   emit = defineEmits<{ dirtyChange: [value: boolean]; launch: [id: string] }>();
+const auth = useAuthStore();
+const identity = computed(() => [
+  auth.loginMode,
+  auth.token,
+  auth.teamId,
+  auth.userId,
+  auth.platformReady,
+]);
 const category = ref<'rule' | 'llm_judge'>('rule'),
   query = ref(''),
   creatingRule = ref(false),
@@ -158,6 +164,7 @@ watch([dirty, busy, promptDirty, groupDirty, codeDirty], (values) =>
   emit('dirtyChange', values.some(Boolean)),
 );
 let openSequence = 0;
+let disposed = false;
 function create() {
   openSequence++;
   groupInitialId.value = undefined;
@@ -240,7 +247,10 @@ function showDefinition(value: EvaluatorDetail, source: Definition, draft: boole
   baseline.value = JSON.stringify(design.value);
 }
 async function refreshDetail(id: string) {
+  if (disposed || !auth.authenticated) return;
+  const currentIdentity = identity.value;
   const value = await api.evaluator(id);
+  if (disposed || currentIdentity !== identity.value) return;
   evaluatorDetails.value[id] = value;
   const source = value.draft ?? value.latest;
   if (!source) throw new Error('此评估器暂无草稿或发布版本。');
@@ -248,7 +258,7 @@ async function refreshDetail(id: string) {
   await loadReviewAssets();
 }
 async function open(e: EvaluatorSummary) {
-  if (busy.value) return;
+  if (disposed || !auth.authenticated || busy.value) return;
   if (e.implementation_id === 'code_rule') {
     codeId.value = e.id;
     codeOpen.value = true;
@@ -266,12 +276,13 @@ async function open(e: EvaluatorSummary) {
     return;
   }
   const sequence = ++openSequence;
+  const currentIdentity = identity.value;
   error.value = '';
   notice.value = '';
   busy.value = true;
   try {
     const value = await api.evaluator(e.id);
-    if (sequence !== openSequence) return;
+    if (sequence !== openSequence || currentIdentity !== identity.value) return;
     const source = value.draft ?? value.latest;
     if (!source) throw new Error('此评估器暂无草稿或发布版本。');
     if (isPromptEvaluator(source)) {
@@ -280,7 +291,7 @@ async function open(e: EvaluatorSummary) {
       promptOpen.value = true;
     } else showDefinition(value, source, !!value.draft);
   } catch (e) {
-    error.value = String(e);
+    if (sequence === openSequence && currentIdentity === identity.value) error.value = String(e);
   } finally {
     if (sequence === openSequence) busy.value = false;
   }
@@ -450,9 +461,6 @@ function viewVersion(value: Definition) {
   error.value = '';
   notice.value = '已发布版本只读；编辑会创建草稿，原版本保持不变。';
 }
-watch([promptOpen, groupOpen, design, evaluatorCatalog], () => {
-  if (promptOpen.value || groupOpen.value || design.value) void loadReviewDetails(false);
-});
 function beforeUnload(event: BeforeUnloadEvent) {
   if (dirty.value || busy.value) {
     event.preventDefault();
@@ -471,6 +479,7 @@ onMounted(async () => {
   }
 });
 onUnmounted(() => {
+  disposed = true;
   openSequence++;
   window.removeEventListener('beforeunload', beforeUnload);
   emit('dirtyChange', false);
@@ -482,9 +491,6 @@ const templateLabels1: Record<string, string> = {
 };
 </script>
 <template>
-  <p v-if="detailsError" class="asset-error" role="alert">
-    {{ detailsError }} <button :disabled="detailsLoading" @click="loadReviewDetails(false)">重试</button>
-  </p>
   <LLMGroupEditor
     v-if="groupOpen"
     :initial-id="groupInitialId"
@@ -527,17 +533,6 @@ const templateLabels1: Record<string, string> = {
         </button>
       </div>
       <button
-        v-if="category === 'rule'"
-        class="asset-primary"
-        :disabled="busy"
-        @click="
-          codeId = undefined;
-          codeOpen = true;
-        "
-      >
-        ＋ 新建规则评估器
-      </button>
-      <button
         v-if="category === 'llm_judge'"
         class="asset-primary"
         :disabled="busy"
@@ -546,9 +541,7 @@ const templateLabels1: Record<string, string> = {
         ＋ 新建 LLM 评估器
       </button>
     </div>
-    <p v-if="assetsError" role="alert" class="asset-error">
-      {{ assetsError }} <button :disabled="assetsLoading" @click="loadReviewAssets()">重试</button>
-    </p>
+    <p v-if="assetsError" role="alert" class="asset-error">{{ assetsError }}</p>
     <p v-if="error && !design" role="alert" class="asset-error">{{ error }}</p>
     <div class="asset-filters">
       <input v-model="query" aria-label="搜索评估器" placeholder="搜索评估器名称" />

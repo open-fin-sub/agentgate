@@ -465,6 +465,16 @@ watch(availableCases, (cases) => {
 watch([executionCases, evaluators], () => {
   recommended.value = recommendEvaluators(evaluators.value, executionCases.value);
 });
+async function finishLocalSubmission(link: TaskLink) {
+  try {
+    if (link.staticReports.length)
+      await saveTaskLink({ ...link, name: undefined });
+    ElMessage.success('测评任务已提交');
+  } catch {
+    ElMessage.warning(`任务已创建（${link.id}），但静态分析报告关联保存失败。`);
+  }
+  emit('created', link);
+}
 async function submit() {
   if (
     submitting.value ||
@@ -577,6 +587,7 @@ async function submit() {
     candidate: localTarget ? platformCandidateVersion.value : candidateVersion.value,
     staticReports: includeStatic.value ? [...staticReports.value] : [],
   };
+  const duplicateNameMessage = `任务名称已存在：${snapshot.name}，请修改名称后重试。`;
   const submissionIdentity = [
     auth.loginMode,
     auth.teamId,
@@ -595,8 +606,8 @@ async function submit() {
   try {
     try {
       const tasks = await request<{ name?: string | null }[]>('/evaluation-tasks');
-      if (tasks.some((t) => (t.name ?? '').trim() === taskName.value.trim())) {
-        formError.value = `任务名称已存在：${taskName.value.trim()}，请修改名称后重试。`;
+      if (tasks.some((t) => (t.name ?? '').trim() === snapshot.name)) {
+        formError.value = duplicateNameMessage;
         return;
       }
     } catch {
@@ -754,6 +765,7 @@ async function submit() {
     creating = true;
     if (localTarget && taskKind.value === 'single') {
       const common = {
+        name: snapshot.name,
         dataset_id: snapshot.datasetId,
         dataset_version: snapshot.datasetVersion,
         case_ids: snapshot.caseIds,
@@ -770,7 +782,6 @@ async function submit() {
         localTarget.adapter_type === 'local_bank'
           ? {
               ...common,
-              name: snapshot.name,
               mode: localTarget.mode,
               max_parallel_cases: snapshot.concurrency,
               target_descriptor_sha256: localTarget.descriptor.content_sha256,
@@ -793,9 +804,7 @@ async function submit() {
         runIds: created.run_ids ?? [id],
         staticReports: snapshot.staticReports,
       };
-      await saveTaskLink(link);
-      emit('created', link);
-      ElMessage.success('测评任务已提交');
+      await finishLocalSubmission(link);
       return;
     }
     if (localTarget?.adapter_type === 'local_bank')
@@ -901,6 +910,7 @@ async function submit() {
       '/run-comparisons',
       'POST',
       {
+        name: snapshot.name,
         max_parallel_cases: snapshot.concurrency,
         baseline_version: snapshot.baseline,
         candidate_version: snapshot.candidate,
@@ -918,20 +928,17 @@ async function submit() {
       runIds: [pair.baseline.run_id, pair.candidate.run_id],
       staticReports: snapshot.staticReports,
     };
-    try {
-      await saveTaskLink(link);
-    } catch {
-      throw Error(
-        '运行已创建，但任务关联保存失败；请勿重复提交。运行 ID：' + link.runIds.join('、'),
-      );
-    }
-    emit('created', link);
-    ElMessage.success(
-      link.staticReports.some((x) => x.error)
-        ? '运行已提交，静态分析未完成，请查看任务详情'
-        : '测评任务已提交',
-    );
+    await finishLocalSubmission(link);
   } catch (e) {
+    if (
+      creating &&
+      e instanceof ApiError &&
+      e.status === 409 &&
+      e.detail === '任务名称已存在，请修改名称后重试。'
+    ) {
+      formError.value = duplicateNameMessage;
+      return;
+    }
     if (e !== 'cancel' && e !== 'close') {
       formError.value =
         snapshot.kind === 'ab'

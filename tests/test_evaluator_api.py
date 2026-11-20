@@ -220,3 +220,29 @@ def test_create_rejects_duplicate_user_evaluator_names(tmp_path) -> None:
             "/api/evaluators", json=_create_payload(name="Custom output 2")
         )
         assert renamed.status_code == 201
+
+
+def test_rename_rejects_duplicate_names_and_allows_existing_name(tmp_path) -> None:
+    with _client(tmp_path / "evaluator-rename.db") as client:
+        taken = client.post("/api/evaluators", json=_create_payload(name="Taken output"))
+        assert taken.status_code == 201
+        created = client.post("/api/evaluators", json=_create_payload(name="Original output"))
+        assert created.status_code == 201
+        path = f"/api/evaluators/{created.json()['evaluator']['id']}"
+        before = client.get(path).json()
+
+        for name in ("Taken output", "Required Tool"):
+            duplicate = client.patch(path, json={"name": f" {name} ", "description": "Rejected"})
+            assert duplicate.status_code == 409
+            assert "评估器名称已存在" in duplicate.json()["detail"]
+            assert client.get(path).json() == before
+
+        management = client.app.state.dependencies.evaluators
+        older = management.get_evaluator(taken.json()["evaluator"]["id"])
+        management.repository.save_evaluator(older.model_copy(update={"name": "Original output"}))
+
+        resaved = client.patch(path, json={"name": " Original output ", "description": "Changed"})
+        assert resaved.status_code == 200
+        assert resaved.json()["name"] == "Original output"
+        assert resaved.json()["description"] == "Changed"
+        assert client.get(path).json()["draft"] == before["draft"]

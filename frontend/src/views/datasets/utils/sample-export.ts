@@ -1,10 +1,16 @@
 import { toApiCase } from '../../../api/datasets';
-import type { DatasetVersion } from '../types/index';
+import { caseCategoryLabels, caseDifficultyLabels, type DatasetVersion } from '../types/index';
 import { sampleColumnLabels, type SampleFileFormat } from './sample-import';
 
 export function exportSamples(version: DatasetVersion, ids?: string[]) {
   const selected = ids ? new Set(ids) : null;
-  const cases = version.cases.filter((item) => !selected || selected.has(item.id)).map(toApiCase);
+  const cases = version.cases
+    .filter((item) => !selected || selected.has(item.id))
+    .map((item) => ({
+      ...toApiCase(item),
+      category: caseCategoryLabels[item.category],
+      difficulty: caseDifficultyLabels[item.difficulty],
+    }));
   if (!cases.length) throw new Error('请选择至少一个样本');
   // A subset is a sample collection, not a published version with its original content hash.
   return { dataset_name: version.dataset_name, source_version: version.version, cases };
@@ -27,6 +33,7 @@ export function sampleRows(
       input_json: JSON.stringify(turn.input),
       expectations_json: JSON.stringify(turn.expectations),
       turn_notes: turn.notes,
+      turn_extensions_json: JSON.stringify(turn.extensions ?? []),
     })),
   );
 }
