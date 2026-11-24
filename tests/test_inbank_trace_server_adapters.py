@@ -1429,7 +1429,7 @@ def test_adapted_multicase_multiturn_evidence_reaches_rules_judge_and_saved_repo
                      "condition": {"kind": "equals", "expected": "customer answer"}},
                 ) + state_expectations,
             ))
-        datasets.save_case(dataset.id, Case(id=f"case-{case_index}", name="Customer case", turns=tuple(turns)))
+        datasets.save_case(dataset.id, Case(id=f"case-{case_index}", name=f"Customer case {case_index + 1}", turns=tuple(turns)))
     datasets.publish_draft(dataset.id)
     target = _request(arrange_type).target
     descriptor = TargetDescriptor(ref=target.ref, display_name=target.display_name)

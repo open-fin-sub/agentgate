@@ -114,7 +114,7 @@ def test_chat_request_id_is_logged_before_http_without_secrets(mode, chat_fails,
         message = records[0].getMessage()
         assert f"request_id={request_id!r}" in message
         assert f"arrange_type={mode}" in message
-        assert "session_id='session-one'" in message
+        assert "session-one" not in message
         if chat_fails:
             raise requests.exceptions.Timeout("chat timed out")
         return response([("message", {"content": "answer"}), ("done", "[DONE]")])

@@ -5,6 +5,7 @@ from __future__ import annotations
 from . import evaluation_projection as projection
 from agentgate.domain.run_event import RunEvent
 
+import logging
 import hashlib
 import os
 from collections.abc import Iterator, Sequence
@@ -13,7 +14,7 @@ from datetime import datetime
 from enum import Enum
 from typing import TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from sqlalchemy import Connection, Table, and_, create_engine, func, select
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DBAPIError, IntegrityError
@@ -54,6 +55,8 @@ from agentgate.storage.evaluator_groups import (
     validate_group_publications,
     validate_identity_update,
 )
+
+LOGGER = logging.getLogger(__name__)
 
 M = TypeVar("M", bound=BaseModel)
 _KEY_FIELDS = {
@@ -149,7 +152,14 @@ def _models(db: Connection, table: Table, model_type: type[M], *, lock=False, **
 def _validated_models(rows, table: Table, model_type: type[M]) -> list[M]:
     models = []
     for row in rows:
-        model = model_type.model_validate_json(row["payload"])
+        try:
+            model = model_type.model_validate_json(row["payload"])
+        except ValidationError as exc:
+            LOGGER.error("Stored payload invalid: table=%s id=%r run_id=%r case_id=%r model=%s errors=%r",
+                         table.name, str(row.get("id", ""))[:128], str(row.get("run_id", ""))[:128],
+                         str(row.get("case_id", ""))[:128], model_type.__name__,
+                         [(e["loc"], e["type"]) for e in exc.errors(include_input=False, include_context=False)][:20])
+            raise
         indexed = {
             name: value
             for name, value in _values(table, model).items()
@@ -158,6 +168,9 @@ def _validated_models(rows, table: Table, model_type: type[M]) -> list[M]:
             and not (table is s.evaluation_tasks and name in {"name", "kind", "first_run_key"})
         }
         if any(row[name] != value for name, value in indexed.items()):
+            LOGGER.error("Stored index mismatch: table=%s id=%r model=%s fields=%r",
+                         table.name, str(row.get("id", ""))[:128], model_type.__name__,
+                         [name for name, value in indexed.items() if row[name] != value])
             raise ValueError("stored indexed columns do not match payload")
         models.append(model)
     return models
@@ -322,9 +335,16 @@ class MySQLRepository:
         try:
             with self._engine.begin() as connection:
                 yield connection
-        except IntegrityError:
+        except IntegrityError as exc:
+            LOGGER.error("MySQL transaction failed: error_type=%s driver_type=%s errno=%s",
+                         type(exc).__name__, type(exc.orig).__name__,
+                         exc.orig.args[0] if exc.orig.args and isinstance(exc.orig.args[0], int) else None)
             raise ValueError("database uniqueness or reference constraint conflict") from None
-        except DBAPIError:
+        except DBAPIError as exc:
+            LOGGER.error("MySQL transaction failed: error_type=%s driver_type=%s errno=%s connection_invalidated=%s",
+                         type(exc).__name__, type(exc.orig).__name__,
+                         exc.orig.args[0] if exc.orig.args and isinstance(exc.orig.args[0], int) else None,
+                         exc.connection_invalidated)
             # Do not replay an operation whose commit outcome may be unknown.
             raise RuntimeError(
                 "MySQL operation failed; check connectivity, schema, and transaction conflicts"
@@ -707,34 +727,6 @@ class MySQLRepository:
             items = _models(db, s.evaluators, Evaluator, user_team_id=user_team_id)
         return _ordered([item for item in items if include_disabled or item.enabled], "updated_at")
 
-    def get_evaluator_catalog_definitions(
-        self, evaluator_ids: Sequence[str], *, user_team_id: str
-    ) -> tuple[dict[str, EvaluatorSpec], dict[str, EvaluatorDraft]]:
-        versions: dict[str, EvaluatorSpec] = {}
-        drafts: dict[str, EvaluatorDraft] = {}
-        with self._transaction() as db:
-            for start in range(0, len(evaluator_ids), 400):
-                ids = evaluator_ids[start:start + 400]
-                keys = [_digest(item) for item in ids]
-                v, d = s.evaluator_versions, s.evaluator_drafts
-                latest = select(v.c.evaluator_key, func.max(v.c.version).label("version")).where(
-                    v.c.evaluator_key.in_(keys), _where(v, {"user_team_id": user_team_id})
-                ).group_by(v.c.evaluator_key).subquery()
-                query = select(v).join(latest, and_(
-                    v.c.evaluator_key == latest.c.evaluator_key, v.c.version == latest.c.version
-                )).where(_where(v, {"user_team_id": user_team_id}))
-                for spec in _validated_models(db.execute(query).mappings().all(), v, EvaluatorSpec):
-                    if spec.id not in ids or spec.user_team_id != user_team_id:
-                        raise ValueError("database identity digest collision")
-                    versions[spec.id] = spec
-                query = select(d).where(d.c.evaluator_key.in_(keys),
-                                        _where(d, {"user_team_id": user_team_id}))
-                for draft in _validated_models(db.execute(query).mappings().all(), d, EvaluatorDraft):
-                    if draft.evaluator_id not in ids or draft.user_team_id != user_team_id:
-                        raise ValueError("database identity digest collision")
-                    drafts[draft.evaluator_id] = draft
-        return versions, drafts
-
     def delete_unpublished_evaluator(self, evaluator_id: str, *, user_team_id: str) -> None:
         with self._transaction() as db:
             if (
@@ -1091,10 +1083,14 @@ class MySQLRepository:
             if stored is None:
                 raise ValueError("unknown EvaluationRun")
             if stored.status not in {RunStatus.RUNNING, RunStatus.COMPLETED}:
+                LOGGER.error("Run write rejected: run_id=%r stored_status=%s target_status=%s reason=invalid_transition",
+                             run.id, stored.status, run.status)
                 raise ValueError("run cannot complete from its current state")
             if any(getattr(stored, f) != getattr(run, f) for f in ("manifest", "created_at", "scheduled_for", "started_at", "user_team_id")):
                 raise ValueError("immutable run fields changed")
             if stored.completed_at is not None and stored != run:
+                LOGGER.error("Run write rejected: run_id=%r stored_status=%s target_status=%s reason=terminal_immutable",
+                             run.id, stored.status, run.status)
                 raise ValueError("terminal EvaluationRun is immutable")
             results = _models(db, s.results, EvaluationResult, run_id=run.id)
             projection.put_completed(db, run, summary, results)
@@ -1134,6 +1130,8 @@ class MySQLRepository:
             if stored.started_at is not None and stored.started_at != run.started_at:
                 raise ValueError("EvaluationRun started_at is immutable once set")
             if stored.completed_at is not None:
+                LOGGER.error("Run write rejected: run_id=%r stored_status=%s target_status=%s reason=terminal_immutable",
+                             run.id, stored.status, run.status)
                 raise ValueError("terminal EvaluationRun is immutable")
             _update(db, s.runs, run)
 

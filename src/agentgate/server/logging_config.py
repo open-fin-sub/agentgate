@@ -125,7 +125,8 @@ def setup_logging() -> None:
     logging.getLogger("uvicorn.access").addFilter(_PollingSuccessFilter())
 
     logging.getLogger("agentgate.server.logging_config").info(
-        "Logging initialized, log_path=%s", log_path
+        "Logging initialized, log_path=%s pid=%s python=%s python_version=%s module=%s",
+        log_path, os.getpid(), sys.executable, sys.version.split()[0], __file__
     )
 
 

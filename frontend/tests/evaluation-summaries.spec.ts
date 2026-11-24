@@ -99,7 +99,7 @@ test('task pagination, debounce, kind and local dates retain the summary query',
   expect(calls).toHaveLength(1);
   await expect(page.locator('.data-table').getByRole('checkbox')).toHaveCount(0);
   await expect(page.locator('.data-table th')).toHaveText([
-    '被测Agent', '测评集', '评估方式', '进度与状态', '启动时间', '结束时间', '得分', '操作',
+    '任务名称', '被测Agent', '测评集', '评估方式', '进度与状态', '启动时间', '结束时间', '得分', '操作',
   ]);
   await page.getByRole('button',{name:'下一页'}).click();
   await expect.poll(()=>calls.length).toBe(2);
@@ -212,7 +212,10 @@ test('A/B scores, nulls, independent and stability rows preserve presentation an
   await page.locator('.ab-summary').first().hover();
   await expect(page.locator('.ab-tooltip').first()).toContainText('Agent -b');
   await expect(page.getByText('评估器异常')).toBeVisible();
-  await page.getByRole('button',{name:'查看任务 stable',exact:true}).click();
+  await page.getByRole('button', { name: ab.name, exact: true }).click();
+  await expect(page.getByText('Comparisons', { exact: true })).toBeVisible();
+  await navigate(page, '/tasks');
+  await page.getByRole('button', { name: stable.name, exact: true }).click();
   await expect(page.getByText('Stability',{exact:true})).toBeVisible();
 });
 
@@ -314,6 +317,18 @@ test('parent route context, A/B tabs, creation, dirty guard, logout and unknown 
   await navigate(page,'/unknown');await expect(page.getByText(/页面不存在/)).toBeVisible();
   await page.getByRole('button',{name:'logout',exact:true}).click();await page.getByRole('button',{name:'取消',exact:true}).click();
   await page.getByRole('button',{name:'logout',exact:true}).click();await page.getByRole('button',{name:'确认登出',exact:true}).click();
+});
+
+test('the evaluator view discards open content on an identity change', async ({ page }) => {
+  await setup(page, []);
+  await mount(page, '/evaluators');
+  const view = page.getByRole('button', { name: 'judge launch', exact: true });
+  await view.evaluate((element) => element.setAttribute('data-old-editor', 'true'));
+  await page.evaluate(() => (window as any).summaryHarness.auth({
+    loginMode: 'bank', token: 'next-token', teamId: 'next-team',
+  }));
+  await expect(view).toBeVisible();
+  await expect(view).not.toHaveAttribute('data-old-editor', 'true');
 });
 
 test('empty metrics and helper boundaries including DST',async({page})=>{
@@ -443,7 +458,7 @@ test('missing summaries keep task rows, real status, details and pagination', as
   await expect(task.locator('.task-score')).toHaveText('—');
   await page.getByRole('button', {name:'下一页',exact:true}).click();
   await expect(page.getByRole('button', {name:'上一页',exact:true})).toBeEnabled();
-  await page.getByRole('button', {name:'查看任务 missing-summary',exact:true}).click();
+  await page.getByRole('button', { name: missing.name, exact: true }).click();
   await expect(page.getByText('Detail missing-summary-a missing-summary', {exact:false})).toBeVisible();
 });
 

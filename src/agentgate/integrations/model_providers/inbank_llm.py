@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+import traceback
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import copy_context
 from inspect import isawaitable
@@ -125,11 +126,12 @@ class InbankLLMModelClient:
                 f"Inbank LLM exceeded {request.timeout_seconds:g} seconds"
             ) from exc
         except Exception as exc:
-            LOGGER.exception(
-                "Inbank LLM Judge request failed: provider_id=%s, model=%s, error=%s",
-                self.provider_id,
-                self._model_name,
-                type(exc).__name__,
+            LOGGER.error(
+                "Inbank LLM Judge request failed: provider_id=%s model=%s error_type=%s cause_type=%s latency_ms=%.1f frames=%r",
+                self.provider_id, self._model_name, type(exc).__name__,
+                type(exc.__cause__).__name__ if exc.__cause__ else None,
+                (time.monotonic() - started) * 1000,
+                [(f.filename, f.lineno, f.name) for f in traceback.extract_tb(exc.__traceback__)][-12:],
             )
             raise JudgeModelUnavailable("Inbank LLM provider is unavailable") from exc
 

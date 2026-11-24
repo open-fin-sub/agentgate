@@ -1646,6 +1646,33 @@ test('submission locks all inputs before asynchronous validation and prevents du
   expect(requests.filter((r) => r.path === '/api/agent-platform/evaluations')).toHaveLength(1);
 });
 
+for (const kind of ['single', 'ab'] as const)
+  test(`in-bank ${kind} reports a duplicate task name rejected by the server`, async ({ page }) => {
+    await openForm(page, true);
+    await selectFormTarget(page);
+    if (kind === 'ab') {
+      await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
+      await choose(page, '平台候选版本', bankVersionTwo);
+    }
+    const path = kind === 'single' ? 'evaluations' : 'comparisons';
+    await page.route(`**/api/agent-platform/${path}`, (route) => {
+      expect(route.request().postDataJSON()).toMatchObject({
+        name: '版本固定测试',
+        dataset_id: 'dataset',
+        dataset_version: 2,
+      });
+      return reply(route, { code: '1', message: '任务名称已存在，请修改名称后重试。', data: null }, 409);
+    });
+    await page.getByLabel('任务名称', { exact: true }).fill(' 版本固定测试 ');
+    const submit = kind === 'single'
+      ? start(page)
+      : page.getByRole('button', { name: '创建 A/B试验', exact: true });
+    await submit.click();
+    await expect(page.getByRole('alert')).toHaveText('任务名称已存在：版本固定测试，请修改名称后重试。');
+    await expect(submit).toBeEnabled();
+    expect(await page.evaluate(() => (window as any).created)).toEqual([]);
+  });
+
 for (const failure of ['reject', 'server', 'malformed', 'refresh'] as const)
   test(`form safely handles ${failure} without leaking server detail or retrying`, async ({
     page,
@@ -1687,7 +1714,7 @@ for (const failure of ['reject', 'server', 'malformed', 'refresh'] as const)
     expect(await page.locator('body').innerText()).not.toContain('form-secret');
   });
 
-test('external A/B keeps legacy endpoint and association, returning to single requires fresh target selection', async ({
+test('external Demo A/B sends the name with submission, returning to single requires fresh target selection', async ({
   page,
 }) => {
   const requests = await openForm(page, false, sampleCases, 'external');
@@ -1704,6 +1731,7 @@ test('external A/B keeps legacy endpoint and association, returning to single re
   await page.getByRole('button', { name: '创建 A/B试验', exact: true }).click();
   await expect.poll(() => page.evaluate(() => (window as any).created.length)).toBe(1);
   expect(requests.find((r) => r.path === '/api/run-comparisons')?.body).toEqual({
+    name: '版本固定测试',
     baseline_version: 'old-1',
     candidate_version: 'old-2',
     dataset_id: 'dataset',
@@ -1713,7 +1741,7 @@ test('external A/B keeps legacy endpoint and association, returning to single re
     evaluators: [{ id: 'judge', version: '1' }],
   });
   expect(requests.some((r) => r.method === 'PUT' && r.path === '/api/evaluation-tasks/a')).toBe(
-    true,
+    false,
   );
   await page.getByRole('button', { name: '单任务', exact: true }).click();
   await expect(page.getByRole('combobox', { name: '选择智能体', exact: true })).toBeEnabled();

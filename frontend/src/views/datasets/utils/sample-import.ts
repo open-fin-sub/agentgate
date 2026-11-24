@@ -1,4 +1,5 @@
 import { toEditorCase } from '../../../api/datasets';
+import { caseCategoryLabels, caseDifficultyLabels } from '../types/index';
 import type { EvaluationCase, JsonObject } from '../types/index';
 
 export const sampleFileFormats = [
@@ -15,12 +16,13 @@ export const sampleColumnLabels: Record<string, string> = {
   difficulty: '难度',
   tags_json: '标签',
   case_notes: '样本备注',
-  initial_state_json: '初始状态',
+  initial_state_json: '初始变量',
   turn_id: '轮次编号',
   turn_order: '轮次顺序',
   input_json: '输入内容',
   expectations_json: '期望结果',
   turn_notes: '轮次备注',
+  turn_extensions_json: '轮次扩展',
 };
 
 export interface ImportIssue {
@@ -68,7 +70,7 @@ const fieldNames: Record<string, string> = {
   category: '样本分类',
   difficulty: '难度',
   tags: '标签',
-  initial_state: '初始状态',
+  initial_state: sampleColumnLabels.initial_state_json,
   turns: '轮次',
   turn_order: '轮次顺序',
   input: '输入内容',
@@ -77,6 +79,7 @@ const fieldNames: Record<string, string> = {
   case_notes: '样本备注',
   turn_id: '轮次编号',
   turn_notes: '轮次备注',
+  extensions: '轮次扩展',
   expected: '预期输出',
 };
 const fieldColumns: Record<string, string> = {
@@ -86,6 +89,7 @@ const fieldColumns: Record<string, string> = {
   input: 'input_json',
   expectations: 'expectations_json',
   turns: 'turn_order',
+  extensions: 'turn_extensions_json',
 };
 function diagnostics() {
   const issues: ImportIssue[] = [];
@@ -174,6 +178,7 @@ function json(value: unknown, fallback: unknown) {
 }
 function validateExpectation(e: any) {
   const nonempty = (v: unknown) => typeof v === 'string' && !!v.trim();
+  if (e.name != null && !nonempty(e.name)) throw Error('测评项名称须为非空文本');
   if (e.kind === 'execution_path') {
     if (
       !['workflow', 'tool', 'skill'].includes(e.scope) ||
@@ -193,7 +198,7 @@ function validateExpectation(e: any) {
     return;
   }
   if (e.kind === 'tool_call') {
-    if (!nonempty(e.tool) || !['required', 'forbidden'].includes(e.mode))
+    if (!nonempty(e.tool) || !['required', 'forbidden'].includes(e.mode === undefined ? 'required' : e.mode))
       throw Error('工具期望缺少 tool 或 mode');
     return;
   }
@@ -202,28 +207,33 @@ function validateExpectation(e: any) {
     return;
   }
   if (e.kind === 'state' && !nonempty(e.path)) throw Error('状态期望缺少 path');
-  if (e.kind === 'output' && e.path !== null && typeof e.path !== 'string')
-    throw Error('输出期望需要 path（可为 null）');
+  if (e.kind === 'output' && e.path != null && !nonempty(e.path))
+    throw Error('输出路径须为非空文本，也可留空以检查完整输出');
   if (
     e.kind === 'tool_argument' &&
     (!nonempty(e.tool) ||
       !nonempty(e.path) ||
-      !['first', 'last', 'any', 'all'].includes(e.occurrence))
+      !['first', 'last', 'any', 'all'].includes(e.occurrence === undefined ? 'last' : e.occurrence))
   )
     throw Error('工具参数期望格式错误');
   const c = e.condition;
   if (!object(c)) throw Error('期望缺少 condition');
+  const finite = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
+  const epsilon = c.epsilon === undefined ? 1e-6 : c.epsilon;
+  const minimum = c.minimum ?? null;
+  const maximum = c.maximum ?? null;
   const valid =
     c.kind === 'equals'
       ? 'expected' in c
       : c.kind === 'must_be_missing'
         ? true
         : c.kind === 'within_tolerance'
-          ? typeof c.expected === 'number' && typeof c.epsilon === 'number' && c.epsilon >= 0
+          ? finite(c.expected) && typeof epsilon === 'number' && finite(epsilon) && epsilon > 0
           : c.kind === 'within_range'
-            ? (c.minimum === null || typeof c.minimum === 'number') &&
-              (c.maximum === null || typeof c.maximum === 'number') &&
-              (c.minimum !== null || c.maximum !== null)
+            ? (minimum === null || finite(minimum)) &&
+              (maximum === null || finite(maximum)) &&
+              (minimum !== null || maximum !== null) &&
+              (typeof minimum !== 'number' || typeof maximum !== 'number' || minimum <= maximum)
             : c.kind === 'matches_pattern'
               ? typeof c.pattern === 'string'
               : c.kind === 'one_of'
@@ -246,9 +256,13 @@ const tableColumnKeys = new Map(
     .filter(([key]) => key !== 'case_name')
     .map(([key, label]) => [label, key]),
 );
+tableColumnKeys.set('初始状态', 'initial_state_json');
 function tableHeaderKey(header: string) {
   const trimmed = header.trim();
-  return tableColumnKeys.get(trimmed) ?? trimmed;
+  // CSV templates put their field instructions after a fullwidth separator.
+  const label = trimmed.split('｜', 1)[0].trim();
+  if (label === sampleColumnLabels.case_name) return label;
+  return tableColumnKeys.get(label) ?? trimmed;
 }
 function sampleNameHeader(values: Record<string, unknown>) {
   return sampleNameHeaders.find((header) => values[header] != null) ?? 'case_name';
@@ -344,7 +358,7 @@ function csvRows(
       row: record.line,
       columns,
       sampleName: sampleName || undefined,
-      sampleKey: values.case_id ? 'id:' + String(values.case_id) : 'row:' + record.line,
+      sampleKey: sampleName && values.turn_order?.trim() ? 'name:' + sampleName : 'row:' + record.line,
       invalid: new Set(),
     };
     if (record.values.length !== headers.length) {
@@ -380,21 +394,52 @@ function readJson(
     return fallback;
   }
 }
-function tableSamples(rows: TableRow[], report: Diagnostics): EvaluationCase[] {
+function tableSamples(
+  rows: TableRow[],
+  report: Diagnostics,
+  draftNames?: ReadonlySet<string>,
+): EvaluationCase[] {
   if (rows.length > 2000) fileError('请选择 1—2000 行样本');
   if (!rows.length) {
     report.finish();
     fileError('请选择 1—2000 行样本');
   }
-  const groups = new Map<string, { value: any; source: CaseSource }>();
+  const legacyCounts = new Map<string, number>();
+  for (const { values, source } of rows) {
+    const id = String(values.case_id ?? '').trim();
+    if (id && !source.invalid.has('case_id')) legacyCounts.set(id, (legacyCounts.get(id) ?? 0) + 1);
+  }
+  const legacyNames = new Map<string, { name: string; source: Source }>();
+  const groups = new Map<string, {
+    value: any;
+    source: CaseSource;
+    legacyId: string;
+    orders: Map<number, Source>;
+  }>();
   rows.forEach(({ values: r, source, formulas = [] }) => {
     const nameHeader = sampleNameHeader(r);
     const name = String(r[nameHeader] ?? '').trim();
     if (nameHeader !== 'case_name' && source.columns)
       source.columns = { ...source.columns, case_name: source.columns[nameHeader] };
     source.sampleName = name || undefined;
-    const key = r.case_id ? 'id:' + String(r.case_id) : source.sampleKey;
+    const legacyId = source.invalid.has('case_id') ? '' : String(r.case_id ?? '').trim();
+    const orderText = source.invalid.has('turn_order') ? '' : String(r.turn_order ?? '').trim();
+    const named = !!name && !source.invalid.has('name');
+    // Old files could group unnumbered rows with a repeated sample ID.
+    const groupByName = named && (orderText !== '' || (legacyCounts.get(legacyId) ?? 0) > 1);
+    const key = groupByName ? 'name:' + name : source.sampleKey;
     source.sampleKey = key;
+    if (named && legacyId) {
+      const previous = legacyNames.get(legacyId);
+      if (previous && previous.name !== name) {
+        report.add(
+          { ...source, sampleKey: previous.source.sampleKey },
+          'name',
+          `样本名称与第 ${previous.source.row} 行冲突，同一样本编号必须使用相同名称`,
+        );
+        source.invalid.add('name');
+      } else if (!previous) legacyNames.set(legacyId, { name, source });
+    }
     let group = groups.get(key);
     if (!group) {
       source.path = 'cases[' + groups.size + ']';
@@ -409,18 +454,22 @@ function tableSamples(rows: TableRow[], report: Diagnostics): EvaluationCase[] {
           turns: [],
         },
         source: { sample: source, turns: [] },
+        legacyId,
+        orders: new Map(),
       };
       groups.set(key, group);
-    } else if (name && name !== group.value.name && !source.invalid.has('name')) {
-      report.add(source, 'name', '同一样本编号的名称不一致，请统一样本名称');
+    } else if (legacyId) {
+      if (group.legacyId && group.legacyId !== legacyId)
+        report.add(source, 'name', '样本名称与其他样本编号冲突，请为不同样本使用不同名称');
+      else group.legacyId = legacyId;
     }
     const c = group.value;
-    const order =
-      r.turn_order == null || r.turn_order === '' ? c.turns.length + 1 : Number(r.turn_order);
+    const order = !orderText ? c.turns.length + 1 : /^\d+$/.test(orderText) ? Number(orderText) : NaN;
+    const validOrder = Number.isSafeInteger(order) && order > 0;
     const turnSource: Source = {
       ...source,
       path: group.source.sample.path + '.turns[' + c.turns.length + ']',
-      turn: Number.isInteger(order) && order > 0 ? order : c.turns.length + 1,
+      turn: validOrder ? order : c.turns.length + 1,
     };
     formulas.forEach(({ field, column }) =>
       report.add(
@@ -432,14 +481,15 @@ function tableSamples(rows: TableRow[], report: Diagnostics): EvaluationCase[] {
         '请将公式转换为值后导入',
       ),
     );
-    if (!name && !source.invalid.has('name') && group.source.sample !== source)
-      report.add(source, 'name', '缺少样本名称，请填写样本名称');
-    if (!Number.isInteger(order) || order < 1 || c.turns.some((turn: any) => turn._order === order))
-      if (!source.invalid.has('turn_order'))
-        report.add(turnSource, 'turn_order', '轮次顺序必须为不重复的正整数');
+    if (!source.invalid.has('turn_order')) {
+      const previous = group.orders.get(order);
+      if (!validOrder) report.add(turnSource, 'turn_order', '轮次顺序必须为正整数');
+      else if (previous) report.add(turnSource, 'turn_order', `轮次顺序 ${order} 与第 ${previous.row} 行重复`);
+      else group.orders.set(order, turnSource);
+    }
     const input = readJson(
       r.input_json,
-      r.query !== undefined ? { query: String(r.query) } : null,
+      String(r.query ?? '').trim() ? { query: String(r.query) } : null,
       'input',
       turnSource,
       report,
@@ -458,6 +508,7 @@ function tableSamples(rows: TableRow[], report: Diagnostics): EvaluationCase[] {
       input,
       expectations,
       notes: String(r.turn_notes ?? ''),
+      extensions: readJson(r.turn_extensions_json, undefined, 'extensions', turnSource, report),
       _order: order,
       _source: turnSource,
     });
@@ -465,13 +516,18 @@ function tableSamples(rows: TableRow[], report: Diagnostics): EvaluationCase[] {
   const values: unknown[] = [],
     sources: CaseSource[] = [];
   for (const group of groups.values()) {
+    if (group.value.turns.length === 1 && group.orders.size === 1) {
+      const [turn] = group.value.turns;
+      if (turn._order !== 1 && turn._source.sampleName && !turn._source.invalid.has('name'))
+        report.add(turn._source, 'turn_order', '单轮样本的轮次顺序必须为 1');
+    }
     group.value.turns.sort((a: any, b: any) => a._order - b._order);
     group.source.turns = group.value.turns.map((turn: any) => turn._source);
     group.value.turns = group.value.turns.map(({ _order, _source, ...turn }: any) => turn);
     values.push(group.value);
     sources.push(group.source);
   }
-  return normalizedCases(values, report, sources);
+  return normalizedCases(values, report, sources, 'cases', draftNames);
 }
 export function rowsToSamples(rows: Record<string, unknown>[]): EvaluationCase[] {
   const report = diagnostics();
@@ -494,15 +550,23 @@ export function rowsToSamples(rows: Record<string, unknown>[]): EvaluationCase[]
     report,
   );
 }
+function readEnum(value: unknown, labels: Record<string, string>, fallback: string): unknown {
+  if (value === undefined || (typeof value === 'string' && !value.trim())) return fallback;
+  if (typeof value !== 'string') return value;
+  const text = value.trim();
+  return Object.entries(labels).find(([, label]) => label === text)?.[0] ?? text;
+}
 function normalizedCases(
   value: unknown,
   report: Diagnostics,
   sources?: CaseSource[],
   prefix = 'cases',
+  draftNames?: ReadonlySet<string>,
 ): EvaluationCase[] {
   if (!Array.isArray(value) || !value.length || value.length > 1000)
     fileError('样本必须是包含 1—1000 项的数组');
   const cases: any[] = [];
+  const names = new Map<string, Source>();
   value.forEach((raw, i) => {
     const source = sources?.[i]?.sample ?? {
       path: prefix + '[' + i + ']',
@@ -514,26 +578,48 @@ function normalizedCases(
       report.add(source, '样本', '样本必须是 JSON 对象', '');
       return;
     }
-    if (
-      (!raw.name || typeof raw.name !== 'string' || !raw.name.trim()) &&
-      !source.invalid.has('name')
-    )
-      report.add(source, 'name', '缺少样本名称，请填写非空名称');
-    const c: any = { ...blankSample(), ...raw, id: crypto.randomUUID() };
+    const name = typeof raw.name === 'string' ? raw.name.trim() : '';
+    if (!source.invalid.has('name')) {
+      if (!name) report.add(source, 'name', '缺少样本名称，请填写非空名称');
+      else {
+        const first = names.get(name);
+        if (first) {
+          const location = first.row === undefined ? first.path : `第 ${first.row} 行`;
+          report.add(source, 'name', `样本名称与${location}重复，请为不同样本使用不同名称`);
+        } else if (draftNames?.has(name)) {
+          report.add(source, 'name', draftSampleNameConflict(name));
+        }
+        if (!first) names.set(name, source);
+      }
+    }
+    const c = {
+      id: crypto.randomUUID(),
+      name,
+      category: readEnum(raw.category, caseCategoryLabels, 'positive'),
+      difficulty: readEnum(raw.difficulty, caseDifficultyLabels, 'medium'),
+      initial_state: raw.initial_state === undefined ? {} : raw.initial_state,
+      tags: raw.tags === undefined ? [] : raw.tags,
+      notes: raw.notes ?? '',
+      turns: [] as unknown[],
+    };
     if (
       !source.invalid.has('category') &&
-      !['positive', 'negative', 'boundary'].includes(c.category)
+      (typeof c.category !== 'string' || !Object.keys(caseCategoryLabels).includes(c.category))
     )
-      report.add(source, 'category', '样本分类须为 positive、negative 或 boundary');
-    if (!source.invalid.has('difficulty') && !['easy', 'medium', 'hard'].includes(c.difficulty))
-      report.add(source, 'difficulty', '难度须为 easy、medium 或 hard');
+      report.add(source, 'category', '样本分类须为正例、负例或边界');
+    if (!source.invalid.has('difficulty') &&
+        (typeof c.difficulty !== 'string' || !Object.keys(caseDifficultyLabels).includes(c.difficulty)))
+      report.add(source, 'difficulty', '难度须为简单、中等或困难');
     if (!source.invalid.has('initial_state') && !object(c.initial_state))
-      report.add(source, 'initial_state', '初始状态必须是 JSON 对象');
+      report.add(source, 'initial_state', '初始变量必须是 JSON 对象');
     if (
       !source.invalid.has('tags') &&
-      (!Array.isArray(c.tags) || c.tags.some((tag: unknown) => typeof tag !== 'string'))
+      (!Array.isArray(c.tags) ||
+        c.tags.some((tag: unknown) => typeof tag !== 'string' || !tag.trim()) ||
+        new Set(c.tags).size !== c.tags.length)
     )
-      report.add(source, 'tags', '标签必须是字符串组成的 JSON 数组');
+      report.add(source, 'tags', '标签必须是由非空且不重复的字符串组成的 JSON 数组');
+    if (typeof c.notes !== 'string') report.add(source, 'case_notes', '样本备注必须是文本');
     if (!Array.isArray(raw.turns) || !raw.turns.length) {
       report.add(source, 'turns', '缺少轮次，请至少填写一轮对话');
       return;
@@ -549,13 +635,28 @@ function normalizedCases(
         report.add(turnSource, '轮次', '轮次必须是 JSON 对象', '');
         return turn;
       }
-      if (!turnSource.invalid.has('input') && !object(turn.input))
-        report.add(turnSource, 'input', '输入内容必须是 JSON 对象，请填写 input_json 或 query');
+      if (!turnSource.invalid.has('input') && (!object(turn.input) || !Object.keys(turn.input).length))
+        report.add(turnSource, 'input', '输入内容必须是非空 JSON 对象，请填写 input_json 或 query');
+      if (turn.notes != null && typeof turn.notes !== 'string')
+        report.add(turnSource, 'turn_notes', '轮次备注必须是文本', 'notes');
+      let extensions: { key: string; value: string }[] | undefined;
+      if (turn.extensions !== undefined && !turnSource.invalid.has('extensions')) {
+        const entries = turn.extensions;
+        if (!Array.isArray(entries) || !entries.every(
+          (entry): entry is { key: string; value: string } =>
+            object(entry) && typeof entry.key === 'string' && !!entry.key.trim() && typeof entry.value === 'string',
+        ) || new Set(entries.map((entry) => entry.key)).size !== entries.length) {
+          report.add(turnSource, 'extensions', '轮次扩展必须是包含非空且唯一的 key 和文本 value 的 JSON 数组');
+        } else if (entries.length) {
+          extensions = entries.map(({ key, value }) => ({ key, value }));
+        }
+      }
+      const expectations = turn.expectations === undefined ? [] : turn.expectations;
       if (!turnSource.invalid.has('expectations')) {
-        if (!Array.isArray(turn.expectations))
+        if (!Array.isArray(expectations))
           report.add(turnSource, 'expectations', '期望结果必须是 JSON 数组');
         else
-          turn.expectations.forEach((expectation: any, k: number) => {
+          expectations.forEach((expectation: any, k: number) => {
             const path = 'expectations[' + k + ']';
             const allowed = [
               'output',
@@ -579,14 +680,18 @@ function normalizedCases(
       return {
         id: crypto.randomUUID(),
         input: turn.input,
-        expectations: Array.isArray(turn.expectations)
-          ? turn.expectations.map((expectation: any) => ({
+        expectations: Array.isArray(expectations)
+          ? expectations.map((expectation: any) => ({
               ...expectation,
               id: crypto.randomUUID(),
               name: expectation?.name ?? null,
+              ...(expectation?.kind === 'output' ? { path: expectation.path ?? null } : {}),
+              ...(expectation?.kind === 'tool_call' ? { mode: expectation.mode ?? 'required' } : {}),
+              ...(expectation?.kind === 'tool_argument' ? { occurrence: expectation.occurrence ?? 'last' } : {}),
             }))
           : [],
         notes: turn.notes ?? '',
+        ...(extensions ? { extensions } : {}),
       };
     });
     cases.push(c);
@@ -597,11 +702,13 @@ function normalizedCases(
 export function normalizeCases(value: unknown): EvaluationCase[] {
   return normalizedCases(value, diagnostics());
 }
-export async function parseSampleFile(file: {
-  name: string;
-  size: number;
-  arrayBuffer: () => Promise<ArrayBuffer>;
-}): Promise<EvaluationCase[]> {
+export function draftSampleNameConflict(name: string) {
+  return `草稿已存在同名样本“${name}”，请使用不同的样本名称`;
+}
+export async function parseSampleFile(
+  file: { name: string; size: number; arrayBuffer: () => Promise<ArrayBuffer> },
+  draftNames?: ReadonlySet<string>,
+): Promise<EvaluationCase[]> {
   if (file.size > 10 * 1024 * 1024) fileError('文件不能超过10MB');
   try {
     const bytes = new Uint8Array(await file.arrayBuffer());
@@ -618,6 +725,7 @@ export async function parseSampleFile(file: {
         diagnostics(),
         undefined,
         prefix,
+        draftNames,
       );
     }
     if (/\.csv$/i.test(file.name)) {
@@ -625,6 +733,7 @@ export async function parseSampleFile(file: {
       return tableSamples(
         csvRows(new TextDecoder('utf-8', { fatal: true }).decode(bytes), report, 'dataset'),
         report,
+        draftNames,
       );
     }
     if (/\.xlsx$/i.test(file.name)) {
@@ -669,9 +778,6 @@ export async function parseSampleFile(file: {
           values[key] = row.getCell(j + 1).text;
         });
         const nameHeader = sampleNameHeader(values);
-        source.sampleKey = values.case_id ? 'id:' + String(values.case_id) : 'row:' + rows.length;
-        const order = Number(values.turn_order);
-        if (Number.isInteger(order) && order > 0) source.turn = order;
         const formulas: { field: string; column: string }[] = [];
         keys.forEach((key, j) => {
           if (!row.getCell(j + 1).formula) return;
@@ -684,7 +790,7 @@ export async function parseSampleFile(file: {
         });
         rows.push({ values, source, formulas });
       });
-      return tableSamples(rows, report);
+      return tableSamples(rows, report, draftNames);
     }
     fileError('仅支持 Excel (.xlsx)、JSON、CSV');
   } catch (error) {

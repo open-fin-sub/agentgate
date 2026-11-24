@@ -140,8 +140,13 @@ class RunScheduling:
                 )
                 recovered.append(failed)
                 LOGGER.warning(
-                    "Run timed out: run_id=%s previous_status=%s deadline=%s",
-                    run.id, status, deadline.isoformat(),
+                    "Run timed out: run_id=%s previous_status=%s deadline=%s now=%s "
+                    "pending_started_at=%s started_at=%s pending_timeout_seconds=%s "
+                    "case_count=%d max_parallel_cases=%d case_timeout_seconds=%s max_retries=%d grace_seconds=%s",
+                    run.id, status, deadline.isoformat(), current_time.isoformat(),
+                    run.timing.pending_started_at, run.started_at, pending_timeout,
+                    len(run.manifest.execution_cases), run.manifest.max_parallel_cases,
+                    run.manifest.timeout_seconds, run.manifest.max_retries, grace_seconds,
                 )
                 if dispatcher is not None:
                     try:

@@ -85,8 +85,9 @@ class RunEventRecorder:
                 self.run_id, stage, status=status, ended_at=ended_at or utcnow(),
                 error_code=error_code, message=safe_diagnostic(message),
             )
-        except Exception:  # noqa: BLE001 -- Diagnostics must not replace execution outcomes.
-            LOGGER.warning("Execution log update failed: run_id=%s stage=%s", self.run_id, stage)
+        except Exception as exc:  # noqa: BLE001 -- Diagnostics must not replace execution outcomes.
+            LOGGER.warning("Execution log update failed: run_id=%r request_id=%r stage=%s error_type=%s",
+                           self.run_id, self.request_id, stage, type(exc).__name__)
 
     def record_trace(self, trace) -> None:
         try:
@@ -107,8 +108,9 @@ class RunEventRecorder:
                     message="上游执行轨迹报告异常" if failed else "来自上游 Trace；执行结束后采集",
                 ))
             self.repository.save_run_events(events)
-        except Exception:  # noqa: BLE001 -- Diagnostics must not replace execution outcomes.
-            LOGGER.warning("Execution trace log persistence failed: run_id=%s", self.run_id)
+        except Exception as exc:  # noqa: BLE001 -- Diagnostics must not replace execution outcomes.
+            LOGGER.warning("Execution trace log persistence failed: run_id=%r case_id=%r trace_id=%r error_type=%s",
+                           self.run_id, trace.case_id, trace.trace_id, type(exc).__name__)
 
     def _write(self, event: RunEvent, *, insert=False) -> None:
         try:
@@ -116,5 +118,7 @@ class RunEventRecorder:
                 self.repository.start_run_event(event)
             else:
                 self.repository.finish_run_event(event)
-        except Exception:  # noqa: BLE001 -- Diagnostics must not replace execution outcomes.
-            LOGGER.warning("Execution log persistence failed: run_id=%s stage=%s", self.run_id, event.stage)
+        except Exception as exc:  # noqa: BLE001 -- Diagnostics must not replace execution outcomes.
+            LOGGER.warning("Execution log persistence failed: run_id=%r request_id=%r event_id=%r case_id=%r stage=%s operation=%s error_type=%s",
+                           self.run_id, self.request_id, event.id, event.case_id, event.stage,
+                           "insert" if insert else "finish", type(exc).__name__)

@@ -237,6 +237,9 @@ def project_yunxia_intent_selection(
         if not (span.operation_type == "routing" and span.name == "inbank.yunxia.skill_selection")
     )
     intent_code = message.get("intent_code")
+    LOGGER.debug("inbank_intent_evidence span_count=%d intent_present=%s intent_type=%s routing_replaced=%d trace_id=%r",
+                 len(turn_spans), "intent_code" in message, type(intent_code).__name__,
+                 len(turn_spans) - len(retained), turn_spans[0].trace_id if turn_spans else None)
     if not isinstance(intent_code, str) or not intent_code.strip():
         return retained
     root = next((span for span in retained if span.operation_type == "turn"), None)
@@ -267,8 +270,8 @@ def project_yunxia_intent_selection(
 def _adapt_turn_spans(trace: Trace) -> tuple[TraceSpan, ...]:
     spans = _enrich_tool_arguments(trace).spans
     LOGGER.info(
-        "inbank_trace_adapted case_id=%r tools=%d unmapped_arguments=%d",
-        trace.case_id, sum(s.operation_type == "tool" for s in spans),
+        "inbank_trace_adapted run_id=%r case_id=%r trace_id=%r tools=%d unmapped_arguments=%d",
+        trace.run_id, trace.case_id, trace.trace_id, sum(s.operation_type == "tool" for s in spans),
         sum(s.operation_type == "tool" and "arguments" not in s.attributes for s in spans),
     )
     return spans

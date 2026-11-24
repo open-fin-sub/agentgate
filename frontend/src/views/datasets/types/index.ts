@@ -4,8 +4,19 @@ export interface JsonObject {
   [key: string]: JsonValue;
 }
 
-export type CaseCategory = 'positive' | 'negative' | 'boundary';
-export type CaseDifficulty = 'easy' | 'medium' | 'hard';
+export const caseCategoryLabels = {
+  positive: '正例',
+  negative: '负例',
+  boundary: '边界',
+} as const;
+export type CaseCategory = keyof typeof caseCategoryLabels;
+
+export const caseDifficultyLabels = {
+  easy: '简单',
+  medium: '中等',
+  hard: '困难',
+} as const;
+export type CaseDifficulty = keyof typeof caseDifficultyLabels;
 export type DatasetVersionStatus = 'draft' | 'published';
 
 export type Condition =

@@ -102,6 +102,31 @@ test('reupload replaces invalid state and accepts the same filename again', asyn
   await expect(page.getByText('校验样本.json', { exact: true })).toBeVisible();
 });
 
+test('checks all imported names against the latest draft before the first write', async ({ page }) => {
+  const writes: string[] = [];
+  await page.route('**/api/datasets/import-acceptance/drafts/**', (route) => {
+    if (route.request().method() !== 'GET') {
+      writes.push(route.request().method());
+      return route.abort();
+    }
+    return route.fulfill({
+      json: { code: '0', message: 'success', data: {
+        content_sha256: 'latest',
+        cases: [{ id: 'existing', name: '已存在样本', turns: [] }],
+      } },
+    });
+  });
+  await open(page);
+  await upload(page, { cases: [
+    ...valid.cases,
+    { name: ' 已存在样本 ', turns: [{ input: { txt: '第二条' } }] },
+  ] });
+  await expect(page.getByTestId('import-validation-summary')).toContainText('文件格式校验通过');
+  await page.getByRole('button', { name: '确认导入到草稿' }).click();
+  await expect(page.getByRole('alert')).toContainText('草稿已存在同名样本“已存在样本”');
+  expect(writes).toEqual([]);
+});
+
 test('unreadable file reports a file error without invented row errors', async ({ page }) => {
   await open(page);
   await upload(page, '{"cases":');

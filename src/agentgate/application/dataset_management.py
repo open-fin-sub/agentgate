@@ -14,6 +14,7 @@ from agentgate.dataset.versioning import (
     publish_draft as build_publication,
     remove_case as remove_draft_case,
     reorder_cases as reorder_draft_cases,
+    require_unique_case_names,
     with_case,
 )
 from agentgate.domain import Case, Dataset, DatasetVersion, DatasetVersionStatus, utcnow
@@ -61,13 +62,15 @@ class DatasetManagement:
         self.repository.save_dataset(dataset)
         return dataset
 
-    def _reject_duplicate_name(self, name: str, user_team_id: str) -> None:
+    def _reject_duplicate_name(
+        self, name: str, user_team_id: str, *, exclude_dataset_id: str | None = None
+    ) -> None:
         if not name:
             return
         for dataset in self.repository.list_datasets(
             include_archived=True, user_team_id=user_team_id
         ):
-            if dataset.name == name:
+            if dataset.id != exclude_dataset_id and dataset.name.strip() == name:
                 raise ValueError(f"测评集名称已存在：{name}，请修改名称后重试。")
 
     def update_dataset(
@@ -81,7 +84,12 @@ class DatasetManagement:
         dataset = self.get_dataset(dataset_id)
         changes: dict[str, Any] = {"updated_at": utcnow()}
         if name is not None:
-            changes["name"] = name.strip()
+            cleaned = name.strip()
+            if cleaned != dataset.name.strip():
+                self._reject_duplicate_name(
+                    cleaned, dataset.user_team_id, exclude_dataset_id=dataset.id
+                )
+            changes["name"] = cleaned
         if description is not None:
             changes["description"] = description.strip()
         if archived is not None:
@@ -203,11 +211,18 @@ class DatasetManagement:
         source = next((case for case in draft.cases if case.id == case_id), None)
         if source is None:
             raise ValueError(f"unknown Case: {case_id}")
+        source_name = source.name.strip()
+        occupied = {case.name.strip() for case in draft.cases}
+        new_name = f"{source_name}（副本）"
+        suffix = 2
+        while new_name in occupied:
+            new_name = f"{source_name}（副本 {suffix}）"
+            suffix += 1
         updated = copy_draft_case(
             draft,
             case_id,
             new_case_id=str(uuid4()),
-            new_name=f"{source.name}（副本）",
+            new_name=new_name,
             updated_at=utcnow(),
         )
         self.repository.save_dataset_version(updated)
@@ -256,6 +271,7 @@ class DatasetManagement:
             if source_version is not None
             else self.latest_published(source_dataset_id)
         )
+        require_unique_case_names(source.cases)
         user_team_id, user_id, user_name = _user_context()
         self._reject_duplicate_name(name.strip(), user_team_id)
         dataset = Dataset(
@@ -284,6 +300,7 @@ class DatasetManagement:
         self, source: str | bytes | Mapping[str, Any]
     ) -> tuple[Dataset, DatasetVersion]:
         dataset, version = load_dataset(source, "json")
+        require_unique_case_names(version.cases)
         user_team_id, user_id, user_name = _user_context()
         self._reject_duplicate_name(dataset.name.strip(), user_team_id)
         dataset = dataset.model_copy(update={
@@ -305,6 +322,7 @@ class DatasetManagement:
         self, source: bytes, name: str, description: str = ""
     ) -> tuple[Dataset, DatasetVersion]:
         cases = load_cases(source, "xlsx")
+        require_unique_case_names(cases)
         user_team_id, user_id, user_name = _user_context()
         self._reject_duplicate_name(name.strip(), user_team_id)
         dataset = Dataset(

@@ -101,7 +101,7 @@ async function download() {
           </option>
         </select>
       </div>
-      <p>三种格式均可重新导入，保留多轮对话、初始状态和测评项。Excel、CSV 每行对应一轮对话。</p>
+      <p>三种格式均导出完整样本字段。Excel、CSV 每行对应一轮，单轮样本的轮次顺序为 1。重新导入表格时，不同样本须使用不同名称。</p>
       <div v-if="scope === 'selected'" class="export-samples">
         <button class="link" :disabled="busy" @click="ids = version?.cases.map((c) => c.id) ?? []">
           全选

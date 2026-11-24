@@ -9,6 +9,7 @@ import {
   blankSample,
   sampleFileFormats,
   SampleImportError,
+  draftSampleNameConflict,
 } from '../utils/sample-import';
 import importTemplateUrl from '../../../assets/dataset-import-template.xlsx?url';
 import jsonTemplateUrl from '../../../assets/dataset-import-template.json?url';
@@ -16,39 +17,13 @@ import csvTemplateUrl from '../../../assets/dataset-import-template.csv?url';
 import type { EvaluationCase } from '../types/index';
 import type { Trace } from '../../../api/client';
 import type { EvaluationRun } from '../../evaluation/types/run';
-const props = defineProps<{ datasetId: string; datasetName: string }>();
+const props = defineProps<{
+  datasetId: string;
+  datasetName: string;
+  draftCases?: readonly Pick<EvaluationCase, 'id' | 'name'>[];
+}>();
 const acceptedFiles = sampleFileFormats.map((format) => '.' + format.value).join(',');
 const formatDescription = sampleFileFormats.map((format) => format.label).join(' / ');
-const jsonExample = JSON.stringify(
-  {
-    cases: [
-      {
-        name: '单轮问答示例',
-        category: 'positive',
-        difficulty: 'medium',
-        tags: ['示例'],
-        notes: '',
-        initial_state: {},
-        turns: [
-          {
-            input: { txt: '你好' },
-            expectations: [
-              {
-                name: '回答内容',
-                kind: 'output',
-                path: null,
-                condition: { kind: 'equals', expected: '你好，请问有什么可以帮您？' },
-              },
-            ],
-            notes: '',
-          },
-        ],
-      },
-    ],
-  },
-  null,
-  2,
-);
 const emit = defineEmits<{ close: []; manual: []; imported: [] }>();
 const method = ref('manual'),
   step = ref(1),
@@ -137,7 +112,8 @@ async function fileChanged(event: Event) {
   selectedFile.value = { name: file.name, size: file.size };
   busy.value = true;
   try {
-    items.value = await parseSampleFile(file);
+    const names = new Set(props.draftCases?.map((item) => item.name.trim()));
+    items.value = await parseSampleFile(file, names);
   } catch (e) {
     if (e instanceof SampleImportError) importFailure.value = e;
     else fileFailure.value = e instanceof Error ? e.message : String(e);
@@ -224,9 +200,17 @@ async function save() {
   error.value = '';
   try {
     let draft = await datasetApi.currentDraft(props.datasetId);
+    const existingIds = new Set(draft.cases.map((item) => item.id));
+    const names = new Set(draft.cases.map((item) => item.name.trim()));
+    for (const item of items.value) {
+      if (done.has(item.id) || existingIds.has(item.id)) continue;
+      const name = item.name.trim();
+      if (names.has(name)) throw Error(draftSampleNameConflict(name));
+      names.add(name);
+    }
     for (const item of items.value) {
       if (done.has(item.id)) continue;
-      if (draft.cases.some((c) => c.id === item.id)) {
+      if (existingIds.has(item.id)) {
         done.add(item.id);
         saved.value = done.size;
         continue;
@@ -383,63 +367,13 @@ function close() {
             下载测评集模板（CSV）
           </a>
         </div>
-        <p>
-          三个模板均包含相同的单轮、多轮及多种测评项示例。Excel
-          另附“填写说明”和“测评项示例”工作表，说明表不会导入。
+        <p class="file-hint">
+          每个模板包含一条单轮示例和字段填写说明。样本名称和每轮输入必填，其他字段可留空。
+          导入后会在草稿中补齐默认值，并生成样本、轮次和测评项编号。
         </p>
-        <p>测评集名称和关联 Agent 在创建页面填写；模板中的输入和测评项需与所选 Agent 匹配。</p>
-        <details>
-          <summary>JSON 格式说明与示例</summary>
-          <p>
-            使用 UTF-8 编码，顶层为 {"cases": [...]}，cases
-            中每项是一个样本。使用双引号，不要添加注释或末尾多余逗号。
-          </p>
-          <p>
-            必填：name（样本名称）、turns（至少一轮）。每轮必填 input（输入对象）和
-            expectations（测评项数组，无规则检查时填 []）。多轮对话按 turns 数组顺序执行。
-          </p>
-          <p>
-            选填：category 为 positive / negative / boundary，默认 positive；difficulty 为 easy /
-            medium / hard，默认 medium；tags 为标签数组，initial_state 为初始状态对象，notes
-            为备注。轮次也可填写 notes。
-          </p>
-          <p>
-            expectations 的 kind 支持
-            output（输出）、state（状态）、tool_argument（工具参数）、tool_call（工具调用）、skill_route（技能路由）、policy（策略）、execution_path（执行路径）。各类型所需字段可参考下载模板和
-            Excel 的“测评项示例”。
-          </p>
-          <p>
-            JSON 中 input、initial_state 直接填写对象，expectations、tags
-            直接填写数组，不要转成字符串。示例中的 txt 应替换为 Agent 实际接收的字段；LLM
-            评估器在测评任务中单独选择。
-          </p>
-          <pre>{{ jsonExample }}</pre>
-        </details>
-        <details>
-          <summary>Excel / CSV 字段填写说明</summary>
-          <p>
-            Excel 填写 Cases 表。CSV 使用 UTF-8 编码和英文逗号分列。模板使用中文表头，已有英文表头文件也可导入。
-            每行一轮对话，相同样本编号合并为一个样本，样本名称必须一致。轮次顺序填不重复的正整数并决定轮次顺序。
-          </p>
-          <p>
-            样本名称和输入内容必填，输入内容填写 JSON 对象。样本编号留空时每行创建独立样本。
-          </p>
-          <p>
-            期望结果填 JSON 数组，无规则检查时填
-            []。一轮可包含多个不同类型的测评项。
-          </p>
-          <p>
-            可选字段包括样本分类（positive / negative / boundary，默认 positive）、难度（easy /
-            medium / hard，默认
-            medium）、标签（JSON 数组）、样本备注、初始状态（JSON 对象）、轮次编号和轮次备注。同一样本的样本级字段请保持一致。
-          </p>
-          <p>
-            CSV
-            字段包含逗号、换行或双引号时，用双引号包裹整个字段，内部双引号写成两个双引号。建议用表格软件编辑后保存为
-            CSV UTF-8；也支持简易列 case_name、query、expected（可选）。
-          </p>
-          <p>导入时会生成新的样本、轮次和测评项 ID；重复导入会新增样本。</p>
-        </details>
+        <p class="file-hint">
+          Excel 和 CSV 中，单轮样本的轮次顺序填 1，留空按 1 导入。多轮样本各行填写相同名称和不重复的正整数轮次顺序。不同样本使用不同名称。
+        </p>
       </details>
       <div v-if="step === 1" class="methods">
         <button
@@ -466,7 +400,9 @@ function close() {
           v-if="method === 'manual'"
           ref="manualEditor"
           hide-save-button
+          hide-basic-expected-output
           :item="manualItem"
+          :draft-cases="draftCases"
           :editable="true"
           :saving="busy"
           :persisted="false"
@@ -727,10 +663,6 @@ function close() {
   flex-wrap: wrap;
   gap: 10px 20px;
 }
-.import-template details {
-  margin-top: 12px;
-  font-size: 13px;
-}
 .import-template > summary {
   margin: 0 0 8px;
 }
@@ -741,18 +673,6 @@ function close() {
   cursor: pointer;
   color: #008b76;
   font-weight: 600;
-}
-.import-template pre {
-  max-height: 300px;
-  overflow: auto;
-  padding: 12px;
-  border-radius: 6px;
-  background: #fff;
-}
-.import-template p {
-  margin: 8px 0 0;
-  font-size: 13px;
-  line-height: 1.6;
 }
 .wizard-actions {
   display: flex;

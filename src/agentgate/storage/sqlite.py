@@ -4,11 +4,14 @@ from . import evaluation_projection as projection
 from .evaluation_migration import upgrade_sqlite
 from agentgate.domain.run_event import RunEvent
 
+import logging
 import sqlite3
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
+
+from pydantic import ValidationError
 
 from agentgate.domain import (
     Dataset,
@@ -48,6 +51,8 @@ from agentgate.storage.evaluator_groups import (
 )
 
 TABLE_PREFIX = "agentgate_"
+
+LOGGER = logging.getLogger(__name__)
 
 _T_API_KEYS = f"{TABLE_PREFIX}api_keys"
 _T_TARGET_DESCRIPTORS = f"{TABLE_PREFIX}target_descriptors"
@@ -1050,43 +1055,6 @@ class SQLiteRepository:
             rows = db.execute(query, parameters).fetchall()
         return [Evaluator.model_validate_json(row[0]) for row in rows]
 
-    def get_evaluator_catalog_definitions(
-        self, evaluator_ids: Sequence[str], *, user_team_id: str
-    ) -> tuple[dict[str, EvaluatorSpec], dict[str, EvaluatorDraft]]:
-        versions: dict[str, EvaluatorSpec] = {}
-        drafts: dict[str, EvaluatorDraft] = {}
-        with self._connect() as db:
-            db.execute("BEGIN")
-            for start in range(0, len(evaluator_ids), 400):
-                ids = evaluator_ids[start:start + 400]
-                placeholders = ",".join("?" for _ in ids)
-                rows = db.execute(f"""
-                    SELECT v.version,v.content_sha256,v.payload
-                    FROM {_T_EVALUATOR_VERSIONS} v
-                    JOIN (
-                        SELECT evaluator_id,MAX(version) AS version
-                        FROM {_T_EVALUATOR_VERSIONS}
-                        WHERE user_team_id=? AND evaluator_id IN ({placeholders})
-                        GROUP BY evaluator_id
-                    ) latest ON v.evaluator_id=latest.evaluator_id AND v.version=latest.version
-                    WHERE v.user_team_id=?
-                    """, (user_team_id, *ids, user_team_id)).fetchall()
-                for row in rows:
-                    spec = _load_evaluator_spec(row)
-                    if spec.id not in ids or spec.user_team_id != user_team_id:
-                        raise ValueError("stored Evaluator identity does not match payload")
-                    versions[spec.id] = spec
-                rows = db.execute(f"""
-                    SELECT payload FROM {_T_EVALUATOR_DRAFTS}
-                    WHERE user_team_id=? AND evaluator_id IN ({placeholders})
-                    """, (user_team_id, *ids)).fetchall()
-                for row in rows:
-                    draft = EvaluatorDraft.model_validate_json(row["payload"])
-                    if draft.evaluator_id not in ids or draft.user_team_id != user_team_id:
-                        raise ValueError("stored Evaluator identity does not match payload")
-                    drafts[draft.evaluator_id] = draft
-        return versions, drafts
-
     def discard_evaluator_group_draft(
         self,
         evaluator_id: str,
@@ -1741,10 +1709,14 @@ class SQLiteRepository:
                 raise ValueError("unknown EvaluationRun")
             stored = EvaluationRun.model_validate_json(row[0])
             if stored.status not in {RunStatus.RUNNING, RunStatus.COMPLETED}:
+                LOGGER.error("Run write rejected: run_id=%r stored_status=%s target_status=%s reason=invalid_transition",
+                             run.id, stored.status, run.status)
                 raise ValueError("run cannot complete from its current state")
             if any(getattr(stored, f) != getattr(run, f) for f in ("manifest", "created_at", "scheduled_for", "started_at", "user_team_id")):
                 raise ValueError("immutable run fields changed")
             if stored.completed_at is not None and stored != run:
+                LOGGER.error("Run write rejected: run_id=%r stored_status=%s target_status=%s reason=terminal_immutable",
+                             run.id, stored.status, run.status)
                 raise ValueError("terminal EvaluationRun is immutable")
             results = [EvaluationResult.model_validate_json(r[0]) for r in db.execute(
                 f"SELECT payload FROM {_T_RESULTS} WHERE run_id=?", (run.id,))]
@@ -1830,6 +1802,8 @@ class SQLiteRepository:
             if stored.started_at is not None and run.started_at != stored.started_at:
                 raise ValueError("EvaluationRun started_at is immutable once set")
             if stored.completed_at is not None:
+                LOGGER.error("Run write rejected: run_id=%r stored_status=%s target_status=%s reason=terminal_immutable",
+                             run.id, stored.status, run.status)
                 raise ValueError("terminal EvaluationRun is immutable")
             db.execute(
                 f"""
@@ -1859,7 +1833,12 @@ class SQLiteRepository:
                     f"SELECT payload FROM {_T_RUNS} WHERE id=? AND user_team_id=?",
                     (run_id, user_team_id),
                 ).fetchone()
-        return EvaluationRun.model_validate_json(row[0]) if row else None
+        try:
+            return EvaluationRun.model_validate_json(row[0]) if row else None
+        except ValidationError as exc:
+            LOGGER.error("Stored payload invalid: table=%s id=%r model=EvaluationRun errors=%r",
+                         _T_RUNS, run_id, [(e["loc"], e["type"]) for e in exc.errors(include_input=False, include_context=False)][:20])
+            raise
 
     def list_runs(
         self, limit: int = 50, *, user_team_id: str

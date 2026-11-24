@@ -5,6 +5,10 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from agentgate.application.evaluation_task_management import (
+    DuplicateTaskNameError,
+    EvaluationTaskManagement,
+)
 from agentgate.domain import EvaluationRun, EvaluatorRef
 from agentgate.domain.evaluation_task import EvaluationTask
 from agentgate.integrations.targets.local_bank import LocalBankClient, local_bank_target
@@ -81,6 +85,9 @@ def launch(request: BankLaunch, dependencies: Dependencies):
             user_id=run.user_id, user_name=run.user_name, api_key=run.api_key)
             for _ in range(request.repetitions - 1))]
         task = EvaluationTask(id=run.id, name=request.name.strip() if request.name else None, kind="stability" if request.repetitions > 1 else "single", run_ids=tuple(r.id for r in runs))
+        EvaluationTaskManagement(dependencies.repository).require_available_name(
+            task.name, user_team_id=run.user_team_id,
+        )
         dependencies.repository.save_task_runs(task, runs)
         for item in runs:
             dependencies.runs.record_created_run(item)
@@ -95,6 +102,8 @@ def launch(request: BankLaunch, dependencies: Dependencies):
         if request.repetitions > 1:
             return task
         return dependencies.results.get_run_progress(run.id)
+    except DuplicateTaskNameError:
+        raise HTTPException(409, "任务名称已存在，请修改名称后重试。") from None
     except TargetExecutionError:
         raise HTTPException(503, "local bank runtime is unavailable") from None
     except (ValueError, LookupError) as exc:

@@ -15,8 +15,10 @@ from agentgate.domain import (
     TargetSnapshot,
     TargetType,
 )
+from agentgate.domain.evaluation_task import EvaluationTask
 from agentgate.integrations.job_dispatchers import JobDispatcher
 
+from .evaluation_task_management import EvaluationTaskManagement
 from .run_management import RunManagement
 
 
@@ -116,6 +118,7 @@ def create_ab_runs(
     candidate_target: TargetSnapshot,
     *,
     dataset_id: str,
+    name: str | None = None,
     dataset_version: int | None = None,
     case_ids: Sequence[str] | None = None,
     evaluator_refs: Sequence[EvaluatorRef] | None = None,
@@ -144,14 +147,22 @@ def create_ab_runs(
         "max_parallel_cases": max_parallel_cases,
     }
     baseline_run = run_management.create_run(baseline_target, persist=False, **run_arguments)
-    candidate_run = EvaluationRun(timing=baseline_run.timing, manifest=type(baseline_run.manifest).model_validate({
-        **baseline_run.manifest.model_dump(exclude={"manifest_sha256"}), "target": candidate_target,
-    }))
-    from agentgate.domain.evaluation_task import EvaluationTask
-    run_management.repository.save_task_runs(
-        EvaluationTask(id=baseline_run.id, kind="ab", run_ids=(baseline_run.id, candidate_run.id)),
-        [baseline_run, candidate_run],
+    candidate_run = EvaluationRun(
+        timing=baseline_run.timing,
+        manifest=type(baseline_run.manifest).model_validate({
+            **baseline_run.manifest.model_dump(exclude={"manifest_sha256"}), "target": candidate_target,
+        }),
+        user_team_id=baseline_run.user_team_id,
+        user_id=baseline_run.user_id,
+        user_name=baseline_run.user_name,
     )
+    task = EvaluationTask(
+        id=baseline_run.id, kind="ab", name=name, run_ids=(baseline_run.id, candidate_run.id)
+    )
+    EvaluationTaskManagement(run_management.repository).require_available_name(
+        task.name, user_team_id=baseline_run.user_team_id,
+    )
+    run_management.repository.save_task_runs(task, [baseline_run, candidate_run])
     for run in (baseline_run, candidate_run):
         run_management.record_created_run(run)
 

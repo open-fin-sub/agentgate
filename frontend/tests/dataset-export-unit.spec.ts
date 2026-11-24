@@ -3,6 +3,7 @@ import { webcrypto } from 'node:crypto';
 import ExcelJS from 'exceljs';
 import {
   blankSample,
+  parseCsv,
   parseSampleFile,
   sampleFileFormats,
 } from '../src/views/datasets/utils/sample-import';
@@ -31,6 +32,7 @@ for (const { value: format } of sampleFileFormats)
     sample.tags = ['中文', '多轮'];
     sample.notes = '样本备注';
     sample.turns[0].notes = '第一轮备注';
+    sample.turns[0].extensions = [{ key: '原始请求 ID', value: 'request-123' }];
     sample.initial_state = {
       config_variables: [
         { name: 'centreId', value: '810000' },
@@ -64,30 +66,63 @@ for (const { value: format } of sampleFileFormats)
       sample.turns.map((turn) => turn.input),
     );
     expect(parsed[0].turns.map((turn) => turn.notes)).toEqual(['第一轮备注', '第二轮备注']);
+    expect(parsed[0].turns.map((turn) => turn.extensions)).toEqual(
+      sample.turns.map((turn) => turn.extensions),
+    );
     expect(JSON.stringify(sample)).toBe(before);
   });
 
 for (const format of ['xlsx', 'csv'] as const)
-  test(format + ' exports the same 12 Chinese headers as the downloadable templates', async () => {
+  test(format + ' exports all sample fields and presents enum values in Chinese', async () => {
     const expected = [
-      '样本编号', '样本名称', '样本分类', '难度', '标签', '样本备注', '初始状态',
-      '轮次编号', '轮次顺序', '输入内容', '期望结果', '轮次备注',
+      '样本编号', '样本名称', '样本分类', '难度', '标签', '样本备注', '初始变量',
+      '轮次编号', '轮次顺序', '输入内容', '期望结果', '轮次备注', '轮次扩展',
     ];
     const blob = await sampleExportBlob(version, [a.id], format);
     if (format === 'csv') {
-      const headers = (await blob.text()).replace(/^\uFEFF/, '').split(/\r?\n/, 1)[0]
-        .split(',').map((header) => header.replace(/^"|"$/g, ''));
+      const [headerRow, sampleRow] = (await blob.text()).replace(/^\uFEFF/, '').split(/\r?\n/, 2);
+      const headers = headerRow.split(',').map((header) => header.replace(/^"|"$/g, ''));
       expect(headers).toEqual(expected);
+      expect(sampleRow).toContain('"正例","中等"');
+      expect(parseCsv(await blob.text())[0]['轮次顺序']).toBe('1');
     } else {
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(await blob.arrayBuffer());
-      expect((workbook.getWorksheet('Cases')!.getRow(1).values as string[]).slice(1)).toEqual(expected);
+      const sheet = workbook.getWorksheet('Cases')!;
+      expect((sheet.getRow(1).values as string[]).slice(1)).toEqual(expected);
+      expect(sheet.getCell('C2').value).toBe('正例');
+      expect(sheet.getCell('D2').value).toBe('中等');
+      expect(sheet.getCell('I2').value).toBe(1);
     }
   });
+
+for (const format of ['xlsx', 'csv'] as const) {
+  test(format + ' exports both same-name samples and reimport reports a conflict', async () => {
+    const single = blankSample('同名样本');
+    single.turns[0].input = { txt: '独立样本' };
+    const multi = blankSample(single.name);
+    multi.turns[0].input = { txt: '第一轮' };
+    const second = blankSample().turns[0];
+    second.input = { txt: '第二轮' };
+    multi.turns.push(second);
+    const blob = await sampleExportBlob({ ...version, cases: [single, multi] }, undefined, format);
+    await expect(parseSampleFile({
+      name: 'export.' + format, size: blob.size, arrayBuffer: () => blob.arrayBuffer(),
+    })).rejects.toMatchObject({
+      issues: expect.arrayContaining([
+        expect.objectContaining({ field: '样本名称', row: 3 }),
+        expect.objectContaining({ field: '轮次顺序', row: 3, turn: 1 }),
+      ]),
+    });
+  });
+}
+
 test('selected exports preserve expectations and never impersonate published version hashes', () => {
   const before = JSON.stringify(version),
     data = exportSamples(version, [a.id]);
   expect(data.cases).toHaveLength(1);
+  expect(data.cases[0]).toMatchObject({ id: a.id, category: '正例', difficulty: '中等' });
+  expect(data.cases[0].turns[0].id).toBe(a.turns[0].id);
   expect(data.cases[0].turns[0].expectations).toEqual([
     expect.objectContaining({ kind: 'tool_call', tool: 'lookup' }),
   ]);
@@ -382,5 +417,26 @@ test('dataset reads and sample write responses work without native structuredClo
   } finally {
     http.defaults.adapter = previousAdapter;
     if (descriptor) Object.defineProperty(globalThis, 'structuredClone', descriptor);
+  }
+});
+
+test('request diagnostics omit credentials, payloads and URL query values', async () => {
+  const previous = http.defaults.adapter;
+  const previousWarn = console.warn;
+  const logs: unknown[][] = [];
+  console.warn = (...args: unknown[]) => { logs.push(args); };
+  try {
+    http.defaults.adapter = async (config) => {
+      throw { isAxiosError: true, code: 'ECONNABORTED', message: 'private-secret',
+        config: { ...config, headers: { token: 'private-secret' }, data: 'private-secret' } };
+    };
+    await expect(httpRequest('/datasets?token=private-secret', {method: 'POST'}))
+      .rejects.toMatchObject({status: 0});
+    expect(logs).toHaveLength(1);
+    expect(JSON.stringify(logs)).not.toContain('private-secret');
+    expect(logs[0][1]).toMatchObject({path: '/datasets', method: 'post', status: 0});
+  } finally {
+    http.defaults.adapter = previous;
+    console.warn = previousWarn;
   }
 });
