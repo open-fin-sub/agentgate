@@ -305,16 +305,16 @@ onUnmounted(() => {
     <p v-if="!loading && !events.length && !error" class="empty">
       暂无执行流程记录。历史任务未采集的数据不会补造。
     </p>
-    <div class="table-wrap" tabindex="0" aria-label="执行流程，可横向滚动">
+    <div class="table-wrap" role="region" tabindex="0" aria-label="执行流程，可横向滚动">
       <table class="data-table flow-table">
         <thead>
           <tr>
-            <th>阶段</th>
-            <th>状态</th>
-            <th>开始时间</th>
-            <th>结束时间</th>
-            <th>耗时</th>
-            <th>说明／异常</th>
+            <th class="stage-column" scope="col">阶段</th>
+            <th class="status-column" scope="col">状态</th>
+            <th class="timestamp-column" scope="col">开始时间</th>
+            <th class="timestamp-column" scope="col">结束时间</th>
+            <th class="duration-column" scope="col">耗时</th>
+            <th scope="col">说明／异常</th>
           </tr>
         </thead>
         <tbody v-for="node in nodes" :key="`${selected}:${node.id}`">
@@ -331,8 +331,8 @@ onUnmounted(() => {
             <td>
               <span class="badge" :class="badge(node.status)">{{ labels[node.status] }}</span>
             </td>
-            <td class="nowrap">{{ time(node.startedAt) }}</td>
-            <td class="nowrap">
+            <td class="flow-timestamp">{{ time(node.startedAt) }}</td>
+            <td class="flow-timestamp">
               {{
                 node.status === 'interrupted' || node.status === 'unknown'
                   ? '未知'
@@ -370,7 +370,12 @@ onUnmounted(() => {
                       labels[node.issues[0].status]
                     }}
                   </p>
-                  <div class="table-wrap" tabindex="0" :aria-label="`${node.name}明细，可横向滚动`">
+                  <div
+                    class="table-wrap"
+                    role="region"
+                    tabindex="0"
+                    :aria-label="`${node.name}明细，可横向滚动`"
+                  >
                     <table class="data-table">
                       <thead>
                         <tr>
@@ -452,6 +457,10 @@ onUnmounted(() => {
   flex-wrap: wrap;
   gap: 12px;
 }
+.toolbar .actions {
+  align-items: center;
+  flex-wrap: wrap;
+}
 .references {
   border: 1px solid var(--el-border-color-light);
   border-radius: 8px;
@@ -467,7 +476,7 @@ onUnmounted(() => {
 }
 dl {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 8px 20px;
   margin-bottom: 0;
 }
@@ -521,18 +530,45 @@ dd {
   overflow-x: auto;
   margin-top: 12px;
 }
+.table-wrap:focus-visible {
+  outline: 2px solid var(--el-color-primary);
+  outline-offset: 2px;
+}
+.flow-table {
+  min-width: 920px;
+  table-layout: fixed;
+}
+.stage-column {
+  width: 168px;
+}
+.status-column {
+  width: 108px;
+}
+.timestamp-column {
+  width: 168px;
+}
+.flow-timestamp {
+  font-variant-numeric: tabular-nums;
+}
+.duration-column {
+  width: 104px;
+}
 th,
 td {
   vertical-align: top;
 }
-td:first-child {
-  min-width: 170px;
+td {
   overflow-wrap: anywhere;
 }
-td:last-child {
+.node-details td:first-child {
+  min-width: 170px;
+}
+.node-details td:last-child {
   min-width: 180px;
-  max-width: 400px;
-  overflow-wrap: anywhere;
+}
+.flow-table > tbody > tr > td > .error {
+  display: block;
+  max-width: 80ch;
 }
 small {
   display: block;

@@ -533,6 +533,17 @@ const templateLabels1: Record<string, string> = {
         </button>
       </div>
       <button
+        v-if="category === 'rule'"
+        class="asset-primary"
+        :disabled="busy"
+        @click="
+          codeId = undefined;
+          codeOpen = true;
+        "
+      >
+        ＋ 新建规则评估器
+      </button>
+      <button
         v-if="category === 'llm_judge'"
         class="asset-primary"
         :disabled="busy"

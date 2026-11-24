@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from '@playwright/test';
 import type { Trace } from '../src/api/evaluations';
-import { buildTracePresentation as build } from '../src/views/evaluation/utils/trace-presentation';
+import {
+  buildTracePresentation as build,
+  formatTraceEvidence,
+  summarizeTrace,
+  traceEvidence,
+} from '../src/views/evaluation/utils/trace-presentation';
 type Span = Trace['spans'][number] & { parent_span_id: string | null };
 const span = (
   id: string,
@@ -194,4 +199,211 @@ test('混合关系所有节点保留且父节点先于子节点', () => {
     verify(input, result);
     assert.deepEqual(build(input).nodes, result.nodes);
   }
+});
+
+test('Trace 与 Turn 使用已保存的结果，内部工具错误仅属于所选节点', () => {
+  const source = trace([
+    span('turn-span', null, 0, {
+      operation_type: 'turn',
+      attributes: { 'agentgate.turn.id': 'turn-a', 'trace_sdk.input': '劣后来源' },
+    }),
+    span('tool-span', 'turn-span', 1, {
+      attributes: {
+        'trace_sdk.input': null,
+        arguments: { ignored: true },
+        'trace_sdk.output': false,
+        'trace_sdk.error': { message: '工具已自行重试' },
+      },
+    }),
+  ]);
+  source.turn_outcomes['turn-a'] = { input: { question: '' }, output: { answer: 0 }, state: {} };
+  source.turn_outcomes['turn-b'] = { input: {}, output: {}, state: {} };
+  source.final_output = { answer: '最终回复' };
+  assert.deepEqual(JSON.parse(formatTraceEvidence(traceEvidence(source))), {
+    input: { 'turn-a': { question: '' }, 'turn-b': {} },
+    output: { answer: '最终回复' },
+  });
+  assert.deepEqual(JSON.parse(formatTraceEvidence(traceEvidence(source, 'turn-span'))), {
+    input: { question: '' },
+    output: { answer: 0 },
+  });
+  assert.deepEqual(JSON.parse(formatTraceEvidence(traceEvidence(source, 'tool-span'))), {
+    input: null,
+    output: false,
+    error: { message: '工具已自行重试' },
+  });
+  assert.deepEqual(traceEvidence(source, 'missing'), {});
+});
+
+test('回放轨迹按轮次顺序补齐已记录的整条输入，缺失输入继续缺省', () => {
+  const turn = (id: string, sequence: number, attributes: Record<string, unknown> = {}) =>
+    span(`span-${id}`, null, sequence, {
+      operation_type: 'turn',
+      attributes: { 'agentgate.turn.id': id, ...attributes },
+    });
+  const source = trace([
+    turn('missing', 3),
+    turn('third', 2, { 'trace_sdk.input': '较低优先级' }),
+    turn('second', 1, { 'agentgate.turn.input': '', 'trace_sdk.input': '较低优先级' }),
+    turn('first', 0, { 'trace_sdk.input': '{"question":"回放数据"}' }),
+  ]);
+  Object.assign(source.turn_outcomes, {
+    missing: { output: {} },
+    third: { input: null, output: {} },
+    second: { output: {} },
+    first: { output: {} },
+  });
+  const input = JSON.parse(formatTraceEvidence(traceEvidence(source))).input;
+  assert.deepEqual(Object.keys(input), ['first', 'second', 'third']);
+  assert.deepEqual(input, { first: { question: '回放数据' }, second: '', third: null });
+  assert.deepEqual(
+    traceEvidence(
+      trace([
+        turn('missing', 3),
+        turn('known', 0, {
+          'trace_sdk.input': false,
+        }),
+      ]),
+    ).input,
+    { known: false },
+  );
+  assert.equal(traceEvidence(trace([turn('missing', 3)])).input, undefined);
+});
+
+test('只从目标环节读取工具参数、显式错误和异常事件', () => {
+  const source = trace([
+    span('turn', null, 0, {
+      operation_type: 'turn',
+      attributes: {
+        'agentgate.turn.id': 'failed-turn',
+        'agentgate.execution.error': { code: 'timeout' },
+      },
+    }),
+    span('tool', 'turn', 1, {
+      attributes: { arguments: {} },
+      events: [
+        { name: 'progress', attributes: { message: '普通事件' } },
+        { name: 'exception', attributes: { 'exception.message': '工具超时' } },
+      ],
+    }),
+    span('unrelated', 'turn', 2, { attributes: { input: '无语义契约' } }),
+  ]);
+  assert.deepEqual(traceEvidence(source).error, { code: 'timeout' });
+  assert.deepEqual(JSON.parse(formatTraceEvidence(traceEvidence(source, 'tool'))), {
+    input: {},
+    error: { 'exception.message': '工具超时' },
+  });
+  assert.equal(formatTraceEvidence(traceEvidence(source, 'unrelated')), '{}');
+});
+
+test('Formatted JSON 解包对象或数组，保留标量文本、原始对象及嵌套上限', () => {
+  let nested: unknown = '{"inner":true}';
+  for (let depth = 0; depth < 8; depth++) nested = [nested];
+  const evidence = {
+    input: '{"payload":"[0,false,null]", "plain":"123", "invalid":"{unfinished"}',
+    output: nested,
+    error: '',
+  };
+  const original = JSON.stringify(evidence);
+  assert.deepEqual(JSON.parse(formatTraceEvidence(evidence)), {
+    input: { payload: [0, false, null], plain: '123', invalid: '{unfinished' },
+    output: nested,
+    error: '',
+  });
+  assert.equal(JSON.stringify(evidence), original);
+});
+
+test('摘要采用唯一明确 Case，已加载资源统计优先并保留零值', () => {
+  const source = trace([
+    span('case', null, 0, {
+      operation_type: 'case',
+      started_at: '2026-11-24T08:00:00+08:00',
+      ended_at: '2026-11-24T08:00:02+08:00',
+      status: 'ok',
+    }),
+    span('tool', 'case', 1, { status: 'error' }),
+  ]);
+  assert.deepEqual(
+    summarizeTrace(source, {
+      agentName: '智能体 A',
+      resourceUsage: { duration_ms: 0, total_tokens: 0, token_status: 'available' },
+    }),
+    {
+      traceId: 'test',
+      agentName: '智能体 A',
+      status: 'ok',
+      durationMs: 0,
+      totalTokens: 0,
+      tokenStatus: 'available',
+      reactStepCount: null,
+    },
+  );
+  assert.equal(summarizeTrace(source).durationMs, 2000);
+});
+
+test('无 Case 时只使用齐全且按 ID 确认的 Turn 计算状态和耗时', () => {
+  const source = trace([
+    span('synthesized', null, 0, {
+      operation_type: 'case',
+      attributes: { 'platform.simulated': true },
+      status: 'ok',
+    }),
+    span('b', null, 1, {
+      operation_type: 'turn',
+      attributes: { 'agentgate.turn.id': 'b' },
+      started_at: '2026-11-24T00:00:03Z',
+      ended_at: '2026-11-24T00:00:04Z',
+      status: 'error',
+    }),
+    span('a', null, 2, {
+      operation_type: 'turn',
+      attributes: { 'agentgate.turn.id': 'a' },
+      started_at: '2026-11-24T00:00:00Z',
+      ended_at: '2026-11-24T00:00:01Z',
+      status: 'ok',
+    }),
+  ]);
+  const complete = summarizeTrace(source, { expectedTurnIds: ['a', 'b'] });
+  assert.equal(complete.status, 'error');
+  assert.equal(complete.durationMs, 4000);
+  const incomplete = summarizeTrace(source, { expectedTurnIds: ['a', 'missing'] });
+  assert.equal(incomplete.status, 'unset');
+  assert.equal(incomplete.durationMs, null);
+});
+
+test('无缓存时 Token 使用去重的观测小计，冲突项、真实请求和非法计数不计入', () => {
+  const observation = {
+    event_type: 'observation',
+    event_id: 'observation-id',
+    trace_id: 'source',
+    prompt_tokens: 4,
+    completion_tokens: 0,
+  };
+  const conflicting = { ...observation, event_id: 'conflict' };
+  const source = trace([
+    span('one', null, 0, {
+      events: [
+        observation,
+        conflicting,
+        { ...observation, event_type: 'llm_request', prompt_tokens: 500 },
+        { ...observation, event_id: undefined, prompt_tokens: 600 },
+      ],
+    }),
+    span('two', null, 1, {
+      events: [
+        observation,
+        { ...conflicting, prompt_tokens: 90 },
+        { ...observation, event_id: 'partial', prompt_tokens: -1, completion_tokens: 2 },
+        { ...observation, event_id: undefined, prompt_tokens: 600 },
+      ],
+    }),
+  ]);
+  assert.equal(summarizeTrace(source).totalTokens, 6);
+  assert.equal(summarizeTrace(source).tokenStatus, 'partial');
+  assert.equal(summarizeTrace(trace([])).tokenStatus, 'unavailable');
+  const cached = summarizeTrace(source, {
+    resourceUsage: { duration_ms: null, total_tokens: null, token_status: 'unavailable' },
+  });
+  assert.equal(cached.totalTokens, null);
+  assert.equal(cached.tokenStatus, 'unavailable');
 });

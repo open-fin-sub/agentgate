@@ -389,12 +389,18 @@ test('catalog deletion removes unpublished single and group records with their o
   await expect(presetRules.getByRole('button', { name: /更多操作|删除/ })).toHaveCount(0);
 });
 
-test('rule catalog hides creation and still opens rule details', async ({ page }) => {
+test('rule catalog opens rule creation and existing rule details', async ({ page }) => {
   await page.goto('/agentgate/#/welcome');
   await page.getByRole('button', { name: '行外Login' }).click();
   await page.getByRole('link', { name: '评估器', exact: true }).click();
   await expect(page.getByRole('button', { name: '规则评估', exact: true })).toHaveClass('active');
-  await expect(page.getByRole('button', { name: /新建规则评估器/ })).toHaveCount(0);
+  const createRule = page.getByRole('button', { name: /新建规则评估器/ });
+  await createRule.click();
+  const creation = page.getByRole('dialog', { name: '新建规则评估器', exact: true });
+  await expect(creation.getByRole('textbox', { name: '规则评估器名称', exact: true })).toHaveValue('');
+  await expect(creation.getByRole('button', { name: '保存草稿', exact: true })).toBeEnabled();
+  await creation.getByRole('button', { name: '关闭', exact: true }).click();
+  await expect(creation).toBeHidden();
 
   const card = page.locator('.rule-evaluator-card').filter({
     has: page.getByRole('heading', { name: '最终输出', exact: true }),
@@ -405,6 +411,7 @@ test('rule catalog hides creation and still opens rule details', async ({ page }
   await details.getByRole('button', { name: '关闭', exact: true }).click();
 
   await page.getByRole('button', { name: 'LLM 评估', exact: true }).click();
+  await expect(createRule).toHaveCount(0);
   await expect(page.getByRole('button', { name: /新建 LLM 评估器/ })).toBeVisible();
 });
 

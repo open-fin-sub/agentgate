@@ -1088,7 +1088,6 @@ onMounted(async () => {
     title="新建测评任务"
     width="min(800px,96vw)"
     class="task-create-dialog"
-    top="3vh"
     :close-on-click-modal="false"
   >
     <p v-if="formLoading || datasetLoading || restoringConfiguration" role="status">
@@ -1523,7 +1522,7 @@ onMounted(async () => {
   width: 100%;
   min-width: 0;
 }
-@media (max-width: 650px) {
+@media (max-width: 900px) {
   .platform-candidate-row {
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
@@ -1533,6 +1532,8 @@ onMounted(async () => {
     grid-column: auto;
     grid-row: auto;
   }
+}
+@container task-create-form (max-width: 600px) {
   .dataset-selection {
     grid-template-columns: 1fr;
   }
@@ -1606,7 +1607,7 @@ onMounted(async () => {
 .execution-settings small {
   font-size: 11px;
 }
-@media (max-width: 420px) {
+@container task-create-form (max-width: 360px) {
   .execution-settings {
     grid-template-columns: 1fr;
   }
@@ -1723,7 +1724,7 @@ fieldset {
   padding: 0;
   min-width: 0;
 }
-@media (max-width: 700px) {
+@container task-create-form (max-width: 620px) {
   .target-choice,
   .target-choice.is-ab {
     grid-template-columns: 1fr;
@@ -1731,7 +1732,28 @@ fieldset {
 }
 </style>
 <style>
-.el-overlay .el-dialog.task-create-dialog .el-dialog__body {
-  max-height: 68vh;
+.el-overlay .el-dialog.task-create-dialog:not(.is-fullscreen) {
+  display: flex;
+  flex-direction: column;
+  margin: 6vh auto !important;
+  max-height: 80vh;
+}
+.el-overlay .el-dialog.task-create-dialog > .el-dialog__body {
+  container: task-create-form / inline-size;
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+}
+.el-overlay .el-dialog.task-create-dialog > :is(.el-dialog__header, .el-dialog__footer) {
+  flex-shrink: 0;
+}
+.el-overlay .el-dialog.task-create-dialog .submission-actions > button + button {
+  margin-left: 0;
+}
+@media (max-height: 800px) {
+  .el-overlay .el-dialog.task-create-dialog:not(.is-fullscreen) {
+    margin: 8px auto !important;
+    max-height: calc(100dvh - 16px);
+  }
 }
 </style>

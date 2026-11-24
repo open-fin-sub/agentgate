@@ -202,17 +202,19 @@ onUnmounted(() => clearTimeout(debounce));
           </colgroup>
           <thead>
             <tr>
-              <th>任务名称</th>
-              <th>被测Agent</th>
-              <th>测评集</th>
-              <th>评估方式</th>
-              <th>进度与状态</th>
-              <th title="平台实际开始执行的时间；A/B 取两侧最早启动时间。北京时间。">启动时间</th>
-              <th title="平台记录完成、失败或取消的时间；A/B 两侧都结束后取最晚时间。北京时间。">
+              <th scope="col">任务名称</th>
+              <th scope="col">被测Agent</th>
+              <th scope="col">测评集</th>
+              <th scope="col">评估方式</th>
+              <th scope="col">进度与状态</th>
+              <th scope="col" title="平台实际开始执行的时间；A/B 取两侧最早启动时间。北京时间。">
+                启动时间
+              </th>
+              <th scope="col" title="平台记录完成、失败或取消的时间；A/B 两侧都结束后取最晚时间。北京时间。">
                 结束时间
               </th>
-              <th>得分</th>
-              <th>操作</th>
+              <th scope="col">得分</th>
+              <th scope="col">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -391,9 +393,27 @@ onUnmounted(() => clearTimeout(debounce));
                 >
                   重跑
                 </button>
-                <button class="link danger" @click="deleteTask(r.task_id ?? r.runs[0].run_id)">
+                <button
+                  class="link danger delete-action"
+                  @click="deleteTask(r.task_id ?? r.runs[0].run_id)"
+                >
                   删除
                 </button>
+                <el-dropdown
+                  class="more-actions"
+                  trigger="click"
+                  placement="bottom-end"
+                  :persistent="false"
+                >
+                  <button type="button" class="link">更多</button>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item @click="deleteTask(r.task_id ?? r.runs[0].run_id)">
+                        删除
+                      </el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
               </td>
             </tr>
           </tbody>
@@ -434,9 +454,6 @@ onUnmounted(() => clearTimeout(debounce));
   background: #f1f6f3;
   font-size: 11px;
 }
-.search-input {
-  width: 160px !important;
-}
 .list-toolbar {
   display: flex;
   align-items: center;
@@ -447,6 +464,7 @@ onUnmounted(() => clearTimeout(debounce));
 }
 .list-toolbar .tabs {
   margin-bottom: 0;
+  flex-wrap: wrap;
 }
 .filters-right {
   display: flex;
@@ -455,8 +473,8 @@ onUnmounted(() => clearTimeout(debounce));
   min-width: 0;
   gap: 10px;
 }
-.filters-right .input {
-  width: 200px;
+.filters-right .search-input {
+  width: min(160px, 100%);
 }
 .tab-sep {
   color: var(--el-border-color);
@@ -613,8 +631,13 @@ onUnmounted(() => clearTimeout(debounce));
   font-size: 12px;
   line-height: inherit;
 }
-.row-actions button:last-child {
+.row-actions .delete-action,
+.row-actions .more-actions button {
   margin-right: 0;
+}
+.row-actions .more-actions {
+  display: none;
+  vertical-align: baseline;
 }
 .progress-cell {
   min-width: 0;
@@ -681,6 +704,20 @@ footer {
 footer > span:first-child {
   margin-right: auto;
 }
+@container (max-width: 1100px) {
+  .row-actions .delete-action {
+    display: none;
+  }
+  .row-actions .more-actions {
+    display: inline-flex;
+  }
+}
+@container (min-width: 1600px) {
+  .name-cell .link {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
 @container (max-width: 700px) {
   .data-table,
   .data-table tbody {
@@ -717,7 +754,11 @@ footer > span:first-child {
     font-weight: 400;
   }
   .name-cell {
-    grid-area: 1 / 1 / 2 / -1;
+    grid-area: 1 / 1;
+  }
+  .name-cell .link {
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
   .identity-target {
     grid-area: 2 / 1;
@@ -729,7 +770,7 @@ footer > span:first-child {
     grid-area: 3 / 1;
   }
   .progress-cell {
-    grid-area: 3 / 2;
+    grid-area: 1 / 2;
   }
   .time-start {
     grid-area: 4 / 1;
@@ -738,10 +779,10 @@ footer > span:first-child {
     grid-area: 4 / 2;
   }
   .task-score {
-    grid-area: 5 / 1;
+    grid-area: 3 / 2;
   }
   .row-actions {
-    grid-area: 5 / 2;
+    grid-area: 5 / 1 / 6 / -1;
   }
   .task-score p {
     display: inline-block;
