@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 import { createServer, type ViteDevServer } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { fileURLToPath } from 'node:url';
@@ -12,19 +12,26 @@ async function workbookText(path: string) {
 
 let server: ViteDevServer;
 let url: string;
-const html = `<!doctype html><html><body><div id="app"></div><script type="module">
-import { createApp, h } from 'vue';
-import { createRouter, createWebHashHistory, RouterView } from 'vue-router';
+const html = `<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><div id="app"></div><script type="module">
+import { createApp } from 'vue';
+import { createRouter, createWebHashHistory } from 'vue-router';
 import ElementPlus from 'element-plus';
 import { pinia } from '/src/stores/index.ts';
 import { useAuthStore } from '/src/stores/modules/auth.ts';
+import { embeddedMode } from '/src/integration/platform-url-context.ts';
+import App from '/src/App.vue';
 import Root from '/src/views/evaluation/index.vue';
 import '/node_modules/element-plus/dist/index.css';
+const params = new URL(location.href).searchParams;
+if (params.has('responsive')) {
+  await import('/src/styles/main.scss');
+  await import('/src/styles/revision.scss');
+}
 const auth = useAuthStore(pinia);
-if (new URL(location.href).searchParams.get('bank')) auth.loginBank('test-token', 'team-a', 'Team A');
-else auth.loginExternal();
+if (params.has('bank')) auth.loginBank('test-token', 'team-a', 'Team A');
+else if (!embeddedMode) auth.loginExternal();
 const router = createRouter({history:createWebHashHistory(),routes:[{path:'/:pathMatch(.*)*',component:Root}]});
-const app = createApp({render:()=>h(RouterView)}).use(pinia).use(router).use(ElementPlus);
+const app = createApp(App).use(pinia).use(router).use(ElementPlus);
 window.detailHarness = {router, auth, unmount: () => app.unmount()};
 app.mount('#app');
 </script></body></html>`;
@@ -132,7 +139,70 @@ const run = (id: string, status: string) => ({
   completed_at: status === 'completed' ? now : null,
 });
 
-async function setup(page: Page, options: { status?: string; associationStatus?: number } = {}) {
+const wideEvaluators = Array.from({ length: 12 }, (_, index) => ({
+  ...manifest.evaluator_specs[0],
+  id: `rule-${index + 1}`,
+  name: `规则 ${index + 1}`,
+}));
+const wideManifest = {
+  ...manifest,
+  evaluator_specs: wideEvaluators,
+  primary_evaluator_ids: wideEvaluators.map(({ id }) => id),
+};
+const wideResults = results.flatMap((result) =>
+  wideEvaluators.map(({ id, name }) => ({ ...result, evaluator_id: id, evaluator_name: name })),
+);
+const taskSummary = {
+  id: 'task',
+  task_id: 'task',
+  name: '任务 task',
+  kind: 'single',
+  created_at: now,
+  status: 'completed',
+  summary_pending: false,
+  total_cases: 7,
+  completed_cases: 7,
+  previous_run_count: 0,
+  runs: [
+    {
+      run_id: 'task-run',
+      status: 'completed',
+      summary_pending: false,
+      target_name: '智能体',
+      target_version: 'v1',
+      dataset_name: '测评集',
+      dataset_version: 1,
+      evaluator_kinds: ['rule'],
+      scoring_mode: null,
+      total_cases: 7,
+      completed_cases: 7,
+      overall_score: 1,
+      gate_reason: null,
+    },
+  ],
+};
+const event = {
+  id: 'event-1',
+  request_id: null,
+  run_id: 'task-run',
+  stage: 'submission',
+  name: '接收任务配置',
+  status: 'completed',
+  case_id: null,
+  turn_id: null,
+  evaluator_id: null,
+  attempt: 1,
+  started_at: now,
+  ended_at: now,
+  duration_ms: 0,
+  error_code: null,
+  message: '测评任务已接收并记录配置快照。',
+};
+
+async function setup(
+  page: Page,
+  options: { status?: string; associationStatus?: number; responsive?: boolean } = {},
+) {
   const calls: { path: string; headers: Record<string, string> }[] = [];
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -143,6 +213,13 @@ async function setup(page: Page, options: { status?: string; associationStatus?:
     calls.push({ path, headers: route.request().headers() });
     const reply = (data: unknown) =>
       route.fulfill({ json: { code: '0', message: 'success', data } });
+    if (options.responsive && path === '/api/evaluation-task-summaries')
+      return reply({ items: [taskSummary], total: 1, page: 1, page_size: 20 });
+    if (
+      options.responsive &&
+      ['/api/datasets', '/api/evaluators', '/api/bank-targets', '/api/local-targets'].includes(path)
+    )
+      return reply([]);
     if (path.startsWith('/api/stability-experiments/'))
       return reply({
         experiment: { id: 'stable', run_ids: ['stable-run'], created_at: now },
@@ -186,6 +263,7 @@ async function setup(page: Page, options: { status?: string; associationStatus?:
       });
     const id = path.split('/')[3];
     if (path.endsWith('/manifest')) return reply(manifest);
+    if (path.endsWith('/events')) return reply(options.responsive ? [event] : []);
     if (path.endsWith('/status'))
       return reply({
         run_id: id,
@@ -199,26 +277,63 @@ async function setup(page: Page, options: { status?: string; associationStatus?:
     if (path.endsWith('/sample-resource-usage')) return reply({items: cases.map(c => ({case_id: c.id, total_tokens: null, token_status: 'unavailable', duration_ms: 2000, duration_source: 'case_span'}))});
     if (path.includes('/traces/')) {
       const caseId = path.split('/').pop()!;
+      const caseSpanId = '1000000000000001';
+      const turnSpanId = '1000000000000002';
+      const timing = { started_at: now, ended_at: '2026-10-23T02:00:02Z' };
       return reply({
         trace_id: `trace-${id}-${caseId}`,
+        run_id: id,
         case_id: caseId,
-        turn_outcomes: { 'turn-1': { output: `回答 ${caseId}` } },
+        turn_outcomes: {
+          'turn-1': {
+            input: cases.find((sample) => sample.id === caseId)?.turns[0].input,
+            output: `回答 ${caseId}`,
+            state: {},
+          },
+        },
+        final_output: { response: `完整回答 ${id}/${caseId}` },
+        final_state: {},
         spans: [
           {
-            span_id: caseId,
-            name: caseId,
+            span_id: caseSpanId,
+            name: `样本执行 ${caseId}`,
             operation_type: 'case',
+            sequence: 0,
+            status: 'ok',
             attributes: {},
-            started_at: now,
-            ended_at: '2026-10-23T02:00:02Z',
+            ...timing,
+          },
+          {
+            span_id: turnSpanId,
+            parent_span_id: caseSpanId,
+            name: `对话轮次 ${caseId}`,
+            operation_type: 'turn',
+            sequence: 1,
+            status: 'ok',
+            attributes: { 'agentgate.turn.id': 'turn-1' },
+            ...timing,
+          },
+          {
+            span_id: '1000000000000003',
+            parent_span_id: turnSpanId,
+            name: `检索节点 ${caseId}`,
+            operation_type: 'tool',
+            sequence: 2,
+            status: 'error',
+            attributes: {
+              'trace_sdk.input': JSON.stringify({ query: `检索查询 ${id}/${caseId}` }),
+              'trace_sdk.output': { result: `检索结果 ${id}/${caseId}` },
+              'trace_sdk.error': { message: `检索错误 ${id}/${caseId}` },
+            },
+            ...timing,
           },
         ],
       });
     }
     if (/^\/api\/runs\/[^/]+$/.test(path))
       return reply({
-        run: run(id, status),
-        results,
+        run: options.responsive ? { ...run(id, status), manifest: wideManifest } : run(id, status),
+        results: options.responsive ? wideResults : results,
         metrics: [{ level: 'overall', key: 'overall', score: 1 }],
         release_gate: { outcome: 'pass' },
       });
@@ -245,18 +360,194 @@ async function open(page: Page, path = '/tasks/task', bank = false) {
   await page.goto(`${url}${bank ? '?bank=1' : ''}#${path}`);
 }
 
+async function expectPageToFit(main: Locator) {
+  await expect
+    .poll(() =>
+      main.evaluate(
+        ({ ownerDocument: { documentElement } }) =>
+          documentElement.scrollWidth - documentElement.clientWidth,
+      ),
+    )
+    .toBeLessThanOrEqual(1);
+}
+
+for (const layout of [
+  { mode: 'external', width: 1092, height: 614 },
+  { mode: 'external', width: 1366, height: 768 },
+  { mode: 'bank', width: 1440, height: 1000 },
+  { mode: 'bank', width: 1920, height: 1080 },
+  { mode: 'external', width: 3840, height: 2160 },
+  { mode: 'integrated', width: 640, height: 480 },
+] as const) {
+  test(`responsive task workflow at ${layout.width}×${layout.height} (${layout.mode})`, async ({
+    page,
+  }) => {
+    const state = await setup(page, { responsive: true });
+    const embedded = layout.mode === 'integrated';
+    const destination = new URL(url);
+    destination.searchParams.set('responsive', '1');
+    destination.hash = '/tasks';
+    if (layout.mode === 'bank') destination.searchParams.set('bank', '1');
+    await page.setViewportSize(embedded ? { width: 1440, height: 1000 } : layout);
+    const workspace = embedded ? page.frameLocator('#evaluation-frame') : page;
+    if (embedded) {
+      destination.searchParams.set('embedded', '1');
+      destination.searchParams.set('token', 'test-token');
+      destination.searchParams.set('teamId', 'team-a');
+      destination.searchParams.set('userId', 'test-user');
+      const host = new URL('/__responsive-task-host', url);
+      await page.route(host.href, (route) =>
+        route.fulfill({
+          contentType: 'text/html; charset=utf-8',
+          body: `<!doctype html><iframe id="evaluation-frame" title="测评工作区" width="${layout.width}" height="${layout.height}" src="${destination.href.replaceAll('&', '&amp;')}"></iframe>`,
+        }),
+      );
+      await page.goto(host.href);
+    } else {
+      await page.goto(destination.href);
+    }
+
+    const main = workspace.getByRole('main').first();
+    const name = main.getByRole('button', { name: '任务 task', exact: true });
+    const logout = workspace.getByRole('button', { name: '登出 Logout', exact: true });
+    await expect(name).toBeVisible({ timeout: 10000 });
+    await expectPageToFit(main);
+    if (embedded) {
+      await expect(logout).toHaveCount(0);
+      const navigation = workspace.getByRole('button', { name: '导航菜单' });
+      await expect(navigation).toBeVisible();
+      await expect(navigation).toHaveAttribute('aria-expanded', 'false');
+      await navigation.click();
+      await workspace.getByRole('link', { name: '测评集', exact: true }).click();
+      await expect(main.getByRole('heading', { name: '测评集', exact: true })).toBeVisible();
+      await expect(navigation).toHaveAttribute('aria-expanded', 'false');
+      await navigation.click();
+      await workspace.getByRole('link', { name: '测评任务', exact: true }).click();
+      await expect(name).toBeVisible();
+      await expect(navigation).toHaveAttribute('aria-expanded', 'false');
+      await expect(name.locator('xpath=ancestor::tr')).toHaveCSS('display', 'grid');
+    } else {
+      await expect(logout).toBeVisible();
+      await expect(main.getByRole('columnheader', { name: '任务名称' })).toBeInViewport();
+    }
+    if (layout.width === 1092) {
+      const more = main.getByRole('button', { name: '更多', exact: true });
+      await more.click();
+      await expect(workspace.getByRole('menuitem', { name: '删除', exact: true })).toBeVisible();
+      await page.keyboard.press('Escape');
+    }
+    if (layout.width === 3840) {
+      const geometry = await main.evaluate((element) => {
+        const box = element.getBoundingClientRect();
+        const sidebar = element.previousElementSibling!.getBoundingClientRect();
+        return { width: box.width, left: sidebar.left, right: innerWidth - box.right };
+      });
+      expect(geometry.width).toBeGreaterThanOrEqual(2000);
+      expect(geometry.width).toBeLessThanOrEqual(2200);
+      expect(Math.abs(geometry.left - geometry.right)).toBeLessThanOrEqual(2);
+    }
+    await name.click();
+
+    await expect(main.getByRole('heading', { name: '任务 task', exact: true })).toBeVisible();
+    const scoreTable = main.getByRole('region', { name: '执行结果表格' });
+    await expect(
+      scoreTable.getByRole('columnheader', { name: '规则 12', exact: true }),
+    ).toBeVisible();
+    await expectPageToFit(main);
+    if (layout.width >= 1920) {
+      await expect
+        .poll(() => scoreTable.evaluate((table) => table.scrollWidth - table.clientWidth))
+        .toBeLessThanOrEqual(1);
+    } else {
+      const scroll = await scoreTable.evaluate((table) => {
+        const first = table.querySelector('thead th')!;
+        const left = first.getBoundingClientRect().left;
+        table.scrollLeft = 300;
+        return {
+          distance: table.scrollLeft,
+          offset: Math.abs(first.getBoundingClientRect().left - left),
+        };
+      });
+      expect(scroll.distance).toBeGreaterThan(0);
+      expect(scroll.offset).toBeLessThanOrEqual(2);
+    }
+    if (embedded) {
+      await scoreTable.getByRole('button', { name: '样本详情', exact: true }).first().click();
+      await expect(main.getByText('回答 case-1', { exact: true })).toBeVisible();
+      const conversation = await main.getByRole('heading', { name: '单轮对话' }).boundingBox();
+      const evaluation = await main.getByRole('heading', { name: '测评结果' }).boundingBox();
+      expect(evaluation!.y).toBeGreaterThan(conversation!.y + conversation!.height);
+      const trace = main.getByRole('region', { name: '执行轨迹追踪', exact: true });
+      const tree = trace.getByRole('region', { name: '调用树', exact: true });
+      const detail = trace.getByRole('region', { name: '轨迹详情', exact: true });
+      await expect(tree).toBeVisible();
+      await expect(detail).toBeVisible();
+      const [treeBox, detailBox] = await Promise.all([tree.boundingBox(), detail.boundingBox()]);
+      expect(detailBox!.y).toBeGreaterThanOrEqual(treeBox!.y + treeBox!.height);
+      expect(Math.abs(detailBox!.x - treeBox!.x)).toBeLessThan(1);
+      await tree.getByRole('button', { name: '全部展开', exact: true }).click();
+      await tree.getByRole('button', { name: /^检索节点 case-1/ }).click();
+      await expect(detail.getByLabel('节点元数据', { exact: true })).toContainText('检索节点 case-1');
+      await expectPageToFit(main);
+      await main.getByRole('button', { name: '任务详情', exact: true }).click();
+    }
+
+    const tabs = main.getByRole('navigation', { name: '测评任务详情页签' });
+    await tabs.getByRole('button', { name: '任务快照', exact: true }).click();
+    await expect(main.getByRole('heading', { name: '被测智能体', exact: true })).toBeVisible();
+    await expectPageToFit(main);
+    await tabs.getByRole('button', { name: '任务日志', exact: true }).click();
+    const step = main.getByRole('button', { name: '提交任务', exact: true });
+    await expect(step).toBeVisible();
+    await step.click();
+    await expect(main.getByText(event.message, { exact: true })).toBeVisible();
+    await expectPageToFit(main);
+    await main.getByRole('button', { name: '测评任务', exact: true }).click();
+    await expect(name).toBeVisible();
+    if (embedded) {
+      await main.getByRole('button', { name: '新建测评任务', exact: true }).click();
+      const dialog = workspace.getByRole('dialog', { name: '新建测评任务', exact: true });
+      const cancel = dialog.getByRole('button', { name: '取消', exact: true });
+      await expect(cancel).toBeInViewport({ ratio: 1 });
+      await expect(dialog.getByRole('button', { name: '开始测评', exact: true })).toBeInViewport({
+        ratio: 1,
+      });
+      const bodyScroll = await dialog.locator('.el-dialog__body').evaluate((body) => {
+        body.scrollTop = body.scrollHeight;
+        return body.scrollTop;
+      });
+      expect(bodyScroll).toBeGreaterThan(0);
+      await expect(cancel).toBeInViewport({ ratio: 1 });
+      await cancel.click();
+      await expect(dialog).toHaveCount(0);
+      await expect(name).toBeVisible();
+    }
+
+    const summaryRead = state.calls.find((call) => call.path === '/api/evaluation-task-summaries');
+    expect(summaryRead).toBeDefined();
+    expect(summaryRead?.headers['token']).toBe(
+      layout.mode === 'external' ? undefined : 'test-token',
+    );
+    expect(summaryRead?.headers['x-user-id']).toBe(
+      embedded ? 'test-user' : layout.mode === 'bank' ? '' : undefined,
+    );
+    expect(state.errors).toEqual([]);
+  });
+}
+
 for (const bank of [false, true]) {
-  test(`detail uses only one task, status and report (${bank ? 'bank' : 'external'})`, async ({
+  test(`detail reads only the selected task and run (${bank ? 'bank' : 'external'})`, async ({
     page,
   }) => {
     const state = await setup(page);
     await open(page, '/tasks/task', bank);
     await expect(page.getByRole('heading', { name: '任务 task', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: '样本详情', exact: true })).toHaveCount(7);
-    expect(state.calls.map((c) => c.path)).toEqual([
+    await expect.poll(() => state.calls.map((c) => c.path)).toEqual([
       '/api/evaluation-tasks/task',
       '/api/runs/task-run/status',
       '/api/runs/task-run',
+      '/api/runs/task-run/sample-resource-usage',
     ]);
     if (bank)
       expect(
@@ -266,6 +557,87 @@ for (const bank of [false, true]) {
       ).toBe(true);
     else
       expect(state.calls.every((c) => !c.headers['token'] && !c.headers['x-team-id'])).toBe(true);
+    expect(state.errors).toEqual([]);
+  });
+
+  test(`sample trace tree and evidence stay local to the selected sample (${bank ? 'bank' : 'external'})`, async ({
+    page,
+  }) => {
+    const state = await setup(page);
+    await open(page, '/tasks/task', bank);
+    await page.getByRole('button', { name: '样本详情', exact: true }).first().click();
+
+    const explorer = page.getByRole('region', { name: '执行轨迹追踪', exact: true });
+    const tree = explorer.getByRole('region', { name: '调用树', exact: true });
+    const detail = explorer.getByRole('region', { name: '轨迹详情', exact: true });
+    const metadata = detail.getByLabel('节点元数据', { exact: true });
+    const panel = detail.getByRole('tabpanel');
+    const turn = tree.getByRole('button', { name: /^对话轮次 case-1/ });
+    const tool = tree.getByRole('button', { name: /^检索节点 case-1/ });
+    const ioTab = detail.getByRole('tab', { name: '输入 / 输出', exact: true });
+    await expect(tree.getByLabel('轨迹摘要', { exact: true })).toContainText('trace-task-run-case-1');
+    await expect(detail.getByRole('heading', { name: '整条轨迹', exact: true })).toBeVisible();
+    await expect(ioTab).toHaveAttribute('aria-selected', 'true');
+    await expect(panel).toContainText('完整回答 task-run/case-1');
+    await expect(turn).toHaveCount(0);
+    const [treeBox, detailBox] = await Promise.all([tree.boundingBox(), detail.boundingBox()]);
+    expect(detailBox!.x).toBeGreaterThanOrEqual(treeBox!.x + treeBox!.width);
+    expect(Math.abs(detailBox!.y - treeBox!.y)).toBeLessThan(1);
+    const initialReads = state.calls.length;
+
+    await tree.getByRole('button', { name: '展开 样本执行 case-1', exact: true }).click();
+    await expect(turn).toBeVisible();
+    await expect(tool).toHaveCount(0);
+    await tree.getByRole('button', { name: '折叠 样本执行 case-1', exact: true }).click();
+    await expect(turn).toHaveCount(0);
+    await tree.getByRole('button', { name: '全部展开', exact: true }).click();
+    await expect(tool).toBeVisible();
+    await tree.getByRole('button', { name: '全部折叠', exact: true }).click();
+    await expect(tool).toHaveCount(0);
+    await tree.getByRole('button', { name: '全部展开', exact: true }).click();
+
+    await tool.click();
+    await expect(tool).toHaveAttribute('aria-pressed', 'true');
+    await expect(metadata).toBeVisible();
+    await expect(metadata).toContainText('tool');
+    await expect(metadata).toContainText('检索节点 case-1');
+    await expect(metadata).toContainText('2.00 s');
+    await expect(metadata).toContainText('错误');
+    await expect(panel).toContainText('检索查询 task-run/case-1');
+    await expect(panel).toContainText('检索结果 task-run/case-1');
+    await expect(panel).toContainText('检索错误 task-run/case-1');
+    await detail.getByRole('tab', { name: 'Formatted JSON', exact: true }).click();
+    await expect(panel).toContainText(/"query":\s*"检索查询 task-run\/case-1"/);
+    await turn.click();
+    await expect(metadata).toContainText('turn');
+    await expect(detail.getByRole('heading', { name: '对话轮次 case-1', exact: true })).toBeVisible();
+    await expect(metadata).not.toContainText('检索节点 case-1');
+    await expect(metadata).toContainText('成功');
+    await expect(metadata).not.toContainText('错误');
+    await expect(panel).toContainText('回答 case-1');
+    await expect(panel).not.toContainText('检索查询 task-run/case-1');
+    await tool.click();
+    await detail.getByRole('tab', { name: '完整 Trace JSON', exact: true }).click();
+    await expect(
+      panel.locator('.trace-json-highlight').filter({ hasText: '检索节点 case-1' }),
+    ).toBeVisible();
+    await tree.getByRole('button', { name: '整条轨迹', exact: true }).click();
+    await expect(metadata).toBeHidden();
+
+    expect(state.calls).toHaveLength(initialReads);
+    expect(traces(state.calls).map((call) => call.path)).toEqual(['/api/runs/task-run/traces/case-1']);
+    await page.getByRole('button', { name: '下一条', exact: true }).click();
+    await expect(panel).toContainText('完整回答 task-run/case-2');
+    await expect(ioTab).toHaveAttribute('aria-selected', 'true');
+    await expect(detail.getByRole('heading', { name: '整条轨迹', exact: true })).toBeVisible();
+    await expect(tree.getByRole('button', { name: /^对话轮次 case-2/ })).toHaveCount(0);
+    await page.getByRole('button', { name: '上一条', exact: true }).click();
+    await expect(panel).toContainText('完整回答 task-run/case-1');
+    await expect(turn).toHaveCount(0);
+    expect(traces(state.calls).map((call) => call.path)).toEqual([
+      '/api/runs/task-run/traces/case-1',
+      '/api/runs/task-run/traces/case-2',
+    ]);
     expect(state.errors).toEqual([]);
   });
 }
@@ -393,8 +765,11 @@ for (const detail of [
       await visibility(page, false);
       await expect.poll(() => count(state.calls, detail.endpoint)).toBe(3);
       state.setStatus('completed');
-      await page.clock.fastForward(5100);
-      await expect.poll(() => count(state.calls, detail.endpoint)).toBe(4);
+      // The resumed request can finish and schedule its next poll after the clock jump.
+      await expect.poll(async () => {
+        if (count(state.calls, detail.endpoint) === 3) await page.clock.fastForward(5100);
+        return count(state.calls, detail.endpoint);
+      }).toBe(4);
       await page.clock.fastForward(30000);
       expect(count(state.calls, detail.endpoint)).toBe(4);
       if (bank) expect(state.calls.every((c) => c.headers['token'] === 'test-token')).toBe(true);
@@ -489,6 +864,9 @@ test('A/B candidate sample navigation retains candidate run identity', async ({ 
   await dialog.getByRole('button', { name: '样本详情', exact: true }).first().click();
   await expect(page.getByText('回答 case-1', { exact: true })).toBeVisible();
   await expect(page).toHaveURL(/\/tasks\/ab\/samples\/case-1\?run=run-b$/);
+  await expect(
+    page.getByRole('region', { name: '轨迹详情', exact: true }).getByRole('tabpanel'),
+  ).toContainText('完整回答 run-b/case-1');
   expect(traces(state.calls).map((c) => c.path)).toEqual(['/api/runs/run-b/traces/case-1']);
   await page.getByRole('button', { name: '任务详情', exact: true }).click();
   await expect(page.getByTestId('comparison-results')).toBeVisible();
@@ -519,6 +897,14 @@ test('query-only tab navigation updates the tab without reloading the report', a
   const state = await setup(page);
   await open(page);
   await expect(page.getByRole('button', { name: '样本详情', exact: true })).toHaveCount(7);
+  const tabs = page.getByRole('navigation', { name: '测评任务详情页签', exact: true });
+  await expect(tabs.getByRole('button')).toHaveText([
+    '执行结果',
+    '低分样本',
+    '优化迭代',
+    '任务快照',
+    '任务日志',
+  ]);
   await page.evaluate(() =>
     (window as any).detailHarness.router.push('/tasks/task?tab=low-samples'),
   );
@@ -531,6 +917,11 @@ test('query-only tab navigation updates the tab without reloading the report', a
     'aria-pressed',
     'true',
   );
+  const taskLog = tabs.getByRole('button', { name: '任务日志', exact: true });
+  await taskLog.click();
+  await expect(taskLog).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText(/暂无执行流程记录/)).toBeVisible();
+  expect(count(state.calls, '/api/runs/task-run/events')).toBeGreaterThan(0);
   expect(count(state.calls, '/api/runs/task-run')).toBe(1);
   expect(state.errors).toEqual([]);
 });
@@ -612,10 +1003,11 @@ test('403 is surfaced without bypassing task access checks; standalone 404 still
   const standalone = await setup(page, { associationStatus: 404 });
   await open(page, '/results/standalone');
   await expect(page.getByRole('button', { name: '样本详情', exact: true })).toHaveCount(7);
-  expect(standalone.calls.map((c) => c.path)).toEqual([
+  await expect.poll(() => standalone.calls.map((c) => c.path)).toEqual([
     '/api/evaluation-tasks/standalone',
     '/api/runs/standalone/status',
     '/api/runs/standalone',
+    '/api/runs/standalone/sample-resource-usage',
   ]);
   expect(standalone.errors).toEqual([]);
 });

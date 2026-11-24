@@ -21,9 +21,31 @@ def _team_id() -> str:
     return info.user_team_id if info else ""
 
 
+class DuplicateTaskNameError(ValueError):
+    """The requested name is already used by a task visible to this team."""
+
+
 class EvaluationTaskManagement:
     def __init__(self, repository: AgentGateRepository) -> None:
         self.repository = repository
+
+    def require_available_name(
+        self,
+        name: str | None,
+        *,
+        user_team_id: str,
+        exclude_task_id: str | None = None,
+    ) -> None:
+        cleaned = (name or "").strip()
+        if not cleaned:
+            return
+        for task in self.repository.list_evaluation_tasks():
+            if (
+                task.id != exclude_task_id
+                and task.name == cleaned
+                and self._is_accessible(task, user_team_id)
+            ):
+                raise DuplicateTaskNameError(f"任务名称已存在：{cleaned}，请修改名称后重试。")
 
     def create_history_comparison(
         self,
@@ -70,13 +92,7 @@ class EvaluationTaskManagement:
             b = candidate.name or candidate_report.run.manifest.target.display_name
             name = f"A/B历史结果对比：{a[:48]} / {b[:48]}"
         cleaned_name = name.strip()
-        if cleaned_name:
-            for task in self._accessible_tasks(team_id):
-                if (
-                    task.id != comparison_id
-                    and (task.name or "").strip() == cleaned_name
-                ):
-                    raise ValueError(f"任务名称已存在：{cleaned_name}，请修改名称后重试。")
+        self.require_available_name(cleaned_name, user_team_id=team_id, exclude_task_id=comparison_id)
         task = EvaluationTask(
             id=comparison_id,
             kind=EvaluationTaskKind.AB,
@@ -105,9 +121,7 @@ class EvaluationTaskManagement:
 
     def _read_accessible_task(self, task_id: str, team_id: str) -> EvaluationTask:
         task = self.repository.get_evaluation_task(task_id)
-        if task is None or any(
-            self.repository.get_run(run_id, user_team_id=team_id) is None for run_id in task.run_ids
-        ):
+        if task is None or not self._is_accessible(task, team_id):
             raise LookupError("unknown evaluation task")
         return task
 
@@ -126,7 +140,8 @@ class EvaluationTaskManagement:
         return task, reader.get_report(run_id)
 
     def save(self, task: EvaluationTask) -> EvaluationTask:
-        runs = [self.repository.get_run(run_id, user_team_id=_team_id()) for run_id in task.run_ids]
+        team_id = _team_id()
+        runs = [self.repository.get_run(run_id, user_team_id=team_id) for run_id in task.run_ids]
         if any(run is None for run in runs):
             raise LookupError("task references an unknown run")
         if task.kind == EvaluationTaskKind.STABILITY and any(run.manifest != runs[0].manifest for run in runs):
@@ -150,13 +165,14 @@ class EvaluationTaskManagement:
                        and report.target_descriptor_sha256 == run.manifest.target.descriptor_sha256
                        for run in runs):
                 raise ValueError("static report does not match the task target snapshot")
+        if task.name is not None:
+            previous = self.repository.get_evaluation_task(task.id)
+            if previous is None or previous.name != task.name:
+                self.require_available_name(task.name, user_team_id=team_id, exclude_task_id=task.id)
         return self.repository.save_evaluation_task(task)
 
     def get(self, task_id: str) -> EvaluationTask:
-        task = self.repository.get_evaluation_task(task_id)
-        if task is None or any(self.repository.get_run(run_id, user_team_id=_team_id()) is None for run_id in task.run_ids):
-            raise LookupError("unknown evaluation task")
-        return self._with_name(task)
+        return self._with_name(self._read_accessible_task(task_id, _team_id()))
 
     def rerun(
         self, task_id: str, source_run_id: str, runs: RunManagement, dispatcher: JobDispatcher,
@@ -187,15 +203,16 @@ class EvaluationTaskManagement:
         })
         return self.repository.save_evaluation_task(named)
 
-    def _accessible_tasks(self, team_id: str) -> list[EvaluationTask]:
-        return [
-            task
-            for task in self.repository.list_evaluation_tasks()
-            if all(
-                self.repository.get_run(run_id, user_team_id=team_id) is not None
-                for run_id in task.run_ids
-            )
-        ]
+    def _is_accessible(self, task: EvaluationTask, team_id: str) -> bool:
+        return all(
+            self.repository.get_run(run_id, user_team_id=team_id) is not None
+            for run_id in task.run_ids
+        )
 
     def list(self) -> list[EvaluationTask]:
-        return [self._with_name(task) for task in self._accessible_tasks(_team_id())]
+        team_id = _team_id()
+        return [
+            self._with_name(task)
+            for task in self.repository.list_evaluation_tasks()
+            if self._is_accessible(task, team_id)
+        ]

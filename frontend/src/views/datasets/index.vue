@@ -15,6 +15,7 @@ import DatasetExportDialog from './components/DatasetExportDialog.vue';
 import VersionSelector from './components/VersionSelector.vue';
 import CaseEditor from './components/SampleEditor.vue';
 import SampleImportWizard from './components/SampleImportWizard.vue';
+import { caseCategoryLabels } from './types/index';
 import type {
   DatasetExport,
   DatasetSummary,
@@ -770,6 +771,7 @@ onMounted(async () => {
       v-if="sampleWizard"
       :dataset-id="activeDatasetId"
       :dataset-name="activeDataset?.name ?? ''"
+      :draft-cases="activeVersion?.cases"
       @close="sampleWizard = false"
       @imported="samplesImported"
     />
@@ -991,11 +993,7 @@ onMounted(async () => {
               </td>
               <td class="input-preview">{{ JSON.stringify(c.turns[0]?.input ?? {}) }}</td>
               <td>{{ c.turns.length }}</td>
-              <td>
-                {{
-                  c.category === 'boundary' ? '边界' : c.category === 'negative' ? '负例' : '正例'
-                }}
-              </td>
+              <td>{{ caseCategoryLabels[c.category] }}</td>
               <td>{{ c.tags.join('、') || '—' }}</td>
               <td>
                 <button class="link" @click="selectCase(c)">{{ editable ? '编辑' : '查看' }}</button
@@ -1013,6 +1011,7 @@ onMounted(async () => {
           ref="caseEditor"
           :item="editedCase"
           :editable="editable"
+          :draft-cases="activeVersion?.cases"
           :saving="busy"
           :persisted="!!activeVersion?.cases.some((c) => c.id === editedCase?.id)"
           :validation-issues="activeCaseIssues"

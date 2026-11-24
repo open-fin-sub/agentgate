@@ -34,10 +34,10 @@ import { taskTitle } from '../utils/dashboard-data';
 import { formatTaskDuration } from '../utils/task-timing';
 const detailTabs = [
   ['results', '执行结果'],
-  ['flow', '执行流程'],
   ['low-samples', '低分样本'],
   ['iteration', '优化迭代'],
   ['config', '任务快照'],
+  ['flow', '任务日志'],
 ] as const;
 type DetailTab = (typeof detailTabs)[number][0];
 const props = defineProps<{ id: string; taskId?: string; returnPage?: string }>(),
@@ -221,6 +221,9 @@ const filtered = computed(() =>
 const sample = computed(() => cases.value.find((c: any) => c.id === sampleId.value)),
   trace = computed(() => traces.value[sampleId.value]),
   results = computed(() => caseResults(sampleId.value));
+const traceTurnIds = computed<string[]>(() =>
+  (sample.value?.turns ?? []).map((turn: { id: string }) => turn.id),
+);
 const isMultiTurn = computed(() => (sample.value?.turns.length ?? 0) > 1);
 const groupedResults = computed(() =>
   groupEvaluatorResults(results.value, manifest.value?.evaluator_specs).sort(
@@ -402,7 +405,7 @@ watch(sampleId, () => {
       <template v-if="!sampleId">
         <header class="task-hero">
           <div class="hero-icon">{{ progress.status === 'completed' ? '✓' : '◷' }}</div>
-          <div>
+          <div class="hero-content">
             <h1>
               {{
                 taskTitle(
@@ -824,7 +827,14 @@ watch(sampleId, () => {
             </details>
           </aside>
         </div>
-        <TraceExplorer v-if="trace" :key="trace.trace_id + ':' + sample.id" :trace="trace" />
+        <TraceExplorer
+          v-if="trace"
+          :key="trace.trace_id + ':' + sample.id"
+          :trace="trace"
+          :agent-name="manifest?.target?.display_name"
+          :resource-usage="resourceRunId === id ? resourceItems[sample.id] : undefined"
+          :expected-turn-ids="traceTurnIds"
+        />
         <section v-else class="trace-status-panel" aria-label="执行轨迹追踪">
           <h2>执行轨迹追踪</h2>
           <p v-if="traceErrors[sample.id]" class="notice error" role="alert">
@@ -863,14 +873,20 @@ watch(sampleId, () => {
   </div>
 </template>
 <style scoped>
+.task-results {
+  container: task-results / inline-size;
+  min-width: 0;
+}
 .baseline-action {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   margin: 12px 0 18px;
 }
 .tabs {
-  overflow-x: auto;
+  flex-wrap: wrap;
+  gap: 8px 28px;
 }
 .tab {
   flex-shrink: 0;
@@ -890,6 +906,7 @@ watch(sampleId, () => {
 }
 .breadcrumbs {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   align-items: center;
   color: #82918b;
@@ -926,11 +943,15 @@ watch(sampleId, () => {
   margin: 0;
   font-size: 13px;
 }
-.task-hero > .badge {
-  margin-left: auto;
-}
+.hero-content,
 .sample-head > div {
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.task-hero > .badge {
+  margin-left: auto;
+  flex-shrink: 0;
 }
 .task-kpis {
   display: grid;
@@ -970,8 +991,12 @@ watch(sampleId, () => {
 .violet {
   color: #7b4cdc;
 }
+.result-filters {
+  flex-wrap: wrap;
+}
 .result-filters select {
   width: 160px;
+  max-width: 100%;
 }
 .export {
   margin-left: auto;
@@ -986,13 +1011,14 @@ watch(sampleId, () => {
   outline-offset: 2px;
 }
 .sample-table {
-  min-width: calc(710px + var(--score-column-count) * 80px);
+  --sample-input-width: 180px;
+  min-width: calc(530px + var(--sample-input-width) + var(--score-column-count) * 80px);
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
 }
 .sample-input-column {
-  width: 180px;
+  width: var(--sample-input-width);
 }
 .sample-scene-column {
   width: 80px;
@@ -1017,17 +1043,25 @@ watch(sampleId, () => {
   white-space: normal;
   overflow-wrap: anywhere;
 }
-.sample-table th:last-child,
-.sample-table td:last-child {
+.sample-table :is(th, td):is(:first-child, :last-child) {
   position: sticky;
-  right: 0;
   background: white;
   z-index: 1;
+}
+.sample-table :is(th, td):first-child {
+  inset-inline-start: 0;
+  box-shadow: 6px 0 10px #253a2e0c;
+}
+.sample-table :is(th, td):last-child {
+  inset-inline-end: 0;
   box-shadow: -6px 0 10px #253a2e05;
 }
-.sample-table th:last-child {
+.sample-table th:is(:first-child, :last-child) {
   z-index: 3;
   background: #f9fafb;
+}
+.sample-table tr:hover td:is(:first-child, :last-child) {
+  background: #fbfefd;
 }
 .sample-name,
 .sample-scenario {
@@ -1047,8 +1081,9 @@ watch(sampleId, () => {
 }
 .config-cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 22px;
+  max-width: 1600px;
   margin-top: 24px;
 }
 .config-block {
@@ -1094,9 +1129,13 @@ watch(sampleId, () => {
   padding: 18px 20px;
   border-bottom: 1px solid #e8edea;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+.conversation-panel > header .actions {
+  flex-wrap: wrap;
 }
 .conversation-panel h2,
 .evaluation-panel h2 {
@@ -1150,6 +1189,7 @@ watch(sampleId, () => {
 }
 .message {
   padding: 18px;
+  overflow-wrap: anywhere;
   background: #f5f7f6;
   border: 1px solid #e6ebe8;
   border-radius: 10px;
@@ -1183,7 +1223,7 @@ watch(sampleId, () => {
 summary {
   cursor: pointer;
 }
-@media (max-width: 1100px) {
+@container task-results (max-width: 900px) {
   .task-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
@@ -1192,15 +1232,18 @@ summary {
     border-right: 0;
   }
   .conversation-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .evaluation-panel {
     max-height: none;
   }
 }
-@media (max-width: 700px) {
+@container task-results (max-width: 620px) {
   .config-cards {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .tabs {
+    gap: 8px 16px;
   }
   .task-hero {
     padding: 10px 16px;
@@ -1214,7 +1257,7 @@ summary {
     display: none;
   }
   .conversation-body {
-    grid-template-columns: 110px 1fr;
+    grid-template-columns: 110px minmax(0, 1fr);
   }
   .conversation-body > aside {
     padding: 6px;
@@ -1224,12 +1267,25 @@ summary {
   }
   .sample-head {
     flex-wrap: wrap;
+    gap: 12px;
   }
-  .task-kpis {
-    grid-template-columns: repeat(2, 1fr);
+  .sample-head > div {
+    flex-basis: 100%;
   }
-  .result-filters {
-    flex-wrap: wrap;
+}
+@container task-results (max-width: 540px) {
+  .sample-table {
+    --sample-input-width: 128px;
+  }
+  .sample-table :is(th, td):last-child {
+    inset-inline-end: auto;
+    box-shadow: none;
+  }
+  .sample-table td:last-child {
+    position: static;
+  }
+  .sample-table th:last-child {
+    z-index: 2;
   }
 }
 </style>

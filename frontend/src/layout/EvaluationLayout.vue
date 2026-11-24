@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+
 withDefaults(defineProps<{
   page: string;
   online: boolean | null;
   hideHeader?: boolean;
 }>(), { hideHeader: false });
 defineEmits<{ logout: [] }>();
+const navigationOpen = ref(false);
 const navigation = [
   ['overview', '测评总览'],
   ['evaluators', '评估器'],
@@ -25,27 +28,70 @@ const navigation = [
     </header>
     <div class="shell">
       <aside class="sidebar">
-        <RouterLink
-          v-for="item in navigation"
-          :key="item[0]"
-          :to="'/' + item[0]"
-          class="nav-item"
-          :class="{ active: page === item[0] || (page === 'stability' && item[0] === 'tasks') }"
-          >{{ item[1] }}</RouterLink
+        <button
+          type="button"
+          class="secondary navigation-toggle"
+          aria-controls="evaluation-navigation"
+          :aria-expanded="navigationOpen"
+          @click="navigationOpen = !navigationOpen"
         >
-        <div class="nav-group sidebar-status">
-          连接状态：{{
-            online === null ? '正在连接服务…' : online ? '测评后端已连接' : '服务未连接'
-          }}
-        </div>
+          导航菜单
+        </button>
+        <nav
+          id="evaluation-navigation"
+          class="evaluation-navigation"
+          :class="{ 'is-open': navigationOpen }"
+          aria-label="测评中心导航"
+        >
+          <RouterLink
+            v-for="item in navigation"
+            :key="item[0]"
+            :to="'/' + item[0]"
+            class="nav-item"
+            :class="{ active: page === item[0] || (page === 'stability' && item[0] === 'tasks') }"
+            @click="navigationOpen = false"
+          >
+            {{ item[1] }}
+          </RouterLink>
+          <div class="nav-group sidebar-status">
+            连接状态：{{
+              online === null ? '正在连接服务…' : online ? '测评后端已连接' : '服务未连接'
+            }}
+          </div>
+        </nav>
       </aside>
-      <main class="content"><slot /></main>
+      <main class="content" :class="{ 'content-wide': ['tasks', 'results', 'stability'].includes(page) }">
+        <slot />
+      </main>
     </div>
     <slot name="dialogs" />
   </div>
 </template>
 
 <style scoped>
+.revision-app {
+  --task-content-max: 2200px;
+  --desktop-sidebar-width: 160px;
+  container: evaluation-shell / inline-size;
+}
+.shell {
+  max-width: calc(var(--task-content-max) + var(--desktop-sidebar-width));
+  margin-inline: auto;
+}
+.revision-app .sidebar {
+  width: var(--desktop-sidebar-width);
+}
+.revision-app .content-wide {
+  max-width: var(--task-content-max);
+}
+.evaluation-navigation {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+.navigation-toggle {
+  display: none;
+}
 .topbar-right {
   display: flex;
   align-items: center;
@@ -68,5 +114,36 @@ const navigation = [
 .sidebar-status {
   margin-top: auto;
   color: #9ca3af;
+}
+@container evaluation-shell (max-width: 768px) {
+  .shell {
+    flex-direction: column;
+  }
+  .revision-app .sidebar,
+  .revision-app.header-hidden .sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+    padding: 8px 12px;
+    border-right: 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .navigation-toggle {
+    display: block;
+    align-self: flex-start;
+    height: 36px;
+  }
+  .evaluation-navigation {
+    display: none;
+  }
+  .evaluation-navigation.is-open {
+    display: flex;
+    margin-top: 8px;
+  }
+  .revision-app .content {
+    flex: auto;
+    width: 100%;
+    padding: 12px;
+  }
 }
 </style>

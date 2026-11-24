@@ -13,6 +13,7 @@ from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validat
 from starlette.concurrency import run_in_threadpool
 from starlette.responses import JSONResponse
 
+from agentgate.application.evaluation_task_management import DuplicateTaskNameError
 from agentgate.domain import EvaluatorRef
 from agentgate.domain.evaluation_task import EvaluationTask
 from agentgate.server.user_context import get_user_info
@@ -298,6 +299,8 @@ async def launch_platform_evaluation(request: Request) -> JSONResponse:
         raise HTTPException(403, "Platform target access was rejected") from None
     except LookupError:
         raise HTTPException(404, "Selected evaluation resource is unavailable") from None
+    except DuplicateTaskNameError:
+        raise HTTPException(409, "任务名称已存在，请修改名称后重试。") from None
     except ValueError:
         raise HTTPException(422, "Target or evaluation settings were rejected") from None
     except (TimeoutError, ConnectionError):
@@ -358,6 +361,8 @@ async def launch_platform_comparison(request: Request) -> JSONResponse:
         raise HTTPException(403, "Platform target access was rejected") from None
     except LookupError:
         raise HTTPException(404, "Selected evaluation resource is unavailable") from None
+    except DuplicateTaskNameError:
+        raise HTTPException(409, "任务名称已存在，请修改名称后重试。") from None
     except ValueError:
         raise HTTPException(422, "Target or evaluation settings were rejected") from None
     except (TimeoutError, ConnectionError):
