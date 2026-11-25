@@ -15,7 +15,9 @@ from starlette.responses import JSONResponse
 
 from agentgate.application.evaluation_task_management import DuplicateTaskNameError
 from agentgate.domain import EvaluatorRef
+from agentgate.domain.dataset import ArchivedDatasetError
 from agentgate.domain.evaluation_task import EvaluationTask
+from agentgate.server.errors import raise_conflict
 from agentgate.server.user_context import get_user_info
 
 router = APIRouter(prefix="/api/agent-platform", tags=["agent-platform"])
@@ -299,6 +301,8 @@ async def launch_platform_evaluation(request: Request) -> JSONResponse:
         raise HTTPException(403, "Platform target access was rejected") from None
     except LookupError:
         raise HTTPException(404, "Selected evaluation resource is unavailable") from None
+    except ArchivedDatasetError as error:
+        raise_conflict(error)
     except DuplicateTaskNameError:
         raise HTTPException(409, "任务名称已存在，请修改名称后重试。") from None
     except ValueError:
@@ -361,6 +365,8 @@ async def launch_platform_comparison(request: Request) -> JSONResponse:
         raise HTTPException(403, "Platform target access was rejected") from None
     except LookupError:
         raise HTTPException(404, "Selected evaluation resource is unavailable") from None
+    except ArchivedDatasetError as error:
+        raise_conflict(error)
     except DuplicateTaskNameError:
         raise HTTPException(409, "任务名称已存在，请修改名称后重试。") from None
     except ValueError:

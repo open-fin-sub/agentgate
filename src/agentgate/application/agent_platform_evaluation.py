@@ -22,12 +22,22 @@ from agentgate.domain import (
     TargetSnapshot,
     utcnow,
 )
+from agentgate.domain.dataset import ArchivedDatasetError
 from agentgate.domain.evaluation_task import EvaluationTask
 from agentgate.integrations.job_dispatchers import JobDispatcher
 from agentgate.integrations.targets.agent_platform import PlatformClient, resolve_platform_target
 from agentgate.storage.repository import AgentGateRepository
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _require_submission_dataset(
+    repository: AgentGateRepository, dataset_id: str, user_team_id: str
+) -> None:
+    dataset = repository.get_dataset(dataset_id, user_team_id=user_team_id)
+    if dataset is None:
+        raise LookupError("dataset unavailable to caller")
+    dataset.require_available_for_submission()
 
 
 def _log_inbank_run_saved(task: EvaluationTask, run: EvaluationRun, side: str) -> None:
@@ -192,14 +202,13 @@ def submit_platform_evaluation(
     agent_name: str | None = None,
     evaluator_refs: tuple[EvaluatorRef, ...] | None = None,
 ) -> EvaluationTask:
-    if credentials is None:
-        raise ConnectionError("platform credential encryption is not configured")
     if scheduled_for is not None and (scheduled_for <= utcnow() or repetitions != 1):
         raise ValueError("invalid reservation")
     if not 1 <= repetitions <= 20:
         raise ValueError("invalid repetitions")
-    if repository.get_dataset(dataset_id, user_team_id=user_team_id) is None:
-        raise LookupError("dataset unavailable to caller")
+    _require_submission_dataset(repository, dataset_id, user_team_id)
+    if credentials is None:
+        raise ConnectionError("platform credential encryption is not configured")
     EvaluationTaskManagement(repository).require_available_name(name, user_team_id=user_team_id)
     platform_mode = os.getenv("AGENTGATE_AGENT_PLATFORM_MODE", "").strip().lower()
     if platform_mode not in {"mock", "inbank"}:
@@ -288,6 +297,9 @@ def submit_platform_evaluation(
         raise
     try:
         repository.save_task_runs(task, runs)
+    except ArchivedDatasetError:
+        credentials.delete_api_key(metadata.id)
+        raise
     except Exception:  # noqa: BLE001 -- Persistence outcome must never become a 4xx rejection.
         # A commit error may be ambiguous: retain the encrypted credential for reconciliation.
         raise RuntimeError("task persistence outcome is uncertain") from None
@@ -340,12 +352,11 @@ def submit_platform_comparison(
     """Create and dispatch one controlled A/B pair of platform Runs."""
     if evaluator_ids is not None and evaluator_refs is not None:
         raise ValueError("use evaluator_ids or evaluator_refs, not both")
-    if credentials is None:
-        raise ConnectionError("platform credential encryption is not configured")
     if baseline_version == candidate_version:
         raise ValueError("A/B requires two different agent versions")
-    if repository.get_dataset(dataset_id, user_team_id=user_team_id) is None:
-        raise LookupError("dataset unavailable to caller")
+    _require_submission_dataset(repository, dataset_id, user_team_id)
+    if credentials is None:
+        raise ConnectionError("platform credential encryption is not configured")
     EvaluationTaskManagement(repository).require_available_name(name, user_team_id=user_team_id)
     platform_mode = os.getenv("AGENTGATE_AGENT_PLATFORM_MODE", "").strip().lower()
     if platform_mode not in {"mock", "inbank"}:
@@ -451,6 +462,9 @@ def submit_platform_comparison(
         raise
     try:
         repository.save_task_runs(task, tuple(prepared))
+    except ArchivedDatasetError:
+        credentials.delete_api_key(metadata.id)
+        raise
     except Exception:  # noqa: BLE001 -- Persistence outcome must never become a 4xx rejection.
         raise RuntimeError("task persistence outcome is uncertain") from None
     for item in prepared:

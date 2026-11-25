@@ -15,6 +15,7 @@ export interface EvaluatorIdentity {
   description: string;
   source: string;
   enabled: boolean;
+  archived?: boolean;
   created_at?: string;
   updated_at?: string;
   owner_evaluator_id?: string | null;
@@ -30,6 +31,7 @@ export interface EvaluatorSummary extends EvaluatorIdentity {
   child_count?: number;
 }
 export interface Definition {
+  name?: string;
   kind: Kind;
   dimension: string;
   metric: string;

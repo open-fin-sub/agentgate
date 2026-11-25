@@ -40,11 +40,12 @@ function optionalReadError(error: unknown, signal: AbortSignal) {
   if (error instanceof ApiError && [401, 403].includes(error.status)) throw error;
 }
 export async function loadTaskExport(
-  request: TaskExportRequest,
+  selection: TaskExportRequest,
   signal: AbortSignal,
   progress: (message: string) => void = () => {},
   get: ExportRead = read,
 ): Promise<TaskExportData> {
+  const request = { ...selection, runIds: [...selection.runIds] };
   if (
     request.runIds.length < 1 ||
     request.runIds.length > 2 ||
@@ -56,7 +57,7 @@ export async function loadTaskExport(
   if (request.kind.startsWith('ab_') && request.runIds.length !== 2)
     throw new Error('A/B 对比导出需要两个任务结果');
   const data: TaskExportData = {
-    request: structuredClone(request),
+    request,
     exportedAt: new Date().toISOString(),
     runs: [],
     comparison: null,

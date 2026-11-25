@@ -16,6 +16,7 @@ from agentgate.domain import (
     RunStatus,
     SkillAnalysisReport,
 )
+from agentgate.domain.dataset import ArchivedDatasetError
 from agentgate.server.dependencies import ServerDependencies, get_dependencies
 from agentgate.server.user_context import get_user_info
 from agentgate.domain.run_event import RunEvent
@@ -99,6 +100,8 @@ def launch_evaluation(
             api_key=request.api_key,
         )
         return dependencies.results.get_run_progress(run.id)
+    except ArchivedDatasetError as error:
+        raise_conflict(error)
     except DuplicateTaskNameError:
         raise HTTPException(409, "任务名称已存在，请修改名称后重试。") from None
     except RuntimeError as error:
@@ -166,9 +169,11 @@ def cancel_run(run_id: str, dependencies: Dependencies) -> RunProgress:
 def rerun_run(run_id: str, dependencies: Dependencies) -> RunProgress:
     try:
         rerun = dependencies.runs.create_rerun(run_id, persist=False)
-        dependencies.repository.save_task_runs(EvaluationTask(
-            id=rerun.id, kind="single", run_ids=(rerun.id,),
-        ), [rerun])
+        dependencies.repository.save_task_runs(
+            EvaluationTask(id=rerun.id, kind="single", run_ids=(rerun.id,)),
+            [rerun],
+            from_rerun_snapshot=True,
+        )
         dependencies.runs.dispatch_run(rerun.id, dependencies.dispatcher)
         return dependencies.results.get_run_progress(rerun.id)
     except LookupError as error:

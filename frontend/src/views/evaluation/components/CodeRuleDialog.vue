@@ -13,7 +13,10 @@ import EvaluatorVersions from './EvaluatorVersions.vue';
 import EvaluatorTaskHistory from './EvaluatorTaskHistory.vue';
 import { traceBuiltinRuleCode } from '../utils/code-rule-templates';
 
-const props = defineProps<{ initialId?: string; presets?: EvaluatorSummary[] }>();
+const props = defineProps<{
+  initialId?: string;
+  initialPreset?: EvaluatorSummary;
+}>();
 const emit = defineEmits<{
   close: [];
   changed: [];
@@ -52,80 +55,6 @@ const value = ref<Definition>({
   },
 });
 const readOnly = computed(() => !!historical.value || (!!detail.value && !detail.value.draft));
-const presetIds = ref<string[]>([]);
-let customDefinition = JSON.parse(JSON.stringify(value.value)) as Definition;
-let presetSnapshot = presetFields();
-let presetName = '',
-  presetDescription = '';
-function presetFields() {
-  return JSON.stringify(value.value);
-}
-function togglePreset(id: string, event: Event) {
-  const input = event.target as HTMLInputElement;
-  const checked = input.checked;
-  // Keep the committed selection visible if replacement is cancelled or fails.
-  input.checked = id ? presetIds.value.includes(id) : !presetIds.value.length;
-  void applyPresets(
-    id ? (checked ? [...presetIds.value, id] : presetIds.value.filter((item) => item !== id)) : [],
-  );
-}
-async function applyPresets(nextIds: string[]) {
-  if (busy.value || JSON.stringify(nextIds) === JSON.stringify(presetIds.value)) return;
-  const selected = (props.presets ?? []).filter((item) => nextIds.includes(item.id));
-  if (selected.length !== nextIds.length) return;
-  if (
-    presetFields() !== presetSnapshot &&
-    !window.confirm(
-      '切换创建方式将替换当前规则配置。自定义代码会暂存，选择“不使用预置模板”可恢复；手动填写的名称和描述会保留。是否继续？',
-    )
-  ) {
-    return;
-  }
-  busy.value = true;
-  error.value = '';
-  try {
-    const sources = await Promise.all(
-      selected.map(async (preset) => {
-        const source = (await api.evaluator(preset.id)).latest;
-        if (!source) throw new Error('该预置评估器没有可用的发布版本，请刷新后重试。');
-        return source;
-      }),
-    );
-    const source = sources[0];
-    if (!presetIds.value.length) customDefinition = JSON.parse(JSON.stringify(value.value));
-    value.value = source
-      ? {
-          ...JSON.parse(JSON.stringify(customDefinition)),
-          dimension: source.dimension,
-          severity: sources.some((item) => item.severity === 'blocking')
-            ? 'blocking'
-            : source.severity,
-          config: {
-            language: 'python-subset-v1',
-            input_format: 'trace-v1',
-            source: traceBuiltinRuleCode(sources.map((item) => item.implementation_id)),
-            pass_threshold: 1,
-          },
-        }
-      : JSON.parse(JSON.stringify(customDefinition));
-    const nextName = selected.map((item) => item.name).join(' + ');
-    const nextDescription = selected
-      .map((item) => item.description)
-      .filter(Boolean)
-      .join('；');
-    if (!name.value.trim() || name.value === presetName) name.value = nextName;
-    if (!description.value.trim() || description.value === presetDescription)
-      description.value = nextDescription;
-    presetName = nextName;
-    presetDescription = nextDescription;
-    presetIds.value = selected.map((item) => item.id);
-    presetSnapshot = presetFields();
-  } catch (e) {
-    error.value = String(e);
-  } finally {
-    busy.value = false;
-  }
-}
 function snapshot() {
   return JSON.stringify([name.value, description.value, value.value]);
 }
@@ -142,6 +71,19 @@ async function load(id: string) {
   name.value = detail.value.evaluator.name;
   description.value = detail.value.evaluator.description;
   selectVersion(null);
+}
+async function loadPreset(preset: EvaluatorSummary) {
+  const source = (await api.evaluator(preset.id)).latest;
+  if (!source) throw new Error('该预置评估器没有可用的发布版本，请刷新后重试。');
+  value.value = {
+    ...value.value,
+    dimension: source.dimension,
+    severity: source.severity,
+    config: { ...value.value.config, source: traceBuiltinRuleCode([source.implementation_id]) },
+  };
+  name.value = preset.name;
+  description.value = preset.description;
+  baseline.value = snapshot();
 }
 async function action(work: () => Promise<void>) {
   if (busy.value) return;
@@ -246,7 +188,9 @@ function beforeUnload(event: BeforeUnloadEvent) {
 onMounted(async () => {
   baseline.value = snapshot();
   window.addEventListener('beforeunload', beforeUnload);
+  const preset = props.initialPreset;
   if (props.initialId) await action(() => load(props.initialId!));
+  else if (preset) await action(() => loadPreset(preset));
 });
 onUnmounted(() => {
   window.removeEventListener('beforeunload', beforeUnload);
@@ -326,34 +270,6 @@ onUnmounted(() => {
                 :readonly="readOnly"
               />
             </label>
-            <div v-if="!initialId && !detail" class="field full">
-              基于预置评估器创建（可选）
-              <div class="preset-options" role="group" aria-label="基于预置评估器创建">
-                <label class="preset-option">
-                  <input
-                    type="checkbox"
-                    :checked="!presetIds.length"
-                    :disabled="busy"
-                    @change="togglePreset('', $event)"
-                  />
-                  不使用预置模板
-                </label>
-                <label v-for="preset in presets" :key="preset.id" class="preset-option">
-                  <input
-                    type="checkbox"
-                    :checked="presetIds.includes(preset.id)"
-                    :disabled="busy"
-                    @change="togglePreset(preset.id, $event)"
-                  />
-                  {{ preset.name }}
-                </label>
-              </div>
-              <span class="muted"
-                >可多选，生成一份可编辑 Python，全部检查通过得 100 分，否则得 0 分。
-                组合统一归类到首个模板的维度；包含阻断模板时沿用阻断检查，可在下方修改。
-                请调整工具名、字段和期望值，最终评分以保存的代码为准。</span
-              >
-            </div>
           </div>
           <CodeRuleEditor v-model="value" :disabled="readOnly || busy" />
         </fieldset>
@@ -393,23 +309,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.preset-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 18px;
-  padding: 12px;
-  border: 1px solid #dce1e9;
-  border-radius: 6px;
-}
-.preset-option {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-}
-.preset-option input {
-  accent-color: #0aa58f;
-}
 .code-fields {
   border: 0;
   padding: 0;

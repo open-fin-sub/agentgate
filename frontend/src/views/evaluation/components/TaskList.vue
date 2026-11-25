@@ -118,25 +118,26 @@ const done = (row: TaskListSummary) =>
   row.total_cases === null || row.completed_cases === null
     ? null
     : { done: row.completed_cases, total: row.total_cases };
-async function deleteTask(id: string) {
-  const historical = rows.value.find((row) => row.id === id)?.historical_comparison;
+const archiving = ref(false);
+async function archiveTask(row: TaskListSummary) {
+  if (archiving.value) return;
+  archiving.value = true;
   try {
+    const ongoing = hasActiveRuns([row]) ? '尚未结束的运行将继续执行。' : '';
     await ElMessageBox.confirm(
-      historical
-        ? '删除此历史对比任务？两侧原单任务及其结果会保留。'
-        : '删除后任务及其运行记录、Trace 和结果将不可恢复。已被历史对比引用的单任务需先删除关联对比。确定删除？',
-      '删除任务',
-      { type: 'warning', confirmButtonText: '永久删除', cancelButtonText: '取消' },
+      `归档测评任务“${row.name}”？归档后将从测评任务列表和测评总览中移除，运行记录、Trace 和测评结果仍可通过原链接查看。${ongoing}`,
+      '归档任务',
+      { type: 'warning', confirmButtonText: '归档', cancelButtonText: '取消' },
     );
-  } catch {
-    return;
-  }
-  try {
-    await request(`/evaluation-tasks/${encodeURIComponent(id)}`, 'DELETE');
-    ElMessage.success('任务已删除');
+    const id = row.task_id ?? row.runs[0].run_id;
+    const path = `/evaluation-tasks/${encodeURIComponent(id)}/archive`;
+    await request(row.task_id === null ? path + '?standalone=true' : path, 'POST');
+    ElMessage.success('任务已归档');
     await load();
   } catch (cause) {
-    ElMessage.error('删除失败：' + String(cause));
+    if (cause !== 'cancel' && cause !== 'close') ElMessage.error('归档失败：' + String(cause));
+  } finally {
+    archiving.value = false;
   }
 }
 onUnmounted(() => clearTimeout(debounce));
@@ -394,10 +395,11 @@ onUnmounted(() => clearTimeout(debounce));
                   重跑
                 </button>
                 <button
-                  class="link danger delete-action"
-                  @click="deleteTask(r.task_id ?? r.runs[0].run_id)"
+                  class="link archive-action"
+                  :disabled="archiving"
+                  @click="archiveTask(r)"
                 >
-                  删除
+                  归档
                 </button>
                 <el-dropdown
                   class="more-actions"
@@ -408,8 +410,8 @@ onUnmounted(() => clearTimeout(debounce));
                   <button type="button" class="link">更多</button>
                   <template #dropdown>
                     <el-dropdown-menu>
-                      <el-dropdown-item @click="deleteTask(r.task_id ?? r.runs[0].run_id)">
-                        删除
+                      <el-dropdown-item :disabled="archiving" @click="archiveTask(r)">
+                        归档
                       </el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
@@ -631,7 +633,7 @@ onUnmounted(() => clearTimeout(debounce));
   font-size: 12px;
   line-height: inherit;
 }
-.row-actions .delete-action,
+.row-actions .archive-action,
 .row-actions .more-actions button {
   margin-right: 0;
 }
@@ -705,7 +707,7 @@ footer > span:first-child {
   margin-right: auto;
 }
 @container (max-width: 1100px) {
-  .row-actions .delete-action {
+  .row-actions .archive-action {
     display: none;
   }
   .row-actions .more-actions {

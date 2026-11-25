@@ -12,10 +12,10 @@ from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from datetime import datetime
 from enum import Enum
-from typing import TypeVar
+from typing import Literal, TypeVar
 
 from pydantic import BaseModel, ValidationError
-from sqlalchemy import Connection, Table, and_, create_engine, func, select
+from sqlalchemy import Connection, Table, and_, create_engine, func, select, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DBAPIError, IntegrityError
 
@@ -128,10 +128,10 @@ def _where(table: Table, filters: dict):
     return and_(*conditions) if conditions else True
 
 
-def _rows(db: Connection, table: Table, *, lock: bool = False, **filters) -> list:
+def _rows(db: Connection, table: Table, *, lock: bool | Literal["shared"] = False, **filters) -> list:
     query = select(table).where(_where(table, filters))
     if lock:
-        query = query.with_for_update()
+        query = query.with_for_update(read=lock == "shared")
     rows = db.execute(query).mappings().all()
     exact = []
     for row in rows:
@@ -181,6 +181,12 @@ def _one(db: Connection, table: Table, model_type: type[M], *, lock=False, **fil
     if len(models) > 1:
         raise ValueError("expected a unique stored identity")
     return models[0] if models else None
+
+
+def _require_unarchived_dataset(db: Connection, dataset_id: str) -> None:
+    dataset = _one(db, s.datasets, Dataset, id=dataset_id, lock="shared")
+    if dataset is not None:
+        dataset.require_available_for_submission()
 
 
 def _insert(db: Connection, table: Table, model: BaseModel) -> None:
@@ -456,7 +462,11 @@ class MySQLRepository:
         self, dataset_id: str, expected_draft_id: str, *, user_team_id: str
     ) -> None:
         with self._transaction() as db:
-            _one(db, s.datasets, Dataset, id=dataset_id, lock=True)
+            dataset = _one(
+                db, s.datasets, Dataset, id=dataset_id, user_team_id=user_team_id, lock=True
+            )
+            if dataset is None:
+                raise ValueError("expected Dataset does not exist")
             draft = _one(
                 db,
                 s.dataset_versions,
@@ -472,30 +482,15 @@ class MySQLRepository:
             db.execute(
                 s.dataset_versions.delete().where(s.dataset_versions.c.id_key == _digest(draft.id))
             )
-            if not _rows(db, s.dataset_versions, dataset_id=dataset_id, user_team_id=user_team_id):
+            if dataset.deleted_version_high_watermark == 0 and not _rows(
+                db, s.dataset_versions, dataset_id=dataset_id, user_team_id=user_team_id
+            ):
                 db.execute(
                     s.datasets.delete().where(
                         s.datasets.c.id_key == _digest(dataset_id),
                         s.datasets.c.user_team_key == _digest(user_team_id),
                     )
                 )
-
-    def delete_dataset_version(self, dataset_id: str, version: int, *, user_team_id: str) -> None:
-        with self._transaction() as db:
-            dataset = _one(db, s.datasets, Dataset, id=dataset_id, user_team_id=user_team_id, lock=True)
-            if dataset is None:
-                raise ValueError("expected Dataset does not exist")
-            published = _one(db, s.dataset_versions, DatasetVersion, dataset_id=dataset_id,
-                             version=version, status="published", user_team_id=user_team_id, lock=True)
-            if published is None:
-                raise ValueError("expected Dataset publication does not exist")
-            db.execute(s.dataset_versions.delete().where(s.dataset_versions.c.id_key == _digest(published.id)))
-            if _rows(db, s.dataset_versions, dataset_id=dataset_id, user_team_id=user_team_id):
-                _update(db, s.datasets, dataset.model_copy(update={
-                    "deleted_version_high_watermark": max(dataset.deleted_version_high_watermark, version),
-                }))
-            else:
-                db.execute(s.datasets.delete().where(s.datasets.c.id_key == _digest(dataset_id)))
 
     def delete_dataset_record(self, dataset_id: str, *, user_team_id: str) -> None:
         with self._transaction() as db:
@@ -504,6 +499,17 @@ class MySQLRepository:
             )
             if dataset is None:
                 raise ValueError("expected Dataset does not exist")
+            if dataset.deleted_version_high_watermark > 0 or _rows(
+                db,
+                s.dataset_versions,
+                lock=True,
+                dataset_id=dataset_id,
+                user_team_id=user_team_id,
+                status="published",
+            ):
+                raise ValueError(
+                    "Dataset with published versions cannot be deleted; archive it instead"
+                )
             db.execute(
                 s.dataset_versions.delete().where(
                     s.dataset_versions.c.dataset_key == _digest(dataset_id),
@@ -578,6 +584,14 @@ class MySQLRepository:
                     s.evaluation_tasks.c.id_key == _digest(task_id)
                 )
             )
+
+    def archive_task(
+        self, task_id: str, *, user_team_id: str, standalone: bool = False,
+    ) -> None:
+        from .evaluation_task_archival import archive_task
+
+        with self._transaction() as db:
+            archive_task(db, task_id, user_team_id=user_team_id, standalone=standalone)
 
     def replace_dataset_draft(self, expected_draft_id: str, published: DatasetVersion) -> None:
         with self._transaction() as db:
@@ -1116,10 +1130,12 @@ class MySQLRepository:
         with self._transaction() as db:
             return projection.dataset_related_tasks(db, dataset_id, version, user_team_id, limit, cursor)
 
-    def save_run(self, run: EvaluationRun) -> None:
+    def save_run(self, run: EvaluationRun, *, from_rerun_snapshot: bool = False) -> None:
         with self._transaction() as db:
             stored = _one(db, s.runs, EvaluationRun, id=run.id, lock=True)
             if stored is None:
+                if not from_rerun_snapshot:
+                    _require_unarchived_dataset(db, run.manifest.dataset.dataset_id)
                 self._insert_run(db, run)
                 return
             if stored == run:
@@ -1145,11 +1161,27 @@ class MySQLRepository:
                 **({"user_team_id": user_team_id} if user_team_id is not None else {}),
             )
 
-    def list_runs(self, limit: int = 50, *, user_team_id: str) -> list[EvaluationRun]:
+    def list_runs(
+        self, limit: int = 50, *, user_team_id: str, include_archived: bool = True,
+    ) -> list[EvaluationRun]:
         _limit(limit)
         with self._transaction() as db:
-            items = _models(db, s.runs, EvaluationRun, user_team_id=user_team_id)
+            items = self._run_models(db, user_team_id, include_archived)
         return _ordered(items)[:limit]
+
+    @staticmethod
+    def _run_models(db: Connection, user_team_id: str, include_archived: bool) -> list[EvaluationRun]:
+        if include_archived:
+            return _models(db, s.runs, EvaluationRun, user_team_id=user_team_id)
+        condition = text(projection.visible_run_condition(
+            db, "agentgate_runs.id_key", "agentgate_runs.archived_at",
+        ))
+        records = db.execute(select(s.runs).where(
+            s.runs.c.user_team_key == _digest(user_team_id), condition,
+        )).mappings()
+        return _validated_models(
+            (row for row in records if row["user_team_id"] == user_team_id), s.runs, EvaluationRun,
+        )
 
     def list_runs_by_status(
         self,
@@ -1179,10 +1211,12 @@ class MySQLRepository:
         )
         return items[:limit]
 
-    def count_runs_by_status(self, *, user_team_id: str) -> dict[RunStatus, int]:
+    def count_runs_by_status(
+        self, *, user_team_id: str, include_archived: bool = True,
+    ) -> dict[RunStatus, int]:
         counts = dict.fromkeys(RunStatus, 0)
         with self._transaction() as db:
-            for run in _models(db, s.runs, EvaluationRun, user_team_id=user_team_id):
+            for run in self._run_models(db, user_team_id, include_archived):
                 counts[run.status] += 1
         return counts
 
@@ -1428,7 +1462,9 @@ class MySQLRepository:
             projection.put_task(db, updated)
         return updated
 
-    def save_task_runs(self, task: EvaluationTask, runs: Sequence[EvaluationRun]) -> None:
+    def save_task_runs(
+        self, task: EvaluationTask, runs: Sequence[EvaluationRun], *, from_rerun_snapshot: bool = False,
+    ) -> None:
         if task.previous_run_ids:
             raise ValueError("new task cannot contain execution history")
         if task.run_ids != tuple(run.id for run in runs):
@@ -1440,13 +1476,16 @@ class MySQLRepository:
         ):
             raise ValueError("stability requires identical snapshots and pending runs")
         with self._transaction() as db:
+            if not from_rerun_snapshot:
+                for dataset_id in sorted({run.manifest.dataset.dataset_id for run in runs}):
+                    _require_unarchived_dataset(db, dataset_id)
             for run in runs:
                 self._insert_run(db, run)
             self._save_task(db, task)
 
     def _save_task(self, db: Connection, task: EvaluationTask) -> EvaluationTask:
         for run_id in sorted(task.run_ids):
-            if not _one(db, s.runs, EvaluationRun, id=run_id, lock=True):
+            if not _one(db, s.runs, EvaluationRun, id=run_id, archived_at=None, lock=True):
                 raise ValueError("unknown EvaluationRun")
         previous = _one(db, s.evaluation_tasks, EvaluationTask, id=task.id, lock=True)
         if previous:
@@ -1492,9 +1531,10 @@ class MySQLRepository:
         with self._transaction() as db:
             return _one(db, s.evaluation_tasks, EvaluationTask, id=task_id)
 
-    def list_evaluation_tasks(self) -> list[EvaluationTask]:
+    def list_evaluation_tasks(self, *, include_archived: bool = True) -> list[EvaluationTask]:
+        filters = {} if include_archived else {"archived_at": None}
         with self._transaction() as db:
-            return _ordered(_models(db, s.evaluation_tasks, EvaluationTask))
+            return _ordered(_models(db, s.evaluation_tasks, EvaluationTask, **filters))
 
     def save_optimization_report(
         self, evidence_key: str, report: OptimizationReport

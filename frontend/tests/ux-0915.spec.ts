@@ -5,19 +5,19 @@ test.beforeEach(async ({ page }) => {
   await passAuthGate(page);
 });
 
-test('September 15 UI: menu, version deletion boundaries and evaluator copy',async({page})=>{
+test('dataset and evaluator menu actions follow published state',async({page})=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message))
  await page.goto('/#datasets')
  await expect(page.getByRole('button',{name:'按 ID 打开',exact:true})).toHaveCount(0)
- await expect(page.locator('.tile-icon')).toHaveCount(0)
- const card=page.locator('.dataset-tile').first()
+ await page.getByLabel('搜索测评集').fill('loan-risk-policy')
+ const card=page.getByTestId('dataset-item-loan-risk-policy')
  await card.getByRole('button',{name:'更多操作',exact:false}).click()
  await expect(page.getByRole('menuitem',{name:'查看详情',exact:true})).toBeVisible()
- await page.getByRole('menuitem',{name:'删除',exact:true}).click()
- const deletion=page.getByRole('dialog',{name:'删除测评集版本'})
- await expect(deletion.getByLabel('待删除版本')).toBeVisible()
- await expect(deletion.getByRole('button',{name:'删除草稿',exact:true})).toBeDisabled()
- await deletion.getByRole('button',{name:'取消',exact:true}).click()
+ await page.getByRole('menuitem',{name:'归档',exact:true}).click()
+ const archive=page.getByRole('dialog',{name:'归档测评集',exact:true})
+ await expect(archive).toContainText('历史版本和测评报告仍可查看')
+ await expect(archive.getByLabel('待删除版本')).toHaveCount(0)
+ await archive.getByRole('button',{name:'取消',exact:true}).click()
  await page.goto('/#datasets/loan-risk-policy')
  await page.getByTestId('version-published-1').click()
  await expect(page.getByTestId('run-single-case')).toHaveCount(0)

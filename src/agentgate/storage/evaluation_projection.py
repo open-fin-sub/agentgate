@@ -235,12 +235,20 @@ def valid_summary(db, run="r", summary="s"):
 def run_relation(db):
     pk, rk, _, _, _, team = keys(db)
     return f"""SELECT r.{pk} AS k,r.id AS run_id,r.{team} AS team,r.status,r.created_at,
-        s.display_payload,s.fallback_name,s.total_cases,s.overall_score,s.gate_reason,
+        r.archived_at,s.display_payload,s.fallback_name,s.total_cases,s.overall_score,s.gate_reason,
         s.summary_version,{valid_summary(db)} AS summary_valid,
         COALESCE(p.completed_cases,0) AS completed_cases
         FROM agentgate_runs r LEFT JOIN agentgate_run_summaries s ON s.{rk}=r.{pk}
         LEFT JOIN (SELECT {rk},SUM(completed) AS completed_cases
                    FROM agentgate_run_case_progress GROUP BY {rk}) p ON p.{rk}=r.{pk}"""
+
+
+def visible_run_condition(db, run_key, archived_at):
+    pk, rk, tk, _, _, _ = keys(db)
+    return f"""{archived_at} IS NULL AND NOT EXISTS (
+        SELECT 1 FROM agentgate_evaluation_task_runs archived_member
+        JOIN agentgate_evaluation_tasks archived_task ON archived_task.{pk}=archived_member.{tk}
+        WHERE archived_member.{rk}={run_key} AND archived_task.archived_at IS NOT NULL)"""
 
 
 _TASK_STATUS = """CASE WHEN SUM(CASE WHEN r.status='failed' THEN 1 ELSE 0 END)>0 THEN 'failed'
@@ -293,7 +301,7 @@ def task_relation(db):
         LEFT JOIN agentgate_run_summaries member_summary ON member_summary.{rk}=r.{pk}
         JOIN agentgate_runs first_run ON first_run.{pk}=t.{first}
         LEFT JOIN agentgate_run_summaries s ON s.{rk}=t.{first}
-        WHERE NOT EXISTS (
+        WHERE t.archived_at IS NULL AND NOT EXISTS (
             SELECT 1 FROM ({task_members(db)}) bad
             LEFT JOIN agentgate_runs br ON br.{pk}=bad.{rk}
             WHERE bad.{tk}=t.{pk} AND bad.is_current=1
@@ -303,7 +311,7 @@ def task_relation(db):
         SELECT r.{pk},r.id,NULL,COALESCE(s.fallback_name,r.id),'single',r.created_at,r.id,
         0,1-({valid_summary(db)}),r.status
         FROM agentgate_runs r LEFT JOIN agentgate_run_summaries s ON s.{rk}=r.{pk}
-        WHERE r.{team}=:team AND NOT EXISTS (
+        WHERE r.{team}=:team AND r.archived_at IS NULL AND NOT EXISTS (
             SELECT 1 FROM agentgate_evaluation_task_runs a WHERE a.{rk}=r.{pk})"""
 
 
@@ -574,6 +582,7 @@ def overview(db, query, team):
         f"""SELECT AVG(overall_score) AS score,COUNT(overall_score) AS scored,
         COALESCE(SUM(total_cases),0) AS samples FROM ({run_relation(db)}) q
         WHERE team=:team AND status='completed' AND summary_valid=1 AND {condition}
+        AND {visible_run_condition(db, "q.k", "q.archived_at")}
         AND NOT EXISTS (
             SELECT 1 FROM agentgate_evaluation_task_runs own
             JOIN agentgate_evaluation_task_runs member ON member.{tk}=own.{tk} AND member.is_current=1

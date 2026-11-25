@@ -46,6 +46,32 @@ def compare(repo, a, b, identity="comparison", team=""):
     )
 
 
+def test_archive_distinguishes_standalone_run_and_owned_task_with_same_id(repository):
+    repo = repository
+    task = seed(repo, "same-id", team="owner")
+    standalone = report(task.id).run.model_copy(update={"user_team_id": "owner"})
+    repo.save_run(standalone)
+    query = TaskSummaryQuery()
+    assert repo.list_evaluation_task_summaries(query, user_team_id="owner").total == 2
+
+    with pytest.raises(LookupError):
+        repo.archive_task(task.id, user_team_id="another-team", standalone=True)
+    with pytest.raises(LookupError):
+        repo.archive_task(task.run_ids[0], user_team_id="owner", standalone=True)
+    repo.archive_task(task.id, user_team_id="owner", standalone=True)
+    repo.archive_task(task.id, user_team_id="owner", standalone=True)
+
+    page = repo.list_evaluation_task_summaries(query, user_team_id="owner")
+    assert [item.task_id for item in page.items] == [task.id]
+    assert repo.list_runs(user_team_id="owner", include_archived=False)[0].id == task.run_ids[0]
+    repo.archive_task(task.id, user_team_id="owner")
+    assert repo.list_evaluation_task_summaries(query, user_team_id="owner").total == 0
+    assert not any(repo.count_runs_by_status(user_team_id="owner", include_archived=False).values())
+    assert repo.get_evaluation_task(task.id) == task
+    assert repo.get_run(standalone.id, user_team_id="owner") == standalone
+    assert repo.list_results(task.run_ids[0])
+
+
 def test_reference_listing_scores_and_delete(repository):
     repo = repository
     a, b = seed(repo, "A", default_score=0), seed(repo, "B", default_score=1)
@@ -204,7 +230,7 @@ def test_missing_reference_is_not_partially_visible(tmp_path):
         repo.is_historical_comparison("comparison", user_team_id="")
 
 
-def test_api_creates_reads_and_deletes_without_dispatch(tmp_path):
+def test_api_creates_reads_and_archives_without_dispatch(tmp_path):
     class Dispatcher:
         def submit(self, run_id):
             pytest.fail("historical comparison must never dispatch a run")
@@ -232,13 +258,16 @@ def test_api_creates_reads_and_deletes_without_dispatch(tmp_path):
         assert overall["baseline_score"] == 0.5 and overall["candidate_score"] == 1
         assert not overall["comparable"] and overall["score_delta"] == 0.5
         assert "dataset_changed" in overall["reasons"]
-        assert client.delete("/api/evaluation-tasks/A").status_code == 409
+        assert client.post("/api/evaluation-tasks/A/archive").status_code == 200
+        assert client.get("/api/evaluation-tasks/history/comparison").json()["data"] == result
         assert (
             client.post(
                 "/api/evaluation-tasks/history/rerun", json={"source_run_id": a.run_ids[0]}
             ).status_code
             == 409
         )
-        assert client.delete("/api/evaluation-tasks/history").status_code == 200
+        assert client.post("/api/evaluation-tasks/history/archive").status_code == 200
+        assert [row["id"] for row in client.get("/api/evaluation-task-summaries").json()["data"]["items"]] == ["B"]
+        assert client.get("/api/evaluation-tasks/history/comparison").json()["data"] == result
         assert client.get("/api/evaluation-tasks/A").status_code == 200
-        assert client.delete("/api/evaluation-tasks/A").status_code == 200
+        assert client.post("/api/evaluation-tasks/A/archive").status_code == 200

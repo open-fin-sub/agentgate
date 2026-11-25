@@ -26,6 +26,9 @@ async function setup(page: Page, rows = [row()], total = rows.length) {
     calls.push({path:url.pathname + url.search, method:route.request().method(),headers:route.request().headers()});
     if (url.pathname === '/api/evaluation-overview/summary') return route.fulfill({json:envelope(metrics)});
     if (url.pathname === '/api/evaluation-task-summaries') return route.fulfill({json:envelope({items:rows,total,page:Number(url.searchParams.get('page')||1),page_size:Number(url.searchParams.get('page_size')||20)})});
+    if (/^\/api\/evaluation-tasks\/[^/]+\/archive$/.test(url.pathname) && route.request().method() === 'POST') {
+      return route.fulfill({json:envelope({archived:decodeURIComponent(url.pathname.split('/')[3])})});
+    }
     if (/^\/api\/evaluation-tasks\/[^/]+$/.test(url.pathname)) {
       const id = url.pathname.split('/').pop()!;
       return route.fulfill({json:envelope({id,kind:id==='ab'?'ab':'single',run_ids:id==='ab'?['ab-a','ab-b']:[id==='created'?'created-run':id+'-a'],static_report_ids:[]})});
@@ -219,22 +222,41 @@ test('A/B scores, nulls, independent and stability rows preserve presentation an
   await expect(page.getByText('Stability',{exact:true})).toBeVisible();
 });
 
-test('delete handles dismiss, errors, success and last-page correction',async({page})=>{
+test('archive handles dismiss, errors, success and last-page correction',async({page})=>{
   const calls=await setup(page,[row()],21);await mount(page);
   await page.getByRole('button',{name:'下一页'}).click();
   await expect(page.locator('footer')).toContainText('2 / 2');
-  await page.getByRole('button',{name:'删除',exact:true}).click();
-  await page.getByRole('button',{name:'取消',exact:true}).click();
-  expect(calls.filter(c=>c.method==='DELETE')).toHaveLength(0);
-  await page.route('**/api/evaluation-tasks/task-1',r=>r.fulfill({status:500,json:{detail:'delete failed'}}));
-  await page.getByRole('button',{name:'删除',exact:true}).click();
-  await page.getByRole('button',{name:'永久删除'}).click();
-  await expect(page.getByText(/删除失败/)).toBeVisible();
-  await page.unroute('**/api/evaluation-tasks/task-1');
+  const action=page.getByRole('button',{name:'归档',exact:true});
+  const confirmation=page.getByRole('dialog',{name:'归档任务'});
+  await action.click();
+  await expect(confirmation).toContainText('运行记录、Trace 和测评结果仍可通过原链接查看');
+  await confirmation.getByRole('button',{name:'取消',exact:true}).click();
+  expect(calls.filter(c=>c.method==='POST')).toHaveLength(0);
+  await page.route('**/api/evaluation-tasks/task-1/archive',r=>r.fulfill({status:500,json:{detail:'archive failed'}}));
+  await action.click();
+  await confirmation.getByRole('button',{name:'归档',exact:true}).click();
+  await expect(page.getByText(/归档失败/)).toBeVisible();
+  await page.unroute('**/api/evaluation-tasks/task-1/archive');
   await page.route('**/api/evaluation-task-summaries?*',r=>r.fulfill({json:envelope({items:[],total:20,page:1,page_size:20})}));
-  await page.getByRole('button',{name:'删除',exact:true}).click();
-  await page.getByRole('button',{name:'永久删除'}).click();
+  await action.click();
+  await confirmation.getByRole('button',{name:'归档',exact:true}).click();
+  await expect(page.getByText('任务已归档',{exact:true})).toBeVisible();
+  await expect.poll(()=>calls.filter(c=>c.method==='POST').map(c=>c.path))
+    .toEqual(['/api/evaluation-tasks/task-1/archive']);
   await expect(page.locator('footer')).toContainText('1 / 1');
+});
+
+test('compact task list archives a standalone run explicitly',async({page})=>{
+  await page.setViewportSize({width:1000,height:1000});
+  const legacy=row('legacy','single','running',null);
+  const calls=await setup(page,[legacy]);await mount(page);
+  await page.getByRole('button',{name:'更多',exact:true}).click();
+  await page.getByRole('menuitem',{name:'归档',exact:true}).click();
+  const confirmation=page.getByRole('dialog',{name:'归档任务'});
+  await expect(confirmation).toContainText('尚未结束的运行将继续执行');
+  await confirmation.getByRole('button',{name:'归档',exact:true}).click();
+  await expect.poll(()=>calls.filter(c=>c.method==='POST').map(c=>c.path))
+    .toEqual(['/api/evaluation-tasks/legacy-a/archive?standalone=true']);
 });
 
 test('cancel uses run identity; rerun uses task identity and detail follows task ID',async({page})=>{

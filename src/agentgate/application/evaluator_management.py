@@ -293,7 +293,9 @@ class EvaluatorManagement:
             evaluator_id, user_team_id=user_team_id
         )
         if latest is not None:
-            if latest.kind not in (EvaluatorKind.LLM_JUDGE, EvaluatorKind.LLM_GROUP):
+            if latest.kind not in (
+                EvaluatorKind.RULE, EvaluatorKind.LLM_JUDGE, EvaluatorKind.LLM_GROUP,
+            ):
                 raise EvaluatorCatalogConflict(
                     "published Evaluator cannot be deleted; disable it instead"
                 )
