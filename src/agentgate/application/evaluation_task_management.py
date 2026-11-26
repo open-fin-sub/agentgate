@@ -174,6 +174,9 @@ class EvaluationTaskManagement:
     def get(self, task_id: str) -> EvaluationTask:
         return self._with_name(self._read_accessible_task(task_id, _team_id()))
 
+    def archive(self, task_id: str, *, standalone: bool = False) -> None:
+        self.repository.archive_task(task_id, user_team_id=_team_id(), standalone=standalone)
+
     def rerun(
         self, task_id: str, source_run_id: str, runs: RunManagement, dispatcher: JobDispatcher,
     ) -> EvaluationTask:
@@ -213,6 +216,6 @@ class EvaluationTaskManagement:
         team_id = _team_id()
         return [
             self._with_name(task)
-            for task in self.repository.list_evaluation_tasks()
+            for task in self.repository.list_evaluation_tasks(include_archived=False)
             if self._is_accessible(task, team_id)
         ]

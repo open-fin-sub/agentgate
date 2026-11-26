@@ -89,6 +89,7 @@ interface Options {
   kind?: 'single' | 'ab';
   status?: 'completed' | 'failed' | 'cancelled';
   missingVersion?: boolean;
+  archivedDataset?: boolean;
   loadError?: boolean;
   rejectSubmission?: boolean;
   hold?: boolean;
@@ -266,7 +267,7 @@ async function open(page: Page, options: Options = {}) {
       return reply(tasks.find((t) => t.id === path.split('/').pop()));
     if (path === '/api/datasets')
       return reply([
-        { id: 'dataset', name: '原测评集', version: 3 },
+        { id: 'dataset', name: '原测评集', version: 3, archived: options.archivedDataset ?? false },
         { id: 'other', name: '另一测评集', version: 1 },
       ]);
     if (path === '/api/evaluators')
@@ -524,6 +525,22 @@ test('cancel leaves original records intact and creates nothing', async ({ page 
   await expect(dialog).toHaveCount(0);
   expect(state.writes).toEqual([]);
   expect(state.tasks).toHaveLength(1);
+});
+test('copying a task with an archived dataset requires an explicit replacement', async ({ page }) => {
+  const state = await open(page, { archivedDataset: true });
+  await page.getByRole('button', { name: '重跑', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '新建测评任务' });
+  await expect(dialog.getByRole('alert')).toContainText('请重新选择已发布的测评集和版本');
+  const dataset = dialog.getByLabel('任务测评集', { exact: true });
+  await expect(dataset).toHaveValue('');
+  await expect(dataset.locator('option[value="dataset"]')).toHaveCount(0);
+  expect(state.writes).toEqual([]);
+  await dataset.selectOption('other');
+  await dialog.getByLabel('运行范围', { exact: true }).selectOption('all');
+  await dialog.getByRole('button', { name: '开始测评', exact: true }).click();
+  await expect(page).toHaveURL(/#\/tasks\/new-task$/);
+  expect(state.writes[0].body).toMatchObject({ dataset_id: 'other', dataset_version: 1 });
+  expect(JSON.stringify(state.original)).toBe(state.originalSnapshot);
 });
 test('missing original version is explicit and never selects a replacement', async ({ page }) => {
   const state = await open(page, { missingVersion: true });

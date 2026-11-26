@@ -12,6 +12,13 @@ from .base import DomainModel, content_sha256, normalize_utc, require_non_blank,
 from .case import Case
 
 
+class ArchivedDatasetError(ValueError):
+    """A new evaluation cannot use an archived dataset."""
+
+    def __init__(self) -> None:
+        super().__init__("该测评集已归档，请恢复后重试或选择其他测评集。")
+
+
 class DatasetVersionStatus(StrEnum):
     """Lifecycle state of a Dataset version record."""
 
@@ -32,6 +39,10 @@ class Dataset(DomainModel):
     user_team_id: str = ""  # 团队 ID（权限隔离，按团队过滤数据可见性）
     user_id: str = ""  # 用户 ID（创建者标识）
     user_name: str = ""  # 用户姓名（创建者显示名）
+
+    def require_available_for_submission(self) -> None:
+        if self.archived:
+            raise ArchivedDatasetError()
 
     @field_validator("id", "name")
     @classmethod

@@ -122,8 +122,6 @@ def test_mysql_dataset_errors_preserve_original(mysql_repository):
     with pytest.raises(ValueError):
         repo.save_dataset_version(publication.model_copy(update={"user_id": "changed"}))
     with pytest.raises(ValueError):
-        repo.delete_dataset_version(dataset.id, 99, user_team_id="")
-    with pytest.raises(ValueError):
         repo.delete_dataset_record("missing", user_team_id="")
     with pytest.raises(ValueError):
         repo.delete_task_record("missing", user_team_id="")

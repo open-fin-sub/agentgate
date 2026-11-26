@@ -15,7 +15,7 @@ import DatasetExportDialog from './components/DatasetExportDialog.vue';
 import VersionSelector from './components/VersionSelector.vue';
 import CaseEditor from './components/SampleEditor.vue';
 import SampleImportWizard from './components/SampleImportWizard.vue';
-import { caseCategoryLabels } from './types/index';
+import { caseCategoryLabels, hasPublicationHistory } from './types/index';
 import type {
   DatasetExport,
   DatasetSummary,
@@ -33,16 +33,22 @@ function openExport(id: string, versionId = '', ids: string[] = []) {
   selectedSampleIds.value = ids;
 }
 const props = defineProps<{ initialId?: string }>();
-watch(
-  () => props.initialId,
-  (id) => {
-    if (!id) {
-      showingDetail.value = false;
-    } else if (id !== activeDatasetId.value) {
-      void openDataset(id);
-    }
-  },
-);
+const linkedVersion = computed(() => {
+  const version = router.currentRoute.value.query.version;
+  return typeof version === 'string' ? version : '';
+});
+watch([() => props.initialId, linkedVersion], ([id, version], [previousId, previousVersion]) => {
+  if (!id && showingDetail.value) {
+    void showCatalog();
+  } else if (
+    id &&
+    (!showingDetail.value ||
+      id !== activeDatasetId.value ||
+      (id === previousId && version !== previousVersion))
+  ) {
+    void openDataset(id);
+  }
+});
 const emit = defineEmits<{
   dirtyChange: [dirty: boolean];
   runVersion: [selection: { id: string; version: number; caseIds?: string[]; caseName?: string }];
@@ -62,66 +68,11 @@ const datasets = shallowRef<DatasetSummary[]>([]);
 const versions = shallowRef<DatasetVersion[]>([]);
 const activeDatasetId = ref(props.initialId ?? '');
 const showingDetail = ref(Boolean(props.initialId));
-const deleteItem = ref<DatasetSummary | null>(null),
-  deleteVersions = shallowRef<DatasetVersion[]>([]),
-  deleteVersionId = ref(''),
-  deleting = ref(false);
-async function openDelete(item: DatasetSummary) {
-  try {
-    const result = await datasetApi.detail(item.id);
-    deleteVersions.value = result.versions;
-    deleteVersionId.value = '';
-    deleteItem.value = item;
-  } catch (e) {
-    showError(e, '无法读取待删除版本');
-  }
-}
-async function deleteSelectedVersion() {
-  if (!deleteItem.value || deleting.value) return;
-  const version = deleteVersions.value.find((v) => v.id === deleteVersionId.value);
-  if (!version) return;
-  try {
-    await ElMessageBox.confirm(
-      deleteVersions.value.length === 1
-        ? '删除此版本将同时删除整个测评集。历史测评报告保留。确认删除？'
-        : '确认删除所选版本及其中的用例？其他版本和历史测评报告保留。',
-      '删除版本',
-      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' },
-    );
-    deleting.value = true;
-    if (version.status === 'draft') await datasetApi.discardDraft(deleteItem.value.id);
-    else if (version.version !== null) await datasetApi.deleteVersion(deleteItem.value.id, version.version);
-    deleteItem.value = null;
-    datasets.value = await datasetApi.list();
-    ElMessage.success(deleteVersions.value.length === 1 ? '测评集已删除' : '版本已删除');
-  } catch (e) {
-    if (e !== 'cancel' && e !== 'close') showError(e, '删除失败');
-  } finally {
-    deleting.value = false;
-  }
-}
-const deleteHasPublished = computed(() =>
-  deleteVersions.value.some((v) => v.status === 'published'),
-);
-async function deleteWholeRecord() {
-  if (!deleteItem.value || deleting.value || deleteHasPublished.value) return;
-  try {
-    await ElMessageBox.confirm(
-      '确认永久删除该测评集及其草稿？此操作不可恢复，也不会以归档替代删除。',
-      '删除整个测评集',
-      { type: 'warning', confirmButtonText: '永久删除', cancelButtonText: '取消' },
-    );
-    deleting.value = true;
-    await datasetApi.deleteRecord(deleteItem.value.id);
-    deleteItem.value = null;
-    datasets.value = await datasetApi.list();
-    ElMessage.success('测评集已删除');
-  } catch (e) {
-    if (e !== 'cancel' && e !== 'close') showError(e, '删除失败');
-  } finally {
-    deleting.value = false;
-  }
-}
+const detailState = ref<
+  'loading' | 'ready' | 'missing' | 'missing-version' | 'forbidden' | 'error'
+>('loading');
+let loadSequence = 0;
+const removingDataset = ref(false);
 async function openById() {
   try {
     const { value } = await ElMessageBox.prompt('输入测评集 ID，可打开已归档资产。', '按 ID 打开', {
@@ -133,29 +84,39 @@ async function openById() {
   }
 }
 async function openDataset(id: string, editDraft = true) {
+  if (props.initialId !== id && id !== activeDatasetId.value && !canDiscard()) return false;
+  showingDetail.value = true;
+  if (props.initialId !== id) void router.replace('/datasets/' + encodeURIComponent(id));
   try {
-    await selectDataset(id);
+    if (!(await selectDataset(id))) return false;
     if (!editDraft) {
       const published = versions.value.find((v) => v.status !== 'draft');
       if (published) selectVersion(published);
     }
-    showingDetail.value = true;
-    void router.replace('/datasets/' + encodeURIComponent(id));
-  } catch (error) {
-    showError(error, '无法打开测评集');
+    return true;
+  } catch {
+    // selectDataset exposes the request outcome on the detail page.
+    return false;
   }
 }
-async function backToList() {
-  if (!canDiscard()) return;
-  editorDirty.value = false;
-  selectFirstCase(activeVersion.value);
+async function showCatalog() {
+  setDatasetId('');
   showingDetail.value = false;
-  void router.replace('/datasets');
+  const ticket = ++loadSequence;
+  loading.value = true;
   try {
-    datasets.value = await datasetApi.list();
+    const list = await datasetApi.list();
+    if (ticket === loadSequence) datasets.value = list;
   } catch (error) {
-    showError(error, '无法刷新测评集');
+    if (ticket === loadSequence) showError(error, '无法刷新测评集');
+  } finally {
+    if (ticket === loadSequence) loading.value = false;
   }
+}
+function backToList() {
+  if (!canDiscard()) return;
+  void showCatalog();
+  void router.replace('/datasets');
 }
 const activeVersionId = ref('');
 const activeCaseId = ref('');
@@ -242,7 +203,7 @@ const filteredSamples = computed(
 );
 async function createdDataset(id: string, withImport: boolean) {
   createV2Dialog.value = false;
-  await openDataset(id, true);
+  if (!(await openDataset(id))) return;
   sampleView.value = false;
   sampleWizard.value = withImport;
 }
@@ -330,23 +291,21 @@ function warnBeforeUnload(event: BeforeUnloadEvent) {
 }
 onMounted(() => window.addEventListener('beforeunload', warnBeforeUnload));
 onUnmounted(() => {
+  loadSequence++;
   historyRequest?.abort();
   window.removeEventListener('beforeunload', warnBeforeUnload);
   emit('dirtyChange', false);
 });
-function chooseVersion(preferredId = '') {
+function chooseVersion(preferredId = '', publication = '') {
   const selected =
     versions.value.find((item) => item.id === preferredId) ??
-    versions.value.find(
-      (item) =>
-        item.version ===
-        Number(new URLSearchParams(location.hash.split('?')[1] ?? '').get('version')),
-    ) ??
-    versions.value.find((item) => item.status === 'draft') ??
-    publishedVersions.value[0] ??
+    (publication
+      ? publishedVersions.value.find((item) => item.version === Number(publication))
+      : (versions.value.find((item) => item.status === 'draft') ?? publishedVersions.value[0])) ??
     null;
   activeVersionId.value = selected?.id ?? '';
   selectFirstCase(selected);
+  return selected;
 }
 
 function selectFirstCase(version: DatasetVersion | null) {
@@ -361,30 +320,28 @@ function selectFirstCase(version: DatasetVersion | null) {
   editedCase.value = selected ? cloneJson(selected) : null;
 }
 
-async function loadDatasets(preferredDatasetId = activeDatasetId.value) {
-  datasets.value = await datasetApi.list();
-  if (preferredDatasetId && !datasets.value.some((d) => d.id === preferredDatasetId)) {
-    await selectDataset(preferredDatasetId);
-    return;
-  }
-  const selected =
-    datasets.value.find((item) => item.id === preferredDatasetId) ??
-    datasets.value.find((item) => item.id === 'loan-risk-policy' && !item.archived) ??
-    datasets.value.find((item) => !item.archived);
-  if (selected) await selectDataset(selected.id);
-  else {
-    activeDatasetId.value = '';
-    versions.value = [];
-    chooseVersion();
-  }
+function setDatasetId(datasetId: string) {
+  if (activeDatasetId.value === datasetId) return;
+  activeDatasetId.value = datasetId;
+  versions.value = [];
+  chooseVersion();
+  selectedSampleIds.value = [];
+  validationIssues.value = [];
+  editorDirty.value = false;
+  versionHistoryDialog.value = false;
+  datasetDialog.value = false;
+  sampleWizard.value = false;
+  sampleQuery.value = '';
+  exportTarget.value = '';
 }
 
 async function selectDataset(datasetId: string, preferredVersionId = '') {
-  if (datasetId !== activeDatasetId.value && !canDiscard()) return;
-  loading.value = true;
+  const ticket = ++loadSequence;
+  setDatasetId(datasetId);
+  detailState.value = 'loading';
   try {
-    activeDatasetId.value = datasetId;
     const detail = await datasetApi.detail(datasetId);
+    if (ticket !== loadSequence) return false;
     const published = detail.versions
         .filter((v) => v.status === 'published')
         .sort((a, b) => (b.version ?? 0) - (a.version ?? 0))[0],
@@ -399,9 +356,17 @@ async function selectDataset(datasetId: string, preferredVersionId = '') {
     };
     datasets.value = [...datasets.value.filter((d) => d.id !== datasetId), summary];
     versions.value = detail.versions;
-    chooseVersion(preferredVersionId);
-  } finally {
-    loading.value = false;
+    const publication =
+      props.initialId === datasetId && linkedVersion.value !== 'draft' ? linkedVersion.value : '';
+    const selected = chooseVersion(preferredVersionId, publication);
+    detailState.value = publication && !selected ? 'missing-version' : 'ready';
+    return detailState.value === 'ready';
+  } catch (error) {
+    if (ticket !== loadSequence) return false;
+    if (error instanceof ApiError && error.status === 404) detailState.value = 'missing';
+    else if (error instanceof ApiError && error.status === 403) detailState.value = 'forbidden';
+    else detailState.value = 'error';
+    throw error;
   }
 }
 
@@ -562,7 +527,7 @@ async function submitDatasetDialog() {
         description: dialogDescription.value,
       });
       datasetDialog.value = false;
-      await loadDatasets(activeDatasetId.value);
+      await selectDataset(activeDatasetId.value);
       ElMessage.success('基本信息已保存');
       return;
     }
@@ -576,9 +541,7 @@ async function submitDatasetDialog() {
         ? await datasetApi.create(dialogName.value, dialogDescription.value)
         : await datasetApi.copy(activeDatasetId.value, dialogName.value, copyVersion.value);
     datasetDialog.value = false;
-    await loadDatasets(result.dataset.id);
-    showingDetail.value = true;
-    void router.replace('/datasets/' + encodeURIComponent(result.dataset.id));
+    if (!(await openDataset(result.dataset.id))) return;
     ElMessage.success(dialogMode.value === 'create' ? '测评集已创建' : '测评集已复制');
   } catch (error) {
     showError(error, '操作失败');
@@ -587,21 +550,34 @@ async function submitDatasetDialog() {
   }
 }
 
-async function archiveDataset(item: DatasetSummary) {
-  if (!canDiscard()) return;
+async function removeDataset(item: DatasetSummary) {
+  if (removingDataset.value || !canDiscard()) return;
+  const published = hasPublicationHistory(item);
+  const action = published ? '归档' : '删除';
+  removingDataset.value = true;
   try {
     await ElMessageBox.confirm(
-      `归档“${item.name}”？历史版本和运行记录仍可读取。主仓不提供归档列表，请保留 ID：${item.id}，通过“按 ID 打开”恢复。`,
-      '归档测评集',
-      { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' },
+      published
+        ? `归档测评集“${item.name}”？归档后将从测评集列表和新建任务的可选项中移除，历史版本和测评报告仍可查看。`
+        : `删除未发布测评集“${item.name}”及其草稿？此操作不可恢复。`,
+      action + '测评集',
+      { type: 'warning', confirmButtonText: action, cancelButtonText: '取消' },
     );
-  } catch {
-    return;
+    if (published) await datasetApi.archive(item.id);
+    else await datasetApi.deleteRecord(item.id);
+
+    datasets.value = datasets.value.filter((dataset) => dataset.id !== item.id);
+    if (activeDatasetId.value === item.id) {
+      activeDatasetId.value = '';
+      versions.value = [];
+      chooseVersion();
+    }
+    ElMessage.success('测评集已' + action);
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') showError(error, action + '失败');
+  } finally {
+    removingDataset.value = false;
   }
-  await datasetApi.archive(item.id);
-  await loadDatasets('');
-  showingDetail.value = false;
-  ElMessage.success('测评集已归档');
 }
 
 async function createDraft(base: number | null) {
@@ -620,7 +596,8 @@ async function createDraft(base: number | null) {
 }
 
 async function discardDraft() {
-  const hasPublished = versions.value.some((v) => v.status === 'published');
+  if (!activeDataset.value) return;
+  const hasPublished = hasPublicationHistory(activeDataset.value);
   await ElMessageBox.confirm(hasPublished
     ? '放弃当前草稿？草稿中的修改将无法恢复。'
     : '该测评集没有已发布版本，放弃草稿将同时删除整个测评集。确认删除？', '放弃草稿', {
@@ -678,8 +655,7 @@ async function importDataset(event: Event) {
   try {
     const payload = JSON.parse(await file.text()) as DatasetExport;
     const result = await datasetApi.importDataset(payload);
-    await loadDatasets(result.dataset.id);
-    showingDetail.value = true;
+    if (!(await openDataset(result.dataset.id))) return;
     ElMessage.success('测评集已导入');
   } catch (error) {
     showError(error, '导入失败');
@@ -692,14 +668,9 @@ function showError(error: unknown, fallback: string) {
   ElMessage.error(error instanceof Error ? error.message : fallback);
 }
 
-onMounted(async () => {
-  try {
-    await loadDatasets();
-  } catch (error) {
-    showError(error, '无法加载测评集');
-  } finally {
-    loading.value = false;
-  }
+onMounted(() => {
+  if (props.initialId) void openDataset(props.initialId);
+  else void showCatalog();
 });
 </script>
 
@@ -714,13 +685,18 @@ onMounted(async () => {
           ← 返回测评集列表
         </button>
         <div class="workspace-title-row">
-          <h1 id="dataset-workspace-title">{{ activeDataset?.name }}</h1>
-          <p v-if="activeDataset?.description?.trim()" class="dataset-description">
+          <h1 id="dataset-workspace-title">
+            {{ detailState === 'ready' ? activeDataset?.name : '测评集详情' }}
+          </h1>
+          <p
+            v-if="detailState === 'ready' && activeDataset?.description?.trim()"
+            class="dataset-description"
+          >
             {{ activeDataset.description }}
           </p>
         </div>
       </div>
-      <div v-if="activeDataset" class="actions">
+      <div v-if="detailState === 'ready' && activeDataset" class="actions">
         <span v-if="activeDataset.archived">已归档 · 只读</span
         ><button
           v-if="activeDataset.archived"
@@ -734,8 +710,13 @@ onMounted(async () => {
           @click="openMetadata(activeDataset)"
         >
           编辑基本信息</button
-        ><button class="secondary" @click="versionHistoryDialog = true">版本记录</button
-        ><button class="secondary" @click="openExport(activeDataset.id, activeVersionId)">
+        ><button v-if="activeVersion" class="secondary" @click="versionHistoryDialog = true">
+          版本记录</button
+        ><button
+          v-if="activeVersion"
+          class="secondary"
+          @click="openExport(activeDataset.id, activeVersionId)"
+        >
           导出样本
         </button>
       </div>
@@ -747,7 +728,7 @@ onMounted(async () => {
       :loading="loading"
       @select="openDataset($event, true)"
       @edit="openDataset($event, true)"
-      @remove="openDelete"
+      @remove="removeDataset"
     >
       <template #actions>
         <button class="primary" data-testid="create-dataset" :disabled="busy" @click="openCreate">
@@ -775,7 +756,26 @@ onMounted(async () => {
       @close="sampleWizard = false"
       @imported="samplesImported"
     />
-    <template v-if="showingDetail">
+    <section v-if="showingDetail && detailState !== 'ready'" class="card">
+      <p v-if="detailState === 'loading'" role="status">正在加载测评集…</p>
+      <p v-else-if="detailState === 'missing'" role="alert">
+        关联的测评集不存在或在当前空间不可见。
+      </p>
+      <p v-else-if="detailState === 'missing-version'" role="alert">
+        关联的测评集版本不存在或在当前空间不可见。
+      </p>
+      <template v-else>
+        <p role="alert">
+          {{
+            detailState === 'forbidden'
+              ? '当前用户无权访问此测评集。'
+              : '测评集详情加载失败，请重试。'
+          }}
+        </p>
+        <button type="button" class="secondary" @click="openDataset(activeDatasetId)">重试</button>
+      </template>
+    </section>
+    <template v-else-if="showingDetail">
       <VersionSelector
         v-if="activeDatasetId && !activeDataset?.archived"
         :versions="versions"
@@ -787,7 +787,8 @@ onMounted(async () => {
         @discard="discardDraft"
       />
 
-      <div class="dataset-detail-tabs tabs" role="group" aria-label="测评集详情">
+      <p v-if="!activeVersion" role="status">当前没有可用版本。</p>
+      <div v-else class="dataset-detail-tabs tabs" role="group" aria-label="测评集详情">
         <button
           type="button"
           :class="['tab', { active: detailTab === 'samples' }]"
@@ -840,7 +841,11 @@ onMounted(async () => {
           </table>
         </section></el-dialog
       >
-      <section v-if="detailTab === 'history'" class="dataset-tab-content" aria-label="关联测评历史">
+      <section
+        v-if="activeVersion && detailTab === 'history'"
+        class="dataset-tab-content"
+        aria-label="关联测评历史"
+      >
         <p v-if="activeVersion?.status === 'draft'" class="empty" role="status">
           草稿尚未发布，暂无关联测评任务
         </p>
@@ -929,7 +934,7 @@ onMounted(async () => {
         </ul>
       </el-alert>
 
-      <section v-if="detailTab === 'samples'" class="samples-panel" v-loading="loading">
+      <section v-if="activeVersion && detailTab === 'samples'" class="samples-panel">
         <div class="sample-toolbar">
           <button v-if="sampleView" class="link" @click="backSamples">← 数据样本</button
           ><input
@@ -949,7 +954,8 @@ onMounted(async () => {
             ＋ 新增样本
           </button>
         </div>
-        <p v-if="!editable" class="muted">
+        <p v-if="activeDataset?.archived" class="muted">测评集已归档，当前版本只读。</p>
+        <p v-else-if="!editable" class="muted">
           当前为已发布版本；如需修改或导入，请先创建草稿，已发布历史不会被覆盖。
         </p>
         <table v-if="!sampleView" class="samples-table">
@@ -1004,7 +1010,7 @@ onMounted(async () => {
           </tbody>
         </table>
         <p v-if="!sampleView && !filteredSamples.length" class="empty">
-          暂无样本，点击新增样本进行手动创建或文件导入。
+          {{ editable ? '暂无样本，点击新增样本进行手动创建或文件导入。' : '暂无匹配的样本。' }}
         </p>
         <CaseEditor
           v-if="sampleView"
@@ -1061,50 +1067,6 @@ onMounted(async () => {
       >
     </el-dialog>
   </section>
-  <el-dialog
-    :model-value="!!deleteItem"
-    title="删除测评集版本"
-    width="560px"
-    @close="!deleting && (deleteItem = null)"
-  >
-    <p>{{ deleteItem?.name }}</p>
-    <label
-      >选择版本<select v-model="deleteVersionId" class="input" aria-label="待删除版本">
-        <option value="">请选择版本</option>
-        <option v-for="v in deleteVersions" :key="v.id" :value="v.id">
-          {{ v.status === 'draft' ? '当前草稿' : '已发布 v' + v.version }} ·
-          {{ v.cases.length }} 条用例
-        </option>
-      </select></label
-    >
-    <p class="muted">
-      {{
-        deleteHasPublished
-          ? '可删除草稿或已发布版本；删除最后一个版本时，将同时删除测评集。历史测评报告保留。'
-          : '该测评集没有已发布版本，可永久删除整个测评集记录（不可恢复）。'
-      }}
-    </p>
-    <template #footer
-      ><button class="secondary" :disabled="deleting" @click="deleteItem = null">取消</button
-      ><button
-        class="primary"
-        :disabled="
-          deleting || !deleteVersions.some((v) => v.id === deleteVersionId)
-        "
-        @click="deleteSelectedVersion"
-      >
-        删除
-      </button>
-      <button
-        v-if="!deleteHasPublished"
-        class="primary"
-        :disabled="deleting"
-        @click="deleteWholeRecord"
-      >
-        删除整个测评集
-      </button></template
-    >
-  </el-dialog>
 </template>
 
 <style scoped>

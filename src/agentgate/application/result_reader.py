@@ -257,8 +257,8 @@ class ResultReader:
 
     def overview(self) -> dict[str, Any]:
         team_id = _user_team_id()
-        runs = self.repository.list_runs(user_team_id=team_id)
-        statuses = self.repository.count_runs_by_status(user_team_id=team_id)
+        runs = self.repository.list_runs(user_team_id=team_id, include_archived=False)
+        statuses = self.repository.count_runs_by_status(user_team_id=team_id, include_archived=False)
         datasets = self.repository.list_datasets(user_team_id=team_id)
         case_count = 0
         for dataset in datasets:

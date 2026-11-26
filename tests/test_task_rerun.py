@@ -54,6 +54,8 @@ def test_rerun_preserves_task_snapshot_and_old_evidence_across_restart(tmp_path)
     with TestClient(create_app(path, dispatcher=dispatcher)) as client:
         task, source = completed_task(client)
         repo = client.app.state.dependencies.repository
+        archived = client.delete(f"/api/datasets/{source.manifest.dataset.dataset_id}")
+        assert archived.status_code == 200, archived.text
         before = source.model_dump_json()
         traces, results = repo.list_traces(source.id), repo.list_results(source.id)
         assert traces and results
@@ -86,7 +88,7 @@ def test_rerun_preserves_task_snapshot_and_old_evidence_across_restart(tmp_path)
         assert client.get(f"/api/runs/{source.id}/samples").status_code == 200
 
 
-def test_repeated_reruns_preserve_history_and_metadata_then_delete_all_runs(tmp_path):
+def test_archive_preserves_history_metadata_and_lets_current_rerun_complete(tmp_path):
     with TestClient(create_app(tmp_path / "repeat.db", dispatcher=Dispatcher())) as client:
         task, source = completed_task(client)
         repo = client.app.state.dependencies.repository
@@ -104,10 +106,15 @@ def test_repeated_reruns_preserve_history_and_metadata_then_delete_all_runs(tmp_
         assert saved.status_code == 200, saved.text
         assert saved.json()["data"]["previous_run_ids"] == [source.id, first_id]
         assert saved.json()["data"]["name"] == "重命名"
-        assert client.delete(f"/api/evaluation-tasks/{task.id}").status_code == 200
+        assert client.post(f"/api/evaluation-tasks/{task.id}/archive").status_code == 200
+        assert execute(client, second_id).status == RunStatus.COMPLETED
+        assert client.get("/api/evaluation-task-summaries").json()["data"]["total"] == 0
+        detail = client.get(f"/api/evaluation-tasks/{task.id}").json()["data"]
+        assert detail["run_ids"] == [second_id]
+        assert detail["previous_run_ids"] == [source.id, first_id]
         for run_id in (source.id, first_id, second_id):
-            assert repo.get_run(run_id) is None
-            assert repo.list_traces(run_id) == repo.list_results(run_id) == []
+            assert repo.get_run(run_id).status == RunStatus.COMPLETED
+            assert repo.list_traces(run_id) and repo.list_results(run_id)
 
 
 @pytest.mark.parametrize("status", ["completed", "failed", "cancelled"])
@@ -208,7 +215,7 @@ def test_dispatch_failure_keeps_new_current_run_for_existing_retry_mechanism(tmp
         assert repo.get_run(source.id).status == RunStatus.COMPLETED
 
 
-def test_delete_task_history_is_scoped_to_owning_team(tmp_path):
+def test_archive_task_history_is_scoped_to_owning_team(tmp_path):
     with TestClient(create_app(tmp_path / "delete-scope.db", dispatcher=Dispatcher())) as client:
         _, template = completed_task(client)
         repo = client.app.state.dependencies.repository
@@ -222,14 +229,16 @@ def test_delete_task_history_is_scoped_to_owning_team(tmp_path):
                                json={"source_run_id": source.id}, headers={"X-Team-Id": "owner-team"})
         assert response.status_code == 202, response.text
         current = response.json()["data"]["run_ids"][0]
-        assert client.delete(f"/api/evaluation-tasks/{task.id}",
+        assert client.post(f"/api/evaluation-tasks/{task.id}/archive",
                              headers={"X-Team-Id": "other-team"}).status_code == 404
         assert repo.get_run(source.id, user_team_id="owner-team") is not None
         assert repo.get_run(current, user_team_id="owner-team") is not None
-        assert client.delete(f"/api/evaluation-tasks/{task.id}",
+        assert client.post(f"/api/evaluation-tasks/{task.id}/archive",
                              headers={"X-Team-Id": "owner-team"}).status_code == 200
-        assert repo.get_run(source.id, user_team_id="owner-team") is None
-        assert repo.get_run(current, user_team_id="owner-team") is None
+        assert repo.get_run(source.id, user_team_id="owner-team") is not None
+        assert repo.get_run(current, user_team_id="owner-team") is not None
+        client_tasks = client.get("/api/evaluation-task-summaries", headers={"X-Team-Id": "owner-team"})
+        assert client_tasks.json()["data"]["total"] == 0
 
 
 def test_persistence_failure_rolls_back_run_and_task_switch(tmp_path, monkeypatch):

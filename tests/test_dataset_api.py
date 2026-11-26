@@ -1,5 +1,9 @@
+from datetime import UTC, datetime, timedelta
+
 from fastapi.testclient import TestClient
 
+from agentgate.application.run_scheduling import RunScheduling
+from agentgate.demo.loan import LOAN_DATASET
 from agentgate.domain import (
     Case,
     CaseCategory,
@@ -15,6 +19,7 @@ from agentgate.domain import (
     ToolCallExpectation,
 )
 from agentgate.integrations.job_dispatchers.celery import execute_evaluation_run
+from agentgate.integrations.targets import DemoLoanTargetAdapter, resolve_demo_trace
 from agentgate.server.app import create_app
 
 
@@ -96,11 +101,73 @@ def test_web_dataset_workflow_persists_and_runs_selected_version(tmp_path, monke
         assert output["outcome"] == "pass"
         assert output["checks"][0]["expected"]["expected"] == "pending_review"
         assert output["checks"][0]["actual"] == "pending_review"
-        deleted = client.delete(f"/api/datasets/{dataset_id}/versions/1")
-        assert deleted.status_code == 204
-        assert client.get(f"/api/datasets/{dataset_id}").status_code == 404
+        before = client.get(f"/api/datasets/{dataset_id}").json()["data"]
+        rejected = client.delete(f"/api/datasets/{dataset_id}/versions/1")
+        assert rejected.status_code == 409
+        assert rejected.json()["message"] == "已发布的测评集版本不能删除，可归档整个测评集。"
+        assert client.get(f"/api/datasets/{dataset_id}").json()["data"] == before
         assert client.get(f"/api/runs/{run_id}").json()["data"] == report
-        assert client.delete(f"/api/datasets/{dataset_id}/versions/1").status_code == 404
+
+
+def test_active_and_archived_publications_remain_readable_after_delete_request(tmp_path):
+    with TestClient(create_app(tmp_path / "publication.db", RecordingDispatcher())) as client:
+        path = f"/api/datasets/{LOAN_DATASET.id}"
+        assert client.post(path + "/drafts", json={"based_on_version": 1}).status_code == 201
+        assert client.post(path + "/drafts/publish").json()["data"]["version"] == 2
+        assert client.post(path + "/drafts", json={"based_on_version": 2}).status_code == 201
+
+        for archived in (False, True):
+            if archived:
+                assert client.delete(path).json()["data"]["archived"] is True
+            before = client.get(path).json()["data"]
+            assert before["dataset"]["archived"] == archived
+            for version in (1, 2):
+                url = f"{path}/versions/{version}"
+                assert client.delete(url).status_code == 409
+                assert client.delete(url, headers={"X-Team-Id": "another-team"}).status_code == 404
+            assert client.delete(path + "/versions/3").status_code == 404
+            assert client.delete("/api/datasets/missing/versions/1").status_code == 404
+            assert client.get(path).json()["data"] == before
+
+        assert client.patch(path, json={"archived": False}).status_code == 200
+        assert client.delete(path + "/drafts/current").status_code == 204
+        assert [v["version"] for v in client.get(path).json()["data"]["versions"]] == [2, 1]
+
+
+def test_archiving_after_scheduling_preserves_execution_and_restoring_allows_submission(tmp_path):
+    dispatcher = RecordingDispatcher()
+    app = create_app(tmp_path / "scheduled.db", dispatcher)
+    dependencies = app.state.dependencies
+    due = datetime.now(UTC) + timedelta(hours=1)
+    settings = {"version": "loan-agent-v2-fixed", "dataset_id": LOAN_DATASET.id, "dataset_version": 1}
+    with TestClient(app) as client:
+        scheduled = client.post("/api/evaluations", json={**settings, "scheduled_for": due.isoformat()})
+        assert scheduled.status_code == 202, scheduled.text
+        run_id = scheduled.json()["data"]["run_id"]
+        manifest = client.get(f"/api/runs/{run_id}/manifest").json()["data"]
+
+        dataset_url = f"/api/datasets/{LOAN_DATASET.id}"
+        archived = client.delete(dataset_url)
+        assert archived.status_code == 200, archived.text
+        assert client.post("/api/evaluations", json=settings).status_code == 409
+        assert dispatcher.run_ids == []
+        RunScheduling(dependencies.repository).dispatch_due_runs(dispatcher, now=due)
+        assert dispatcher.run_ids == [run_id]
+        adapter = DemoLoanTargetAdapter()
+        try:
+            dependencies.runs.execute_run(run_id, adapter, resolve_demo_trace)
+        finally:
+            adapter.close()
+        report = client.get(f"/api/runs/{run_id}").json()["data"]
+        assert report["run"]["status"] == "completed"
+        assert report["run"]["manifest"] == manifest
+        assert client.get(f"/api/runs/{run_id}/traces/high-risk-approval").status_code == 200
+
+        restored = client.patch(dataset_url, json={"archived": False})
+        assert restored.status_code == 200, restored.text
+        retried = client.post("/api/evaluations", json=settings)
+        assert retried.status_code == 202, retried.text
+        assert dispatcher.run_ids == [run_id, retried.json()["data"]["run_id"]]
 
 
 def test_publish_returns_domain_validation_message(tmp_path):

@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import type { DatasetSummary } from '../types/index';
+import { hasPublicationHistory, type DatasetSummary } from '../types/index';
 const props = defineProps<{ items: DatasetSummary[]; loading?: boolean }>();
 const emit = defineEmits<{
   select: [id: string];
   edit: [id: string];
-  archive: [item: DatasetSummary];
-  restore: [item: DatasetSummary];
   remove: [item: DatasetSummary];
 }>();
 const query = ref(''),
@@ -72,7 +70,7 @@ const rows = computed(() => filtered.value.slice((page.value - 1) * 10, page.val
               <h2>{{ item.name }}</h2>
             </el-tooltip>
             <span class="version-badge">{{
-              item.version === null ? '草稿' : 'v' + item.version
+              item.version !== null ? 'v' + item.version : item.has_draft ? '草稿' : '暂无版本'
             }}</span>
           </div>
           <el-tooltip
@@ -88,13 +86,20 @@ const rows = computed(() => filtered.value.slice((page.value - 1) * 10, page.val
             item.archived
               ? '已归档'
               : item.version === null
-                ? '未发布草稿'
+                ? hasPublicationHistory(item)
+                  ? '无可用发布版本'
+                  : '未发布草稿'
                 : item.has_draft
                   ? '有待发布修改'
                   : '已发布'
           }}</el-tag>
           <p>
-            {{ item.version === null ? '草稿 · 点击管理样本' : item.case_count + ' 条已发布样本'
+            {{
+              item.version === null
+                ? item.has_draft
+                  ? '草稿 · 点击管理样本'
+                  : '暂无样本'
+                : item.case_count + ' 条已发布样本'
             }}{{ item.version !== null && item.has_draft ? ' · 有待发布修改' : '' }}
           </p>
           <div class="tile-bottom">
@@ -109,9 +114,9 @@ const rows = computed(() => filtered.value.slice((page.value - 1) * 10, page.val
                 ><el-dropdown-item @click="emit('select', item.id)">查看详情</el-dropdown-item
                 ><el-dropdown-item :disabled="!item.has_draft" @click="emit('edit', item.id)"
                   >编辑草稿</el-dropdown-item
-                ><el-dropdown-item divided @click="emit('remove', item)"
-                  >删除</el-dropdown-item
-                ></el-dropdown-menu
+                ><el-dropdown-item divided @click="emit('remove', item)">{{
+                  hasPublicationHistory(item) ? '归档' : '删除'
+                }}</el-dropdown-item></el-dropdown-menu
               ></template
             ></el-dropdown
           >

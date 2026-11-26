@@ -1,4 +1,4 @@
-"""Deleting published LLM assets hides the catalog entry but preserves exact history."""
+"""Archiving published evaluators hides their catalog entries and preserves exact history."""
 
 import json
 from contextlib import contextmanager
@@ -12,7 +12,16 @@ from agentgate.application.evaluator_management import (
     EvaluatorCatalogConflict,
     build_default_evaluator_management,
 )
-from agentgate.domain import Case, CaseTurn, DatasetVersion, Evaluator, EvaluatorRef, Trace
+from agentgate.domain import (
+    Case,
+    CaseTurn,
+    DatasetVersion,
+    Equals,
+    Evaluator,
+    EvaluatorRef,
+    OutputExpectation,
+    Trace,
+)
 from agentgate.evaluator.judge.model_protocol import JudgeResponse
 from agentgate.server.dependencies import build_dependencies
 from agentgate.server.routes.evaluators import router
@@ -85,11 +94,15 @@ def _judge_definition():
 
 
 def _published_judge(client, name="Saved judge"):
+    return _published_evaluator(client, name, _judge_definition())
+
+
+def _published_evaluator(client, name, definition):
     response = client.post(
         "/api/evaluators",
         json={
             "name": name,
-            "draft": _judge_definition(),
+            "draft": definition,
         },
     )
     assert response.status_code == 201, response.text
@@ -99,6 +112,58 @@ def _published_judge(client, name="Saved judge"):
     enabled = client.patch(f"/api/evaluators/{evaluator_id}", json={"enabled": True})
     assert enabled.status_code == 200, enabled.text
     return evaluator_id, publication.json()
+
+
+def test_archived_rule_keeps_saved_draft_and_plan_after_restart(tmp_path):
+    database_path = tmp_path / "rule-archive.db"
+    with _system(database_path) as (client, management):
+        evaluator_id, published = _published_evaluator(client, "Saved output rule", {
+            "kind": "rule",
+            "dimension": "answer",
+            "metric": "custom_output",
+            "implementation_id": "final_output",
+            "implementation_version": "1",
+        })
+        path = f"/api/evaluators/{evaluator_id}"
+        draft = client.post(path + "/drafts", json={"based_on_version": "1"})
+        assert draft.status_code == 201, draft.text
+        saved_specs = management.select([evaluator_id])
+
+        response = client.delete(path)
+        assert response.status_code == 204, response.text
+        assert client.delete(path).status_code == 204
+
+    with _system(database_path) as (client, management):
+        listed = client.get("/api/evaluators", params={"include_disabled": True}).json()
+        assert evaluator_id not in {item["id"] for item in listed}
+        detail = client.get(path).json()
+        assert detail["evaluator"]["archived"] is True
+        assert detail["evaluator"]["enabled"] is False
+        assert detail["latest"] == published
+        assert detail["draft"] is None
+        assert client.get(path + "/versions/1").json() == published
+        stored_draft = management.repository.get_evaluator_draft(evaluator_id, user_team_id="")
+        assert stored_draft.model_dump(mode="json") == draft.json()
+        assert client.post(path + "/drafts/publish").status_code == 409
+        with pytest.raises(EvaluatorCatalogConflict, match="disabled"):
+            management.select([evaluator_id])
+        with pytest.raises(EvaluatorCatalogConflict, match="disabled"):
+            management.select_versions([EvaluatorRef(
+                evaluator_id=evaluator_id, evaluator_version="1",
+            )])
+
+        case = Case(id="case", name="Question", turns=(CaseTurn(
+            input={"question": "What is 2+2?"},
+            expectations=(OutputExpectation(path="answer", condition=Equals(expected="4")),),
+        ),))
+        management.validate_plan(DatasetVersion(dataset_id="dataset", cases=(case,)), saved_specs)
+        trace = Trace(
+            trace_id="0" * 32, run_id="saved-run", case_id=case.id, spans=(),
+            final_output={"answer": "4"},
+        )
+        result, = management.evaluate_case(case, trace, saved_specs)
+        assert result.outcome == "pass"
+        assert result.evaluator_content_sha256 == published["content_sha256"]
 
 
 def _group_body():

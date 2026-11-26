@@ -115,7 +115,7 @@ def test_static_report_replacement_preserves_history_and_rejects_wrong_target(tm
         assert c.put("/api/evaluation-tasks/"+risky, json={"kind":"single", "run_ids":[risky], "static_report_ids":[reports[2].id]}).status_code == 409
 
 
-def test_delete_completed_task_removes_evidence_and_preserves_other_tasks(tmp_path):
+def test_archive_completed_task_hides_it_and_preserves_evidence(tmp_path):
     from agentgate.domain import OptimizationReport, RoutingConfusionMatrix
 
     with client(tmp_path / "delete.db") as c:
@@ -126,8 +126,10 @@ def test_delete_completed_task_removes_evidence_and_preserves_other_tasks(tmp_pa
         assert c.put("/api/evaluation-tasks/" + run.id, json={
             "kind": "single", "run_ids": [run.id],
         }).status_code == 200
-        assert repo.list_traces(run.id)
-        assert repo.list_results(run.id)
+        traces = repo.list_traces(run.id)
+        results = repo.list_results(run.id)
+        events = repo.list_run_events(run.id, user_team_id="")
+        assert traces and results and events
         report = OptimizationReport(
             run_id=run.id,
             target_ref=run.manifest.target.ref,
@@ -140,19 +142,34 @@ def test_delete_completed_task_removes_evidence_and_preserves_other_tasks(tmp_pa
             confusion_matrix=RoutingConfusionMatrix(eligible_count=0),
         )
         repo.save_optimization_report("delete-evidence", report)
-        response = c.delete("/api/evaluation-tasks/" + run.id)
+        path = "/api/evaluation-tasks/" + run.id
+        assert c.get("/api/evaluation-overview/summary").json()["data"]["scored_run_count"] == 1
+        assert c.delete(path).status_code == 405
+        assert repo.get_run(run.id) == run
+        assert repo.list_traces(run.id) == traces
+        assert repo.list_results(run.id) == results
+        response = c.post(path + "/archive")
         assert response.status_code == 200, response.text
-        assert c.get("/api/evaluation-tasks/" + run.id).status_code == 404
-        assert repo.get_run(run.id) is None
-        assert repo.list_traces(run.id) == []
-        assert repo.list_results(run.id) == []
-        assert repo.get_optimization_report("delete-evidence") is None
+        assert response.json()["data"] == {"archived": run.id}
+        assert c.get(path).status_code == 200
+        assert c.get("/api/runs/" + run.id + "/samples").status_code == 200
+        assert repo.get_run(run.id) == run
+        assert repo.list_traces(run.id) == traces
+        assert repo.list_results(run.id) == results
+        assert repo.list_run_events(run.id, user_team_id="") == events
+        assert repo.get_optimization_report("delete-evidence") == report
+        assert [item["id"] for item in c.get("/api/evaluation-tasks").json()["data"]] == [other_id]
+        assert c.get("/api/evaluation-task-summaries", params={"keyword": run.id}).json()["data"]["total"] == 0
+        totals = c.get("/api/evaluation-overview/summary").json()["data"]
+        assert totals["task_count"] == 1
+        assert totals["scored_run_count"] == totals["completed_sample_count"] == 0
+        assert c.get("/api/overview").json()["data"]["completed_runs"] == 0
         assert c.get("/api/evaluation-tasks/" + other_id).status_code == 200
         assert repo.get_run(other_id) is not None
-        assert c.delete("/api/evaluation-tasks/" + run.id).status_code == 404
+        assert c.post(path + "/archive").json()["data"] == {"archived": run.id}
 
 
-def test_delete_ab_task_removes_both_runs(tmp_path):
+def test_archive_ab_task_preserves_unfinished_runs(tmp_path):
     with client(tmp_path / "delete-ab.db") as c:
         response = c.post("/api/run-comparisons", json={
             "baseline_version": "loan-agent-v1-risky",
@@ -163,11 +180,40 @@ def test_delete_ab_task_removes_both_runs(tmp_path):
         assert response.status_code == 202, response.text
         pair = response.json()["data"]
         ids = [pair["baseline"]["run_id"], pair["candidate"]["run_id"]]
-        response = c.delete("/api/evaluation-tasks/" + ids[0])
+        response = c.post("/api/evaluation-tasks/" + ids[0] + "/archive")
         assert response.status_code == 200, response.text
         repo = c.app.state.dependencies.repository
-        assert all(repo.get_run(run_id) is None for run_id in ids)
+        assert all(repo.get_run(run_id) is not None for run_id in ids)
         assert c.get("/api/evaluation-tasks").json()["data"] == []
+        assert c.get("/api/evaluation-task-summaries").json()["data"]["total"] == 0
+
+
+def test_archive_standalone_run_keeps_direct_detail_and_checks_discriminator(tmp_path):
+    with client(tmp_path / "standalone.db") as c:
+        run = c.app.state.dependencies.execute_demo_run("loan-agent-v1-risky")
+        path = "/api/evaluation-tasks/" + run.id
+        summary = c.get("/api/evaluation-task-summaries").json()["data"]
+        assert [(item["id"], item["task_id"]) for item in summary["items"]] == [(run.id, None)]
+        archive = path + "/archive"
+        assert c.post(archive).status_code == 404
+        assert c.post(
+            archive, params={"standalone": True}, headers={"X-Team-Id": "foreign"},
+        ).status_code == 404
+        response = c.post(archive, params={"standalone": True})
+        assert response.status_code == 200, response.text
+        assert response.json()["data"] == {"archived": run.id}
+        assert c.post(archive, params={"standalone": True}).status_code == 200
+        assert c.get("/api/evaluation-task-summaries").json()["data"]["total"] == 0
+        overview = c.get("/api/evaluation-overview/summary").json()["data"]
+        assert overview["task_count"] == overview["scored_run_count"] == 0
+        assert c.get("/api/overview").json()["data"]["total_runs"] == 0
+        assert c.get("/api/runs/" + run.id + "/samples").status_code == 200
+        assert c.put(path, json={"kind": "single", "run_ids": [run.id]}).status_code == 409
+        owned = launch(c)
+        assert c.post(
+            "/api/evaluation-tasks/" + owned + "/archive", params={"standalone": True},
+        ).status_code == 404
+        assert c.get("/api/evaluation-task-summaries").json()["data"]["total"] == 1
 
 
 def test_task_name_persists_and_old_tasks_are_named_once(tmp_path):

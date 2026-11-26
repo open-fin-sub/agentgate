@@ -506,6 +506,7 @@ def test_run_route_reruns_exact_historical_configuration(tmp_path) -> None:
     dependencies = client.app.state.dependencies
     repository = dependencies.repository
     source = dependencies.execute_demo_run("loan-agent-v1-risky")
+    dependencies.datasets.archive_dataset(source.manifest.dataset.dataset_id)
     source_payload = repository.get_run(source.id).model_dump_json()
 
     with client:

@@ -287,8 +287,9 @@ def test_user_evaluator_lifecycle_publishes_and_selects_latest_version(
         DatasetVersion(dataset_id="historical"),
         (second,),
     ) is None
-    with pytest.raises(EvaluatorCatalogConflict, match="cannot be deleted"):
-        default_management.delete_evaluator(evaluator.id)
+    default_management.delete_evaluator(evaluator.id)
+    assert default_management.get_evaluator(evaluator.id).archived
+    assert default_management.list_versions(evaluator.id) == (second, first)
 
 
 def test_unpublished_evaluator_draft_can_be_discarded_and_identity_deleted(

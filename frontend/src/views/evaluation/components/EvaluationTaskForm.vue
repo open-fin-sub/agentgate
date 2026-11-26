@@ -343,7 +343,11 @@ async function openCreate(source?: {
           !item.owner_evaluator_id &&
           props.rerun?.baseline.primary_evaluator_ids.includes(item.id)),
     );
-    selectedDataset.value = source?.id || datasets.value[0]?.id || '';
+    if (source?.id && !datasets.value.some((dataset) => dataset.id === source.id)) {
+      formError.value = '原测评集不可用，请重新选择已发布的测评集和版本。';
+    } else {
+      selectedDataset.value = source?.id || datasets.value[0]?.id || '';
+    }
     selectedEvaluators.value = source?.evaluatorId ? [source.evaluatorId] : [];
   } catch (e) {
     if (ticket === formSequence) formError.value = String(e);
@@ -467,8 +471,7 @@ watch([executionCases, evaluators], () => {
 });
 async function finishLocalSubmission(link: TaskLink) {
   try {
-    if (link.staticReports.length)
-      await saveTaskLink({ ...link, name: undefined });
+    if (link.staticReports.length) await saveTaskLink({ ...link, name: undefined });
     ElMessage.success('测评任务已提交');
   } catch {
     ElMessage.warning(`任务已创建（${link.id}），但静态分析报告关联保存失败。`);
@@ -930,14 +933,17 @@ async function submit() {
     };
     await finishLocalSubmission(link);
   } catch (e) {
-    if (
-      creating &&
-      e instanceof ApiError &&
-      e.status === 409 &&
-      e.detail === '任务名称已存在，请修改名称后重试。'
-    ) {
-      formError.value = duplicateNameMessage;
-      return;
+    if (creating && e instanceof ApiError && e.status === 409) {
+      if (e.detail === '任务名称已存在，请修改名称后重试。') {
+        formError.value = duplicateNameMessage;
+        return;
+      }
+      if (e.detail === '该测评集已归档，请恢复后重试或选择其他测评集。') {
+        datasets.value = datasets.value.filter((item) => item.id !== snapshot.datasetId);
+        if (selectedDataset.value === snapshot.datasetId) selectedDataset.value = '';
+        formError.value = e.detail;
+        return;
+      }
     }
     if (e !== 'cancel' && e !== 'close') {
       formError.value =

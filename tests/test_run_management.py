@@ -30,6 +30,7 @@ from agentgate.domain import (
     transition_run,
     utcnow,
 )
+from agentgate.domain.dataset import ArchivedDatasetError
 from agentgate.evaluator.models import DuplicateEvaluatorId, UnknownEvaluator
 from agentgate.integrations.targets import DemoLoanTargetAdapter, resolve_demo_trace
 from agentgate.storage.sqlite import SQLiteRepository
@@ -118,6 +119,18 @@ def test_create_run_persists_case_concurrency_limit(tmp_path) -> None:
             dataset_id=LOAN_DATASET.id,
             max_parallel_cases=0,
         )
+
+
+def test_archived_dataset_rejects_latest_version_and_preserves_history(tmp_path) -> None:
+    repository = SQLiteRepository(tmp_path / "archived-latest.db")
+    seed_demo(repository)
+    management, _ = run_management(repository)
+    management.dataset_management.archive_dataset(LOAN_DATASET.id)
+
+    assert management.dataset_management.latest_published(LOAN_DATASET.id) == LOAN_DATASET_VERSION
+    with pytest.raises(ArchivedDatasetError):
+        management.create_run(target(), dataset_id=LOAN_DATASET.id)
+    assert not repository.list_runs(user_team_id="")
 
 
 def test_create_run_persists_retry_limit(tmp_path) -> None:

@@ -9,6 +9,8 @@ from agentgate.application.evaluation_task_management import (
     DuplicateTaskNameError,
     EvaluationTaskManagement,
 )
+from agentgate.domain.dataset import ArchivedDatasetError
+from agentgate.server.errors import raise_conflict
 from agentgate.server.routes.runs import Dependencies, LaunchRequest
 
 router = APIRouter(prefix="/api/stability-experiments", tags=["stability"])
@@ -27,6 +29,8 @@ def launch(body: StabilityRequest, dependencies: Dependencies):
         settings = body.model_dump()
         settings["evaluator_refs"] = body.evaluator_refs
         return dependencies.submit_stability_runs(**settings)
+    except ArchivedDatasetError as error:
+        raise_conflict(error)
     except DuplicateTaskNameError:
         raise HTTPException(409, "任务名称已存在，请修改名称后重试。") from None
     except (ValueError, LookupError) as exc:

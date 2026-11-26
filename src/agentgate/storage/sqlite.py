@@ -38,6 +38,7 @@ from agentgate.domain import (
     utcnow,
 )
 from agentgate.domain.credential import ApiKeyMetadata
+from agentgate.domain.dataset import ArchivedDatasetError
 from agentgate.domain.evaluation_task import EvaluationTask, task_with_rerun
 from agentgate.domain.run import RunTiming
 from agentgate.evaluator.versioning import (
@@ -267,6 +268,14 @@ CREATE INDEX IF NOT EXISTS idx_runs_apikey_status
 """
 
 
+def _require_unarchived_dataset(db: sqlite3.Connection, dataset_id: str) -> None:
+    row = db.execute(
+        f"SELECT archived FROM {_T_DATASETS} WHERE id=?", (dataset_id,),
+    ).fetchone()
+    if row is not None and row["archived"]:
+        raise ArchivedDatasetError()
+
+
 class SQLiteRepository:
     """SQLite JSON-document adapter behind a PostgreSQL-compatible domain boundary."""
 
@@ -443,6 +452,15 @@ class SQLiteRepository:
                 db.execute(f"DELETE FROM {_T_RUNS} WHERE id=?", (run_id,))
             db.execute(f"DELETE FROM {_T_EVALUATION_TASKS} WHERE id=?", (task_id,))
 
+    def archive_task(
+        self, task_id: str, *, user_team_id: str, standalone: bool = False,
+    ) -> None:
+        from .evaluation_task_archival import archive_task
+
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            archive_task(db, task_id, user_team_id=user_team_id, standalone=standalone)
+
     def save_task_rerun(
         self, task_id: str, source_run_id: str, rerun: EvaluationRun, *, user_team_id: str,
     ) -> EvaluationTask:
@@ -470,7 +488,9 @@ class SQLiteRepository:
             projection.put_task(db, updated)
         return updated
 
-    def save_task_runs(self, task: EvaluationTask, runs: Sequence[EvaluationRun]) -> None:
+    def save_task_runs(
+        self, task: EvaluationTask, runs: Sequence[EvaluationRun], *, from_rerun_snapshot: bool = False,
+    ) -> None:
         if task.previous_run_ids:
             raise ValueError("new task cannot contain execution history")
         if task.run_ids != tuple(r.id for r in runs):
@@ -481,6 +501,9 @@ class SQLiteRepository:
             raise ValueError("stability requires identical snapshots and pending runs")
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
+            if not from_rerun_snapshot:
+                for dataset_id in sorted({run.manifest.dataset.dataset_id for run in runs}):
+                    _require_unarchived_dataset(db, dataset_id)
             for run in runs:
                 self._insert_task_run(db, run)
             db.execute(f"INSERT INTO {_T_EVALUATION_TASKS}(id,created_at,payload) VALUES(?,?,?)", (task.id, task.created_at.isoformat(), canonical_json(task)))
@@ -544,6 +567,10 @@ class SQLiteRepository:
                     raise ValueError("unknown static report")
             try:
                 if not row:
+                    if any(db.execute(
+                        f"SELECT 1 FROM {_T_RUNS} WHERE id=? AND archived_at IS NOT NULL", (run_id,),
+                    ).fetchone() for run_id in task.run_ids):
+                        raise ValueError("cannot associate an archived standalone evaluation run")
                     db.execute(f"INSERT INTO {_T_EVALUATION_TASKS}(id,created_at,payload) VALUES(?,?,?)",
                                (task.id, task.created_at.isoformat(), canonical_json(task)))
                     db.executemany(f"INSERT INTO {_T_EVALUATION_TASK_RUNS}(run_id,task_id) VALUES(?,?)",
@@ -560,9 +587,12 @@ class SQLiteRepository:
             row = db.execute(f"SELECT payload FROM {_T_EVALUATION_TASKS} WHERE id=?", (task_id,)).fetchone()
         return EvaluationTask.model_validate_json(row["payload"]) if row else None
 
-    def list_evaluation_tasks(self) -> list[EvaluationTask]:
+    def list_evaluation_tasks(self, *, include_archived: bool = True) -> list[EvaluationTask]:
+        where = "" if include_archived else "WHERE archived_at IS NULL "
         with self._connect() as db:
-            rows = db.execute(f"SELECT payload FROM {_T_EVALUATION_TASKS} ORDER BY created_at DESC,id").fetchall()
+            rows = db.execute(
+                f"SELECT payload FROM {_T_EVALUATION_TASKS} {where}ORDER BY created_at DESC,id"
+            ).fetchall()
         return [EvaluationTask.model_validate_json(row["payload"]) for row in rows]
 
     @staticmethod
@@ -1577,45 +1607,36 @@ class SQLiteRepository:
             db.execute(
                 f"""
                 DELETE FROM {_T_DATASETS}
-                WHERE id=? AND user_team_id=? AND NOT EXISTS (
-                    SELECT 1 FROM {_T_DATASET_VERSIONS}
-                    WHERE dataset_id=? AND user_team_id=?
-                )
+                WHERE id=? AND user_team_id=?
+                    AND COALESCE(json_extract(payload, '$.deleted_version_high_watermark'), 0) = 0
+                    AND NOT EXISTS (
+                        SELECT 1 FROM {_T_DATASET_VERSIONS}
+                        WHERE dataset_id=? AND user_team_id=?
+                    )
                 """,
-                (dataset_id, user_team_id, dataset_id, user_team_id),
-            )
-
-    def delete_dataset_version(self, dataset_id: str, version: int, *, user_team_id: str) -> None:
-        with self._connect() as db:
-            cursor = db.execute(
-                f"DELETE FROM {_T_DATASET_VERSIONS} "
-                "WHERE dataset_id=? AND version=? AND status='published' AND user_team_id=?",
-                (dataset_id, version, user_team_id),
-            )
-            if cursor.rowcount != 1:
-                raise ValueError("expected Dataset publication does not exist")
-            row = db.execute(
-                f"SELECT payload FROM {_T_DATASETS} WHERE id=? AND user_team_id=?",
-                (dataset_id, user_team_id),
-            ).fetchone()
-            if row is None:
-                raise ValueError("expected Dataset does not exist")
-            dataset = Dataset.model_validate_json(row[0])
-            dataset = dataset.model_copy(update={
-                "deleted_version_high_watermark": max(dataset.deleted_version_high_watermark, version),
-            })
-            db.execute(
-                f"UPDATE {_T_DATASETS} SET payload=? WHERE id=? AND user_team_id=?",
-                (canonical_json(dataset), dataset_id, user_team_id),
-            )
-            db.execute(
-                f"DELETE FROM {_T_DATASETS} WHERE id=? AND user_team_id=? AND NOT EXISTS "
-                f"(SELECT 1 FROM {_T_DATASET_VERSIONS} WHERE dataset_id=? AND user_team_id=?)",
                 (dataset_id, user_team_id, dataset_id, user_team_id),
             )
 
     def delete_dataset_record(self, dataset_id: str, *, user_team_id: str) -> None:
         with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            published = db.execute(
+                f"""
+                SELECT 1 FROM {_T_DATASETS} AS d
+                WHERE d.id=? AND d.user_team_id=? AND (
+                    COALESCE(json_extract(d.payload, '$.deleted_version_high_watermark'), 0) > 0
+                    OR EXISTS (
+                        SELECT 1 FROM {_T_DATASET_VERSIONS} AS v
+                        WHERE v.dataset_id=d.id AND v.user_team_id=d.user_team_id AND v.status='published'
+                    )
+                )
+                """,
+                (dataset_id, user_team_id),
+            ).fetchone()
+            if published is not None:
+                raise ValueError(
+                    "Dataset with published versions cannot be deleted; archive it instead"
+                )
             db.execute(
                 f"DELETE FROM {_T_DATASET_VERSIONS} WHERE dataset_id=? AND user_team_id=?",
                 (dataset_id, user_team_id),
@@ -1631,6 +1652,7 @@ class SQLiteRepository:
         self, expected_draft_id: str, published: DatasetVersion
     ) -> None:
         with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
             row = db.execute(
                 f"""
                 SELECT payload FROM {_T_DATASET_VERSIONS}
@@ -1746,13 +1768,15 @@ class SQLiteRepository:
         with self._connect() as db:
             return projection.dataset_related_tasks(db, dataset_id, version, user_team_id, limit, cursor)
 
-    def save_run(self, run: EvaluationRun) -> None:
+    def save_run(self, run: EvaluationRun, *, from_rerun_snapshot: bool = False) -> None:
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
             existing = db.execute(
                 f"SELECT payload FROM {_T_RUNS} WHERE id = ?", (run.id,)
             ).fetchone()
             if existing is None:
+                if not from_rerun_snapshot:
+                    _require_unarchived_dataset(db, run.manifest.dataset.dataset_id)
                 references = self._run_asset_references(db, run)
                 db.execute(
                     f"""
@@ -1841,13 +1865,16 @@ class SQLiteRepository:
             raise
 
     def list_runs(
-        self, limit: int = 50, *, user_team_id: str
+        self, limit: int = 50, *, user_team_id: str, include_archived: bool = True,
     ) -> list[EvaluationRun]:
         if limit < 1:
             raise ValueError("Run list limit must be at least 1")
         with self._connect() as db:
+            visibility = "" if include_archived else (
+                "AND " + projection.visible_run_condition(db, "r.id", "r.archived_at")
+            )
             rows = db.execute(
-                f"SELECT payload FROM {_T_RUNS} WHERE user_team_id=? "
+                f"SELECT payload FROM {_T_RUNS} r WHERE user_team_id=? {visibility} "
                 f"ORDER BY created_at DESC, id LIMIT ?",
                 (user_team_id, limit),
             ).fetchall()
@@ -2175,12 +2202,17 @@ class SQLiteRepository:
             rows = db.execute(query, parameters).fetchall()
         return [EvaluationRun.model_validate_json(row[0]) for row in rows]
 
-    def count_runs_by_status(self, *, user_team_id: str) -> dict[RunStatus, int]:
+    def count_runs_by_status(
+        self, *, user_team_id: str, include_archived: bool = True,
+    ) -> dict[RunStatus, int]:
         counts = {status: 0 for status in RunStatus}
         with self._connect() as db:
+            visibility = "" if include_archived else (
+                "AND " + projection.visible_run_condition(db, "r.id", "r.archived_at")
+            )
             rows = db.execute(
-                f"SELECT status, COUNT(*) AS count FROM {_T_RUNS} "
-                f"WHERE user_team_id=? GROUP BY status",
+                f"SELECT status, COUNT(*) AS count FROM {_T_RUNS} r "
+                f"WHERE user_team_id=? {visibility} GROUP BY status",
                 (user_team_id,),
             ).fetchall()
         for row in rows:

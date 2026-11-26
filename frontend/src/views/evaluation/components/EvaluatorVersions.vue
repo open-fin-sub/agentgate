@@ -145,6 +145,11 @@ async function mutate(action: 'discard' | 'delete' | 'draft') {
         >
           删除评估器
         </button>
+        <span
+          v-else-if="item.latest.kind === 'rule' && !item.evaluator.owner_evaluator_id"
+          class="muted"
+          >可在评估器列表的「更多操作」中归档</span
+        >
         <span v-else class="muted">已发布评估器不可删除，可停用</span>
       </div>
     </div>

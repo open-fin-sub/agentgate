@@ -1673,6 +1673,35 @@ for (const kind of ['single', 'ab'] as const)
     expect(await page.evaluate(() => (window as any).created)).toEqual([]);
   });
 
+for (const mode of ['bank', 'external', 'integrated'] as const)
+  test(`${mode} can reselect after the chosen dataset is archived during submission`, async ({ page }) => {
+    await openForm(page, false, sampleCases, mode);
+    await choose(page, '选择智能体', '工作流 · workflow');
+    await choose(page, '智能体版本', mode === 'external' ? 'v1' : bankVersionOne);
+    const isAb = mode === 'integrated';
+    if (isAb) {
+      await page.getByRole('button', { name: 'A/B试验', exact: true }).click();
+      await choose(page, '平台候选版本', bankVersionTwo);
+    }
+    const message = '该测评集已归档，请恢复后重试或选择其他测评集。';
+    const endpoint = isAb ? 'comparisons' : 'evaluations';
+    await page.route(`**/api/agent-platform/${endpoint}`, (route) =>
+      route.request().postDataJSON().dataset_id === 'dataset'
+        ? reply(route, { code: '1', message, data: null }, 409)
+        : route.fallback(),
+    );
+    const submit = page.getByRole('button', { name: isAb ? '创建 A/B试验' : '开始测评', exact: true });
+    await submit.click();
+    await expect(page.getByRole('alert')).toHaveText(message);
+    expect(await page.evaluate(() => (window as any).created)).toEqual([]);
+    const datasets = page.getByLabel('任务测评集', { exact: true });
+    await expect(datasets.locator('option[value="dataset"]')).toHaveCount(0);
+    await datasets.selectOption('other');
+    await expect(page.getByLabel('任务测评集版本', { exact: true })).toHaveValue('1');
+    await submit.click();
+    await expect.poll(() => page.evaluate(() => (window as any).created.length)).toBe(1);
+  });
+
 for (const failure of ['reject', 'server', 'malformed', 'refresh'] as const)
   test(`form safely handles ${failure} without leaking server detail or retrying`, async ({
     page,

@@ -184,6 +184,31 @@ def submission(kind, dataset_id, evaluator_id, version="1"):
     return "/api/evaluations", body
 
 
+@pytest.mark.parametrize(
+    "kind,platform_mode",
+    [(kind, "inbank") for kind in (*PATHS, "demo-scheduled", "bank-scheduled", "platform-scheduled")]
+    + [(kind, "mock") for kind in ("platform", "platform-stability", "platform-ab", "platform-scheduled")],
+)
+def test_new_submission_with_archived_dataset_returns_conflict_and_persists_nothing(
+    system, monkeypatch, kind, platform_mode
+):
+    client, dependencies, dispatcher, dataset_id = system
+    dependencies.datasets.archive_dataset(dataset_id)
+    monkeypatch.setenv("AGENTGATE_AGENT_PLATFORM_MODE", platform_mode)
+    path, body = submission(kind, dataset_id, "final-output")
+    if kind.endswith("scheduled"):
+        body["scheduled_for"] = "2099-01-01T00:00:00Z"
+    token = "local" if platform_mode == "mock" else "real-session-test-token"
+    response = client.post(path, json=body, headers={"X-Agent-Platform-Token": token})
+
+    assert response.status_code == 409, response.text
+    assert response.json()["detail"] == "该测评集已归档，请恢复后重试或选择其他测评集。"
+    assert dependencies.repository.list_evaluation_tasks() == []
+    assert dependencies.repository.list_runs(user_team_id="") == []
+    assert dependencies.api_keys.list_api_keys() == []
+    assert dispatcher.ids == []
+
+
 @pytest.mark.parametrize("kind", PATHS)
 def test_selected_version_survives_newer_publication_and_is_persisted(system, kind):
     client, dependencies, dispatcher, dataset_id = system

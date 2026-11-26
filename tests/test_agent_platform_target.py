@@ -590,6 +590,60 @@ def test_execution_failure_is_persisted_and_instance_is_cleaned(
         assert not peer.state.instances
 
 
+@pytest.mark.parametrize("endpoint", ["evaluations", "comparisons"])
+def test_archived_dataset_conflict_only_disclosed_to_its_team(endpoint, monkeypatch, tmp_path):
+    monkeypatch.delenv("AGENTGATE_API_KEY_ENCRYPTION_KEY", raising=False)
+    app = create_app(tmp_path / "teams.db", RecordingDispatcher())
+    deps = app.state.dependencies
+    info = set_user_info(UserInfo("owner-team", "owner", "Owner"))
+    try:
+        dataset_id = seed(deps)
+        deps.datasets.archive_dataset(dataset_id)
+    finally:
+        reset_user_info(info)
+    body = submission if endpoint == "evaluations" else comparison_submission
+    with TestClient(app) as client:
+        for team, status in (("owner-team", 409), ("other-team", 404)):
+            response = client.post(
+                f"/api/agent-platform/{endpoint}",
+                json=body(dataset_id, "workflow"),
+                headers={"X-Agent-Platform-Token": "test-token", "X-Team-Id": team},
+            )
+            assert response.status_code == status, response.text
+
+
+@pytest.mark.parametrize("endpoint", ["evaluations", "comparisons"])
+def test_archiving_during_platform_submission_discards_temporary_credential(
+    endpoint, monkeypatch, tmp_path,
+):
+    monkeypatch.setenv("AGENTGATE_AGENT_PLATFORM_MODE", "inbank")
+    dispatcher = RecordingDispatcher()
+    app = create_app(tmp_path / "archive-race.db", dispatcher, ApiKeyEncryptor(b"k" * 32))
+    deps = app.state.dependencies
+    dataset_id = seed(deps)
+    save_task_runs = deps.repository.save_task_runs
+
+    def archive_then_save(task, runs):
+        assert len(deps.api_keys.list_api_keys()) == 1
+        deps.datasets.archive_dataset(dataset_id)
+        save_task_runs(task, runs)
+
+    monkeypatch.setattr(deps.repository, "save_task_runs", archive_then_save)
+    body = submission if endpoint == "evaluations" else comparison_submission
+    with TestClient(app) as client:
+        response = client.post(
+            f"/api/agent-platform/{endpoint}",
+            json=body(dataset_id, "workflow"),
+            headers={"X-Agent-Platform-Token": "test-token"},
+        )
+        assert response.status_code == 409, response.text
+        assert response.json()["message"] == "该测评集已归档，请恢复后重试或选择其他测评集。"
+        assert not deps.repository.list_evaluation_tasks()
+        assert not deps.repository.list_runs(user_team_id="")
+        assert not deps.api_keys.list_api_keys()
+        assert not dispatcher.ids
+
+
 def test_initial_state_rejected_without_leaving_credentials_or_tasks(
     mock_peer, monkeypatch, tmp_path
 ):
