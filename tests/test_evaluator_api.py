@@ -135,7 +135,8 @@ def test_user_evaluator_api_lifecycle_preserves_exact_versions(tmp_path) -> None
         assert exact_first["metric"] == "custom_output"
 
         delete_response = client.delete(f"/api/evaluators/{evaluator_id}")
-        assert delete_response.status_code == 409
+        assert delete_response.status_code == 204
+        assert client.get(f"/api/evaluators/{evaluator_id}/versions").json() == [second, first]
 
 
 def test_unpublished_evaluator_can_be_deleted_with_its_draft(tmp_path) -> None:
@@ -154,6 +155,7 @@ def test_unpublished_evaluator_can_be_deleted_with_its_draft(tmp_path) -> None:
 
 def test_builtin_mutation_and_unknown_resources_have_stable_statuses(tmp_path) -> None:
     with _client(tmp_path / "evaluator-errors.db") as client:
+        assert client.delete("/api/evaluators/final-output").status_code == 409
         assert (
             client.patch(
                 "/api/evaluators/final-output",

@@ -3,11 +3,14 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   api,
+  kindLabel,
+  pretty,
   request,
   type Definition,
   type EvaluatorDetail,
   type EvaluatorSummary,
 } from '../../../api/evaluations';
+import { ApiError } from '../../../utils/request';
 import RuleEvaluatorCreate from './RuleEvaluatorCreate.vue';
 import CodeRuleDialog from './CodeRuleDialog.vue';
 import { dimensionNames, isLlmEvaluator, ruleExamples } from '../utils/evaluator-display';
@@ -42,9 +45,20 @@ import {
   type EvaluatorDesign,
 } from '../utils/evaluator-design';
 import '../../../styles/review-assets.scss';
-const props = defineProps<{ initialId?: string }>(),
+const props = defineProps<{ initialId?: string; initialVersion?: string }>(),
   emit = defineEmits<{ dirtyChange: [value: boolean]; launch: [id: string] }>();
 const auth = useAuthStore();
+const linkLoading = ref(!!props.initialId);
+const linkError = ref('');
+const linkCanRetry = ref(false);
+const linkedVersion = ref<{
+  name: string;
+  archived: boolean;
+  definition: Definition | null;
+} | null>(null);
+const showLinkedState = computed(
+  () => linkLoading.value || !!linkError.value || !!linkedVersion.value,
+);
 const identity = computed(() => [
   auth.loginMode,
   auth.token,
@@ -58,7 +72,10 @@ const category = ref<'rule' | 'llm_judge'>('rule'),
   rule = ref<EvaluatorSummary | null>(null);
 const codeOpen = ref(false),
   codeDirty = ref(false),
-  codeId = ref<string>();
+  codeId = ref<string>(),
+  initialRulePreset = ref<EvaluatorSummary>();
+const ruleTemplatesOpen = ref(false),
+  ruleTemplateQuery = ref('');
 const design = ref<EvaluatorDesign | null>(null),
   detail = ref<EvaluatorDetail | null>(null),
   definition = ref<Definition | null>(null);
@@ -119,6 +136,14 @@ const rulePresets = computed(() =>
     )
     .map((e) => ({ ...e, name: displayName(e) })),
 );
+const visibleRuleTemplates = computed(() => {
+  const keyword = ruleTemplateQuery.value.trim().toLowerCase();
+  return rulePresets.value.filter((preset) =>
+    [preset.name, preset.description, evaluatorScenarios[preset.implementation_id]].some(
+      (text) => text?.toLowerCase().includes(keyword),
+    ),
+  );
+});
 const entries = computed(() =>
   evaluatorCatalog.value.filter(
     (e) =>
@@ -165,6 +190,16 @@ watch([dirty, busy, promptDirty, groupDirty, codeDirty], (values) =>
 );
 let openSequence = 0;
 let disposed = false;
+function chooseRuleTemplate() {
+  ruleTemplateQuery.value = '';
+  ruleTemplatesOpen.value = true;
+}
+function createRule(preset?: EvaluatorSummary) {
+  ruleTemplatesOpen.value = false;
+  codeId.value = undefined;
+  initialRulePreset.value = preset;
+  codeOpen.value = true;
+}
 function create() {
   openSequence++;
   groupInitialId.value = undefined;
@@ -193,25 +228,40 @@ function useCustomTemplate(value: EvaluatorDetail) {
     beginEdit();
   }
 }
+function canRemoveEvaluator(evaluator: EvaluatorSummary) {
+  return (
+    evaluator.source === 'user' &&
+    !evaluator.owner_evaluator_id &&
+    (isLlmEvaluator(evaluator.kind) || (evaluator.kind === 'rule' && !!evaluator.latest_version))
+  );
+}
 async function removeEvaluator(evaluator: EvaluatorSummary) {
   if (
+    disposed ||
+    !auth.authenticated ||
     busy.value ||
     deleting.value ||
-    evaluator.source !== 'user' ||
-    !isLlmEvaluator(evaluator.kind)
+    !canRemoveEvaluator(evaluator)
   )
     return;
+  const currentIdentity = identity.value;
+  let action = evaluator.latest_version ? '归档' : '删除';
   deleting.value = true;
   error.value = '';
   try {
     const path = `/evaluators/${encodeURIComponent(evaluator.id)}`;
     const group =
       evaluator.kind === 'llm_group' ? await request<LLMGroupDetail>(path + '/llm-group') : null;
+    if (disposed || currentIdentity !== identity.value) return;
+    if (group) action = group.latest_version ? '归档' : '删除';
     await ElMessageBox.confirm(
-      `确认删除评估器“${evaluator.name}”？删除后将不再出现在评估器列表和新建任务的选择中，历史测评报告保留。`,
-      '删除评估器',
-      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' },
+      action === '归档'
+        ? `归档评估器“${evaluator.name}”？归档后将从评估器列表和新建任务的可选项中移除，历史测评报告和已发布版本将保留。`
+        : `删除未发布评估器“${evaluator.name}”及其草稿？此操作不可恢复。`,
+      action + '评估器',
+      { type: 'warning', confirmButtonText: action, cancelButtonText: '取消' },
     );
+    if (disposed || currentIdentity !== identity.value) return;
     if (group && !group.latest_version) {
       await request(path + '/llm-group/draft', 'DELETE', {
         expected_draft_id: group.definition.id,
@@ -220,12 +270,14 @@ async function removeEvaluator(evaluator: EvaluatorSummary) {
     } else {
       await request(path, 'DELETE');
     }
+    if (disposed || currentIdentity !== identity.value) return;
     evaluatorCatalog.value = evaluatorCatalog.value.filter((item) => item.id !== evaluator.id);
     delete evaluatorDetails.value[evaluator.id];
     await loadReviewAssets();
-    ElMessage.success('评估器已删除');
+    if (!disposed && currentIdentity === identity.value) ElMessage.success('评估器已' + action);
   } catch (cause) {
-    if (cause !== 'cancel' && cause !== 'close') error.value = '删除失败：' + String(cause);
+    if (!disposed && currentIdentity === identity.value && cause !== 'cancel' && cause !== 'close')
+      error.value = action + '失败。' + String(cause);
   } finally {
     deleting.value = false;
   }
@@ -257,10 +309,11 @@ async function refreshDetail(id: string) {
   showDefinition(value, source, !!value.draft);
   await loadReviewAssets();
 }
-async function open(e: EvaluatorSummary) {
+async function open(e: EvaluatorSummary, loaded?: EvaluatorDetail) {
   if (disposed || !auth.authenticated || busy.value) return;
   if (e.implementation_id === 'code_rule') {
     codeId.value = e.id;
+    initialRulePreset.value = undefined;
     codeOpen.value = true;
     return;
   }
@@ -281,7 +334,7 @@ async function open(e: EvaluatorSummary) {
   notice.value = '';
   busy.value = true;
   try {
-    const value = await api.evaluator(e.id);
+    const value = loaded ?? (await api.evaluator(e.id));
     if (sequence !== openSequence || currentIdentity !== identity.value) return;
     const source = value.draft ?? value.latest;
     if (!source) throw new Error('此评估器暂无草稿或发布版本。');
@@ -467,16 +520,65 @@ function beforeUnload(event: BeforeUnloadEvent) {
     event.returnValue = '';
   }
 }
-onMounted(async () => {
-  window.addEventListener('beforeunload', beforeUnload);
-  await loadReviewAssets();
-  if (props.initialId) {
-    const e = evaluatorCatalog.value.find((e) => e.id === decodeURIComponent(props.initialId!));
-    if (e && !hiddenEvaluator(e) && e.kind !== 'hybrid') {
-      category.value = e.kind === 'rule' ? 'rule' : 'llm_judge';
-      void open(e);
+async function loadLinkedEvaluator() {
+  if (!props.initialId) return;
+  const context = identity.value;
+  const isCurrent = () => !disposed && context === identity.value;
+  linkLoading.value = true;
+  linkError.value = '';
+  linkCanRetry.value = false;
+  let resource = '评估器';
+  try {
+    const id = decodeURIComponent(props.initialId);
+    const value = await api.evaluator(id);
+    if (!isCurrent()) return;
+    if (props.initialVersion || value.evaluator.archived) {
+      let published = value.latest;
+      if (props.initialVersion && published?.version !== props.initialVersion) {
+        resource = '评估器版本';
+        published = await request<Definition>(
+          '/evaluators/' +
+            encodeURIComponent(id) +
+            '/versions/' +
+            encodeURIComponent(props.initialVersion),
+        );
+      }
+      if (isCurrent())
+        linkedVersion.value = {
+          name: published?.name ?? value.evaluator.name,
+          archived: !!value.evaluator.archived,
+          definition: published,
+        };
+      return;
     }
+    await loadReviewAssets();
+    if (!isCurrent()) return;
+    if (assetsError.value) throw new Error(assetsError.value);
+    const entry = evaluatorCatalog.value.find((item) => item.id === id);
+    if (!entry || hiddenEvaluator(entry) || entry.kind === 'hybrid') {
+      linkError.value = '当前空间没有可单独查看的评估器详情。';
+      return;
+    }
+    category.value = entry.kind === 'rule' ? 'rule' : 'llm_judge';
+    await open(entry, value);
+  } catch (cause) {
+    if (!isCurrent()) return;
+    if (cause instanceof ApiError && cause.status === 404) {
+      linkError.value = `关联的${resource}不存在或在当前空间不可见。`;
+    } else if (cause instanceof ApiError && cause.status === 403) {
+      linkError.value = `当前没有权限查看该${resource}。`;
+    } else {
+      linkError.value = `暂时无法读取${resource}，请重试。`;
+      linkCanRetry.value = true;
+    }
+  } finally {
+    if (isCurrent()) linkLoading.value = false;
   }
+}
+onMounted(() => {
+  window.addEventListener('beforeunload', beforeUnload);
+  if (props.initialId) void loadLinkedEvaluator();
+  else void loadReviewAssets();
 });
 onUnmounted(() => {
   disposed = true;
@@ -491,6 +593,31 @@ const templateLabels1: Record<string, string> = {
 };
 </script>
 <template>
+  <section v-if="showLinkedState" class="card" aria-label="关联评估器详情">
+    <p v-if="linkLoading" role="status">正在读取关联评估器…</p>
+    <p v-else-if="linkError" role="alert">
+      {{ linkError }}
+      <button v-if="linkCanRetry" class="asset-link" @click="loadLinkedEvaluator">重试</button>
+    </p>
+    <template v-else-if="linkedVersion">
+      <h1 class="page-title">
+        {{ linkedVersion.name
+        }}<template v-if="linkedVersion.definition">
+          · v{{ linkedVersion.definition.version }}</template
+        >
+      </h1>
+      <p v-if="linkedVersion.archived">此评估器已归档。</p>
+      <template v-if="linkedVersion.definition">
+        <p>{{ kindLabel(linkedVersion.definition.kind) }} · 已发布版本（只读）</p>
+        <details>
+          <summary>查看版本定义与执行配置</summary>
+          <pre class="linked-definition">{{ pretty(linkedVersion.definition) }}</pre>
+        </details>
+      </template>
+      <p v-else>此评估器暂无可查看的发布版本。</p>
+    </template>
+    <a class="link" href="#/evaluators">返回评估器列表</a>
+  </section>
   <LLMGroupEditor
     v-if="groupOpen"
     :initial-id="groupInitialId"
@@ -517,11 +644,11 @@ const templateLabels1: Record<string, string> = {
       emit('launch', $event);
     "
   />
-  <div v-if="!promptOpen && (!groupOpen || groupChoosing)" class="page-head">
+  <div v-if="!showLinkedState && !promptOpen && (!groupOpen || groupChoosing)" class="page-head">
     <h1 id="evaluator-catalog-title" class="page-title">评估器</h1>
   </div>
   <section
-    v-if="!promptOpen && (!groupOpen || groupChoosing)"
+    v-if="!showLinkedState && !promptOpen && (!groupOpen || groupChoosing)"
     class="review-assets"
     aria-labelledby="evaluator-catalog-title"
   >
@@ -536,10 +663,7 @@ const templateLabels1: Record<string, string> = {
         v-if="category === 'rule'"
         class="asset-primary"
         :disabled="busy"
-        @click="
-          codeId = undefined;
-          codeOpen = true;
-        "
+        @click="chooseRuleTemplate"
       >
         ＋ 新建规则评估器
       </button>
@@ -578,7 +702,7 @@ const templateLabels1: Record<string, string> = {
           @view="open(e)"
         >
           <template #menu>
-            <el-dropdown v-if="e.source === 'user'" trigger="click" :disabled="busy || deleting">
+            <el-dropdown v-if="canRemoveEvaluator(e)" trigger="click" :disabled="busy || deleting">
               <button
                 type="button"
                 class="asset-link evaluator-more"
@@ -590,7 +714,7 @@ const templateLabels1: Record<string, string> = {
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item :disabled="busy || deleting" @click="removeEvaluator(e)">
-                    删除
+                    {{ e.latest_version ? '归档' : '删除' }}
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -626,6 +750,23 @@ const templateLabels1: Record<string, string> = {
             ><span class="asset-small">{{
               e.latest_version ? (e.enabled ? '已启用' : '已停用') : '发布后可用'
             }}</span>
+            <el-dropdown v-if="canRemoveEvaluator(e)" trigger="click" :disabled="busy || deleting">
+              <button
+                type="button"
+                class="asset-link evaluator-more"
+                :aria-label="e.name + '更多操作'"
+                :disabled="busy || deleting"
+              >
+                …
+              </button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item :disabled="busy || deleting" @click="removeEvaluator(e)">
+                    归档
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </div>
         </article>
       </template>
@@ -890,10 +1031,56 @@ const templateLabels1: Record<string, string> = {
       loadReviewAssets();
     "
   />
+  <el-dialog
+    v-if="ruleTemplatesOpen"
+    :model-value="true"
+    title="评估器模板"
+    width="min(1180px,94vw)"
+    class="rule-template-dialog"
+    :close-on-click-modal="false"
+    @close="ruleTemplatesOpen = false"
+  >
+    <div class="rule-template-layout">
+      <aside class="rule-template-sidebar">
+        <h3>类型</h3>
+        <span>规则</span>
+      </aside>
+      <div class="rule-template-main">
+        <div class="rule-template-toolbar">
+          <input
+            v-model="ruleTemplateQuery"
+            class="input"
+            aria-label="搜索评估器模板"
+            placeholder="搜索评估器模板"
+          />
+          <button type="button" class="asset-primary" @click="createRule()">
+            ＋ 自定义创建规则评估器
+          </button>
+        </div>
+        <p v-if="assetsLoading" role="status">正在读取模板…</p>
+        <p v-else-if="assetsError" role="alert" class="asset-error">{{ assetsError }}</p>
+        <p v-else-if="!visibleRuleTemplates.length" class="muted">
+          {{ ruleTemplateQuery.trim() ? '没有匹配的模板，请调整搜索。' : '当前没有可用的规则模板。' }}
+        </p>
+        <div v-else class="rule-template-cards">
+          <article v-for="preset in visibleRuleTemplates" :key="preset.id" class="asset-card">
+            <span class="asset-chip">预置模板</span>
+            <h2>{{ preset.name }}</h2>
+            <p>{{ evaluatorScenarios[preset.implementation_id] ?? preset.description }}</p>
+            <div class="asset-card-actions">
+              <button type="button" class="asset-primary" @click="createRule(preset)">
+                使用此模板创建
+              </button>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+  </el-dialog>
   <CodeRuleDialog
     v-if="codeOpen"
     :initial-id="codeId"
-    :presets="rulePresets"
+    :initial-preset="initialRulePreset"
     @close="codeOpen = false"
     @dirty-change="codeDirty = $event"
     @changed="loadReviewAssets()"
@@ -904,6 +1091,65 @@ const templateLabels1: Record<string, string> = {
   />
 </template>
 <style scoped>
+:global(.el-overlay .el-dialog.rule-template-dialog:not(.is-fullscreen)) {
+  height: min(840px, 92vh);
+  max-height: 92vh;
+  margin: 4vh auto !important;
+}
+:global(.el-overlay .el-dialog.rule-template-dialog:not(.is-fullscreen) .el-dialog__body) {
+  flex: 1;
+  max-height: none;
+}
+.rule-template-layout {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+}
+.rule-template-sidebar {
+  padding: 12px 22px 20px 4px;
+  border-right: 1px solid var(--el-border-color-lighter);
+}
+.rule-template-sidebar h3 {
+  margin: 6px 0 18px;
+}
+.rule-template-sidebar span {
+  display: block;
+  padding: 10px;
+  text-align: center;
+  border-radius: 7px;
+  background: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
+}
+.rule-template-main {
+  min-width: 0;
+  padding: 10px 0 0 22px;
+}
+.rule-template-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.rule-template-toolbar input {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.rule-template-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 18px;
+}
+@media (max-width: 760px) {
+  .rule-template-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rule-template-sidebar {
+    display: none;
+  }
+  .rule-template-main {
+    padding-inline-start: 0;
+  }
+}
 .evaluator-toolbar {
   display: flex;
   align-items: center;
@@ -1019,6 +1265,7 @@ const templateLabels1: Record<string, string> = {
   justify-content: space-between;
   gap: 12px;
 }
+.linked-definition,
 .dimension-content pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;

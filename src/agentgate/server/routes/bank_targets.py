@@ -10,10 +10,12 @@ from agentgate.application.evaluation_task_management import (
     EvaluationTaskManagement,
 )
 from agentgate.domain import EvaluationRun, EvaluatorRef
+from agentgate.domain.dataset import ArchivedDatasetError
 from agentgate.domain.evaluation_task import EvaluationTask
 from agentgate.integrations.targets.local_bank import LocalBankClient, local_bank_target
 from agentgate.run.target_protocol import TargetExecutionError
 from agentgate.server.dependencies import ServerDependencies, get_dependencies
+from agentgate.server.errors import raise_conflict
 from agentgate.server.user_context import get_user_info
 
 router = APIRouter(prefix="/api", tags=["bank-targets"])
@@ -59,6 +61,7 @@ def list_targets(dependencies: Dependencies):
 @router.post("/bank-evaluations", status_code=202)
 def launch(request: BankLaunch, dependencies: Dependencies):
     try:
+        dependencies.datasets.get_dataset(request.dataset_id).require_available_for_submission()
         descriptor, target = local_bank_target(LocalBankClient(), request.mode)
         if request.target_descriptor_sha256 and request.target_descriptor_sha256 != descriptor.content_sha256:
             raise ValueError("智能体配置已变化，请刷新后重新提交，不能静默替换所选版本")
@@ -102,6 +105,8 @@ def launch(request: BankLaunch, dependencies: Dependencies):
         if request.repetitions > 1:
             return task
         return dependencies.results.get_run_progress(run.id)
+    except ArchivedDatasetError as error:
+        raise_conflict(error)
     except DuplicateTaskNameError:
         raise HTTPException(409, "任务名称已存在，请修改名称后重试。") from None
     except TargetExecutionError:

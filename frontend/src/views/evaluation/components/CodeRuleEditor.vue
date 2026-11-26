@@ -294,13 +294,12 @@ watch(
     feedback.value = '';
   },
 );
-function setField(key: string, value: unknown, config = false) {
-  if ((config ? props.modelValue.config[key] : props.modelValue[key as keyof Definition]) === value)
-    return;
-  const next = JSON.parse(JSON.stringify(props.modelValue));
-  if (config) next.config[key] = value;
-  else next[key] = value;
-  emit('update:modelValue', next);
+function updateSource(source: string) {
+  if (props.modelValue.config.source === source) return;
+  emit('update:modelValue', {
+    ...props.modelValue,
+    config: { ...props.modelValue.config, source },
+  });
 }
 async function validate() {
   checking.value = true;
@@ -324,74 +323,6 @@ async function validate() {
 <template>
   <section class="code-rule-editor" aria-label="Code 规则配置">
     <p class="muted">编写或生成代码 → 检查语法 → 构造测试数据并试运行 → 保存草稿 → 发布并启用</p>
-    <div class="form-grid">
-      <label class="field"
-        >评估维度<select
-          class="input"
-          aria-label="评估维度"
-          :disabled="disabled"
-          :value="modelValue.dimension"
-          @change="setField('dimension', ($event.target as HTMLSelectElement).value)"
-        >
-          <option value="tool_use">工具调用</option>
-          <option value="routing">技能路由</option>
-          <option value="state">业务状态</option>
-          <option value="answer">回答质量</option>
-          <option value="safety">安全合规</option>
-        </select></label
-      >
-      <label class="field"
-        >通过分数（0—100）<input
-          class="input"
-          type="number"
-          min="0"
-          max="100"
-          aria-label="Code 通过分数"
-          :disabled="disabled"
-          :value="Number(modelValue.config.pass_threshold) * 100"
-          @input="
-            setField(
-              'pass_threshold',
-              Number(($event.target as HTMLInputElement).value) / 100,
-              true,
-            )
-          "
-      /></label>
-    </div>
-    <p class="muted">评估维度用于结果分类。通过分数默认 100，达到该分数即通过。</p>
-    <details>
-      <summary>
-        高级设置 · {{ modelValue.severity === 'blocking' ? '阻断检查' : '普通检查' }}
-      </summary>
-      <div class="form-grid">
-        <label class="field"
-          >指标标识<input
-            class="input"
-            aria-label="指标标识"
-            :disabled="disabled"
-            :value="modelValue.metric"
-            @input="setField('metric', ($event.target as HTMLInputElement).value)"
-        /></label>
-        <label class="field"
-          >失败影响<select
-            class="input"
-            aria-label="失败影响"
-            :disabled="disabled"
-            :value="modelValue.severity"
-            @change="setField('severity', ($event.target as HTMLSelectElement).value)"
-          >
-            <option value="standard">普通检查</option>
-            <option value="blocking">阻断检查</option>
-          </select></label
-        >
-      </div>
-      <p class="muted">
-        新建时自动生成独立指标标识，一般无需修改。同名指标会合并统计，不同维度请使用不同标识。
-      </p>
-      <p class="muted">
-        普通检查参与评分；阻断检查失败会导致发布门禁不通过，不会立即中断 Agent 执行。
-      </p>
-    </details>
     <div class="code-workbench">
       <section class="code-pane" aria-label="Python 评估代码编辑区">
         <div class="editor-header">
@@ -402,7 +333,7 @@ async function validate() {
           language="python"
           :disabled="disabled"
           :model-value="String(modelValue.config.source ?? '')"
-          @update:model-value="setField('source', $event, true)"
+          @update:model-value="updateSource"
         />
       </section>
       <section class="trial-panel" aria-label="测试数据编辑区">
@@ -530,7 +461,7 @@ async function validate() {
     </div>
     <p class="muted">
       返回 EvalOutput(score=0～1, reason="评分说明", span_ids=["证据 ID"])；span_ids
-      可选。低于通过分数为失败，运行异常为 ERROR，不按 0 分处理。
+      可选。试运行会显示判定结果，运行异常单独标记为 ERROR。
     </p>
     <div v-if="!disabled" class="actions">
       <button type="button" class="secondary" :disabled="checking" @click="validate">
@@ -684,8 +615,5 @@ async function validate() {
   .code-workbench {
     grid-template-columns: 1fr;
   }
-}
-summary {
-  cursor: pointer;
 }
 </style>

@@ -291,12 +291,18 @@ def discard_draft(dataset_id: str, dependencies: Dependencies) -> None:
         raise_not_found(error)
 
 
-@router.delete("/{dataset_id}/versions/{version}", status_code=204)
+@router.delete(
+    "/{dataset_id}/versions/{version}",
+    status_code=409,
+    response_description="已发布的测评集版本不能删除",
+    responses={404: {"description": "未找到该测评集或发布版本"}},
+)
 def delete_published_version(dataset_id: str, version: int, dependencies: Dependencies) -> None:
     try:
-        dependencies.datasets.delete_published_version(dataset_id, version)
+        dependencies.datasets.get_version(dataset_id, version)
     except ValueError as error:
         raise_not_found(error)
+    raise HTTPException(status_code=409, detail="已发布的测评集版本不能删除，可归档整个测评集。")
 
 
 @router.post("/{dataset_id}/drafts/publish")

@@ -433,7 +433,8 @@ for (const layout of [
     if (layout.width === 1092) {
       const more = main.getByRole('button', { name: '更多', exact: true });
       await more.click();
-      await expect(workspace.getByRole('menuitem', { name: '删除', exact: true })).toBeVisible();
+      await expect(workspace.getByRole('menuitem', { name: '归档', exact: true })).toBeVisible();
+      await expect(workspace.getByRole('menuitem', { name: '删除', exact: true })).toHaveCount(0);
       await page.keyboard.press('Escape');
     }
     if (layout.width === 3840) {
@@ -680,9 +681,11 @@ test('direct sample link reads only its trace and can retry an unavailable trace
   expect(state.errors).toEqual([]);
 });
 
-test('full Excel automatically previews five rows and exports all executed samples regardless of the visible filter', async ({ page }) => {
+test('full Excel previews five rows and exports all executed samples without native structuredClone', async ({ page }) => {
+  await page.addInitScript(() => Reflect.deleteProperty(globalThis, 'structuredClone'));
   const state = await setup(page);
   await open(page);
+  expect(await page.evaluate(() => typeof globalThis.structuredClone)).toBe('undefined');
   await page.getByLabel('样本场景', { exact: true }).selectOption('A');
   await page.getByRole('button', { name: '导出 Excel', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '导出 Excel' });

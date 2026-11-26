@@ -18,13 +18,18 @@ SQLITE_TABLES = (
         evaluator_id TEXT NOT NULL,PRIMARY KEY(run_id,evaluator_id))""",
 )
 SQLITE_COLUMNS = {
-    "agentgate_evaluation_tasks": {"name": "TEXT", "kind": "TEXT", "first_run_id": "TEXT"},
+    "agentgate_evaluation_tasks": {
+        "name": "TEXT", "kind": "TEXT", "first_run_id": "TEXT", "archived_at": "TEXT",
+    },
+    "agentgate_runs": {"archived_at": "TEXT"},
     "agentgate_evaluation_task_runs": {"is_current": "INTEGER", "position": "INTEGER"},
     "agentgate_dataset_versions": {"sample_count": "INTEGER"},
 }
 
 
 def upgrade_sqlite(db):
+    if not db.in_transaction:
+        db.execute("BEGIN IMMEDIATE")
     for statement in SQLITE_TABLES:
         db.execute(statement)
     expected_tables = {
@@ -74,7 +79,9 @@ def inspect_or_upgrade_mysql(engine, *, apply=False):
             "name": "LONGTEXT NULL",
             "kind": "VARCHAR(16) NULL",
             "first_run_key": "BINARY(32) NULL",
+            "archived_at": "DATETIME(6) NULL",
         },
+        "agentgate_runs": {"archived_at": "DATETIME(6) NULL"},
         "agentgate_evaluation_task_runs": {
             "is_current": "SMALLINT NULL",
             "position": "INTEGER NULL",

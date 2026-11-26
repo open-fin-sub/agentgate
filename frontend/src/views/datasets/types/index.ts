@@ -98,6 +98,7 @@ export interface DatasetRecord {
   name: string;
   description: string;
   archived: boolean;
+  deleted_version_high_watermark?: number;
   created_at: string;
   updated_at: string;
 }
@@ -108,6 +109,10 @@ export interface DatasetSummary extends DatasetRecord {
   has_draft: boolean;
   draft_case_count?: number | null;
   draft_based_on_version?: number | null;
+}
+
+export function hasPublicationHistory(dataset: DatasetSummary): boolean {
+  return dataset.version != null || (dataset.deleted_version_high_watermark ?? 0) > 0;
 }
 
 export interface DatasetVersion {

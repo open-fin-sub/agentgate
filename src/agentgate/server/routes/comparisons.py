@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from agentgate.application.evaluation_task_management import DuplicateTaskNameError
 from agentgate.domain import EvaluatorRef, RunStatus
+from agentgate.domain.dataset import ArchivedDatasetError
 from agentgate.result import EvaluationComparison
 from agentgate.server.dependencies import ServerDependencies, get_dependencies
 from agentgate.server.errors import (
@@ -82,6 +83,8 @@ def launch_run_comparison(
                 else None
             ),
         )
+    except ArchivedDatasetError as error:
+        raise_conflict(error)
     except DuplicateTaskNameError:
         raise HTTPException(409, "任务名称已存在，请修改名称后重试。") from None
     except RuntimeError as error:

@@ -9,7 +9,6 @@ from agentgate.application.evaluation_task_management import EvaluationTaskManag
 from agentgate.domain.evaluation_task import EvaluationTask, EvaluationTaskKind
 from agentgate.server.dependencies import ServerDependencies, get_dependencies
 from agentgate.server.user_context import get_user_info
-from agentgate.storage.historical_comparisons import TaskReferencedError
 
 router = APIRouter(prefix="/api/evaluation-tasks", tags=["evaluation-tasks"])
 Dependencies = Annotated[ServerDependencies, Depends(get_dependencies)]
@@ -127,15 +126,10 @@ def save_task(task_id: str, body: TaskAssociationRequest, dependencies: Dependen
         raise HTTPException(409, str(exc)) from exc
 
 
-@router.delete("/{task_id}")
-def delete_task(task_id: str, dependencies: Dependencies):
+@router.post("/{task_id}/archive")
+def archive_task(task_id: str, dependencies: Dependencies, standalone: bool = False):
     try:
-        info = get_user_info()
-        dependencies.repository.delete_task_record(
-            task_id, user_team_id=info.user_team_id if info else ""
-        )
-    except TaskReferencedError as exc:
-        raise HTTPException(409, str(exc)) from exc
-    except ValueError as exc:
+        EvaluationTaskManagement(dependencies.repository).archive(task_id, standalone=standalone)
+    except LookupError as exc:
         raise HTTPException(404, str(exc)) from exc
-    return {"deleted": task_id}
+    return {"archived": task_id}

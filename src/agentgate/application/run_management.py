@@ -74,11 +74,7 @@ class RunManagement:
             target.ref,
             target.descriptor_sha256,
         )
-        dataset = (
-            self.dataset_management.get_version(dataset_id, dataset_version)
-            if dataset_version is not None
-            else self.dataset_management.latest_published(dataset_id)
-        )
+        dataset = self.dataset_management.version_for_submission(dataset_id, dataset_version)
         if evaluator_ids is not None and evaluator_refs is not None:
             raise ValueError("use evaluator_ids or evaluator_refs, not both")
         selected = (
@@ -181,7 +177,7 @@ class RunManagement:
             api_key=source.api_key,
         )
         if persist:
-            self.repository.save_run(rerun)
+            self.repository.save_run(rerun, from_rerun_snapshot=True)
         RunEventRecorder(self.repository, rerun.id, rerun.user_team_id).start(
             "run", "任务全流程", key="run", started_at=rerun.created_at,
             agent_id=rerun.manifest.target.ref.external_target_id,

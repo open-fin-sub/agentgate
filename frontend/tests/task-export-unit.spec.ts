@@ -112,6 +112,24 @@ const allDetails = (row: Record<string, string>) =>
     .map((key) => row[key])
     .join('\n');
 
+test('export keeps the original request without native structuredClone', async () => {
+  const selection = request();
+  const io = reader();
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'structuredClone');
+  try {
+    Reflect.deleteProperty(globalThis, 'structuredClone');
+    const pending = loadTaskExport(selection, new AbortController().signal, undefined, io.get);
+    selection.runIds.push('another-run');
+    selection.taskName = '另一个任务';
+    const data = await pending;
+
+    expect(data.request).toEqual(request());
+    expect(data.runs.map((run) => run.samples.run.id)).toEqual(['run-a']);
+  } finally {
+    if (descriptor) Object.defineProperty(globalThis, 'structuredClone', descriptor);
+  }
+});
+
 test('full Excel has one row per sample and turn, all evaluator columns and original aggregate/resource values', async () => {
   const data = await load(),
     table = taskExportTable(data),

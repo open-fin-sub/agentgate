@@ -631,9 +631,16 @@ watch(sampleId, () => {
             </div>
             <h3>测评集</h3>
             <div class="config-block">
-              <a class="link" :href="'#datasets/' + manifest.dataset.dataset_id">{{
-                manifest.dataset.dataset_name
-              }}</a>
+              <a
+                class="link"
+                :href="
+                  '#datasets/' +
+                  encodeURIComponent(manifest.dataset.dataset_id) +
+                  '?version=' +
+                  encodeURIComponent(manifest.dataset.version)
+                "
+                >{{ manifest.dataset.dataset_name }}</a
+              >
               <p>{{ cases.length }} 条样本 · v{{ manifest.dataset.version }}</p>
             </div>
             <h3>执行设置</h3>

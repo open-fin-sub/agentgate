@@ -17,7 +17,7 @@ from agentgate.dataset.versioning import (
     require_unique_case_names,
     with_case,
 )
-from agentgate.domain import Case, Dataset, DatasetVersion, DatasetVersionStatus, utcnow
+from agentgate.domain import Case, Dataset, DatasetVersion, utcnow
 from agentgate.storage.repository import AgentGateRepository
 from agentgate.server.user_context import get_user_info
 
@@ -107,13 +107,6 @@ class DatasetManagement:
         """Permanently remove a Dataset that never published a version."""
         dataset = self.get_dataset(dataset_id)
         user_team_id, _, _ = _user_context()
-        versions = self.repository.list_dataset_versions(
-            dataset_id, include_draft=True, user_team_id=user_team_id
-        )
-        if any(version.status == DatasetVersionStatus.PUBLISHED for version in versions):
-            raise ValueError(
-                "Dataset with published versions cannot be deleted; archive it instead"
-            )
         self.repository.delete_dataset_record(dataset_id, user_team_id=user_team_id)
         return dataset
 
@@ -127,24 +120,30 @@ class DatasetManagement:
         )
 
     def get_version(self, dataset_id: str, version: int) -> DatasetVersion:
-        self.get_dataset(dataset_id)
-        user_team_id, _, _ = _user_context()
-        item = self.repository.get_published_dataset_version(
-            dataset_id, version, user_team_id=user_team_id
-        )
-        if item is None:
-            raise ValueError(f"unknown Dataset version: {dataset_id} v{version}")
-        return item
+        return self._published_version(self.get_dataset(dataset_id), version)
 
     def latest_published(self, dataset_id: str) -> DatasetVersion:
-        self.get_dataset(dataset_id)
-        user_team_id, _, _ = _user_context()
-        version = self.repository.get_latest_published_dataset_version(
-            dataset_id, user_team_id=user_team_id
+        return self._published_version(self.get_dataset(dataset_id), None)
+
+    def version_for_submission(self, dataset_id: str, version: int | None) -> DatasetVersion:
+        dataset = self.get_dataset(dataset_id)
+        dataset.require_available_for_submission()
+        return self._published_version(dataset, version)
+
+    def _published_version(self, dataset: Dataset, version: int | None) -> DatasetVersion:
+        if version is not None:
+            item = self.repository.get_published_dataset_version(
+                dataset.id, version, user_team_id=dataset.user_team_id
+            )
+            if item is None:
+                raise ValueError(f"unknown Dataset version: {dataset.id} v{version}")
+            return item
+        item = self.repository.get_latest_published_dataset_version(
+            dataset.id, user_team_id=dataset.user_team_id
         )
-        if version is None:
-            raise ValueError(f"Dataset has no published version: {dataset_id}")
-        return version
+        if item is None:
+            raise ValueError(f"Dataset has no published version: {dataset.id}")
+        return item
 
     def get_draft(self, dataset_id: str) -> DatasetVersion | None:
         self.get_dataset(dataset_id)
@@ -184,11 +183,6 @@ class DatasetManagement:
         self.repository.delete_dataset_draft(
             dataset_id, draft.id, user_team_id=user_team_id
         )
-
-    def delete_published_version(self, dataset_id: str, version: int) -> None:
-        self.get_version(dataset_id, version)
-        user_team_id, _, _ = _user_context()
-        self.repository.delete_dataset_version(dataset_id, version, user_team_id=user_team_id)
 
     def _draft(self, dataset_id: str) -> DatasetVersion:
         draft = self.get_draft(dataset_id)

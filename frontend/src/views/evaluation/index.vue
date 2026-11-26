@@ -401,6 +401,9 @@ async function taskRerunCreated(taskId: string) {
       v-else-if="page === 'evaluators'"
       :key="`${route}:${evaluatorSession}`"
       :initial-id="runId"
+      :initial-version="
+        typeof currentRoute.query.version === 'string' ? currentRoute.query.version : undefined
+      "
       @dirty-change="evaluatorDirty = $event"
       @launch="openCreate({ id: '', version: 0, evaluatorId: $event })"
     />
