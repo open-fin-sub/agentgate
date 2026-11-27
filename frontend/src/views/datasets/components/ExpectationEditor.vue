@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, toRaw, watch } from 'vue';
 import type { Condition, Expectation, JsonObject, JsonValue } from '../types/index';
+import { conditionLabels, toolOccurrenceLabels } from '../types/index';
 
 const props = defineProps<{ modelValue: Expectation[]; disabled?: boolean }>();
 const emit = defineEmits<{
@@ -230,33 +231,43 @@ defineExpose({ validate });
       :data-testid="`expectation-${index}`"
     >
       <div class="expectation-row-head">
-        <el-select
-          :model-value="row.kind"
-          :disabled="disabled"
-          aria-label="期望类型"
-          @update:model-value="changeKind(index, $event)"
-        >
-          <el-option v-for="(label, kind) in kindLabels" :key="kind" :label="label" :value="kind" />
-        </el-select>
-        <el-input v-model="row.name" :disabled="disabled" placeholder="检查名称（可选）" />
+        <label>
+          期望类型 <em class="required" aria-hidden="true">*</em>
+          <el-select
+            :model-value="row.kind"
+            :disabled="disabled"
+            aria-label="期望类型"
+            aria-required="true"
+            @update:model-value="changeKind(index, $event)"
+          >
+            <el-option
+              v-for="(label, kind) in kindLabels"
+              :key="kind"
+              :label="label"
+              :value="kind"
+            />
+          </el-select>
+        </label>
         <el-button v-if="!disabled" link type="danger" @click="remove(index)">删除</el-button>
       </div>
       <div class="expectation-fields">
         <label v-if="row.kind === 'tool_argument'"
-          >工具名 <span class="required">*</span>
+          >工具名 <em class="required" aria-hidden="true">*</em>
           <el-input
             v-model="row.tool"
             :disabled="disabled"
+            aria-required="true"
             :data-testid="`expectation-tool-${index}`"
             placeholder="工具名，例如 approve_loan"
           />
         </label>
         <label
           >{{ row.kind === 'output' ? '输出路径' : '字段路径' }}
-          <span v-if="row.kind !== 'output'" class="required">*</span>
+          <em v-if="row.kind !== 'output'" class="required" aria-hidden="true">*</em>
           <el-input
             v-model="row.path"
             :disabled="disabled"
+            :aria-required="row.kind !== 'output'"
             :data-testid="`expectation-path-${index}`"
             :aria-label="row.kind === 'output' ? '输出路径' : '字段路径'"
             :placeholder="
@@ -269,39 +280,36 @@ defineExpose({ validate });
           />
         </label>
         <label v-if="row.kind === 'tool_argument'"
-          >调用范围
-          <el-select v-model="row.occurrence" :disabled="disabled" aria-label="调用范围">
-            <el-option label="最后一次调用" value="last" /><el-option
-              label="第一次调用"
-              value="first"
-            />
-            <el-option label="任意一次通过" value="any" /><el-option
-              label="所有调用通过"
-              value="all"
+          >调用范围 <em class="required" aria-hidden="true">*</em>
+          <el-select
+            v-model="row.occurrence"
+            :disabled="disabled"
+            aria-label="调用范围"
+            aria-required="true"
+          >
+            <el-option
+              v-for="(label, value) in toolOccurrenceLabels"
+              :key="value"
+              :label="label"
+              :value="value"
             />
           </el-select>
         </label>
         <label
-          >判定方式
+          >判定方式 <em class="required" aria-hidden="true">*</em>
           <el-select
             :model-value="row.condition.kind"
             :disabled="disabled"
             aria-label="判定方式"
+            aria-required="true"
             @update:model-value="changeCondition(row, $event)"
           >
-            <el-option label="等于" value="equals" /><el-option
-              label="数值容差"
-              value="within_tolerance"
+            <el-option
+              v-for="(label, value) in conditionLabels"
+              :key="value"
+              :label="label"
+              :value="value"
             />
-            <el-option label="数值范围" value="within_range" /><el-option
-              label="正则匹配"
-              value="matches_pattern"
-            />
-            <el-option label="属于集合" value="one_of" /><el-option
-              label="字段不存在"
-              value="must_be_missing"
-            />
-            <el-option label="JSON Schema" value="matches_json_schema" />
           </el-select>
         </label>
         <label v-if="row.condition.kind === 'equals'" class="value-field"
@@ -316,20 +324,26 @@ defineExpose({ validate });
         </label>
         <template v-else-if="row.condition.kind === 'within_tolerance'">
           <label
-            >期望值<el-input-number
+            >期望值 <em class="required" aria-hidden="true">*</em>
+            <el-input-number
               v-model="row.condition.expected"
               :disabled="disabled"
+              aria-label="期望值"
+              aria-required="true"
               placeholder="期望值"
           /></label>
           <label
-            >容差<el-input-number
+            >容差 <em class="required" aria-hidden="true">*</em>
+            <el-input-number
               v-model="row.condition.epsilon"
               :disabled="disabled"
               aria-label="容差"
+              aria-required="true"
               placeholder="容差"
           /></label>
         </template>
-        <template v-else-if="row.condition.kind === 'within_range'">
+        <fieldset v-else-if="row.condition.kind === 'within_range'" class="range-fields">
+          <legend>范围边界（至少填写一项） <em class="required" aria-hidden="true">*</em></legend>
           <label
             >最小值<el-input-number
               v-model="row.condition.minimum"
@@ -342,29 +356,31 @@ defineExpose({ validate });
               :disabled="disabled"
               placeholder="最大值"
           /></label>
-        </template>
+        </fieldset>
         <label v-else-if="row.condition.kind === 'matches_pattern'" class="value-field"
           >正则表达式
           <el-input v-model="row.condition.pattern" :disabled="disabled" placeholder="正则表达式" />
         </label>
         <label v-else-if="row.condition.kind === 'one_of'" class="value-field"
-          >允许值（JSON 数组）
+          >允许值（JSON 数组） <em class="required" aria-hidden="true">*</em>
           <el-input
             :model-value="jsonText(row, 'allowed')"
             :disabled="disabled"
             :data-testid="`expectation-allowed-${index}`"
+            aria-required="true"
             placeholder='例如 ["completed", "approved"]'
             @input="setJson(row, 'allowed', $event)"
           />
         </label>
         <label v-else-if="row.condition.kind === 'matches_json_schema'" class="value-field"
-          >JSON Schema
+          >JSON Schema <em class="required" aria-hidden="true">*</em>
           <el-input
             :model-value="jsonText(row, 'json_schema')"
             type="textarea"
             :rows="3"
             :disabled="disabled"
             :data-testid="`expectation-schema-${index}`"
+            aria-required="true"
             placeholder="JSON Schema 对象"
             @input="setJson(row, 'json_schema', $event)"
           />
@@ -413,27 +429,44 @@ defineExpose({ validate });
   background: #fff;
 }
 .expectation-row-head {
-  display: grid;
-  grid-template-columns: 150px minmax(0, 1fr) auto;
+  display: flex;
+  justify-content: space-between;
   gap: 12px;
-  align-items: center;
+  align-items: flex-end;
 }
-.expectation-fields {
+.expectation-row-head label {
+  width: 150px;
+}
+.expectation-fields,
+.range-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+.expectation-fields {
   margin-top: 16px;
 }
-.expectation-fields label {
+.range-fields {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.range-fields legend {
+  padding: 0 0 6px;
+}
+.expectation-row label,
+.range-fields legend {
   display: block;
   min-width: 0;
   font-size: 12px;
   color: #5a6879;
 }
-.expectation-fields label :deep(.el-input),
-.expectation-fields label :deep(.el-select),
-.expectation-fields label :deep(.el-input-number),
-.expectation-fields label :deep(.el-textarea) {
+.expectation-row label :deep(.el-input),
+.expectation-row label :deep(.el-select),
+.expectation-row label :deep(.el-input-number),
+.expectation-row label :deep(.el-textarea) {
   width: 100%;
   margin-top: 6px;
 }
@@ -443,11 +476,12 @@ defineExpose({ validate });
 .value-field {
   grid-column: 1 / -1;
 }
-.required,
-.expectation-error {
-  color: #d14343;
+.required {
+  color: var(--el-color-danger);
+  font-style: normal;
 }
 .expectation-error {
+  color: #d14343;
   font-size: 12px;
   margin-bottom: 0;
 }
@@ -455,13 +489,8 @@ defineExpose({ validate });
   .subsection-heading {
     align-items: flex-start;
   }
-  .expectation-row-head {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-  .expectation-row-head > :first-child {
-    grid-column: 1 / -1;
-  }
-  .expectation-fields {
+  .expectation-fields,
+  .range-fields {
     grid-template-columns: minmax(0, 1fr);
   }
 }

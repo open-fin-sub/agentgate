@@ -101,8 +101,8 @@ class Case(DomainModel):
     name: str
     turns: tuple[CaseTurn, ...] = Field(min_length=1)
     initial_state: FrozenJsonObject = Field(default_factory=FrozenJsonObject)
-    category: CaseCategory = CaseCategory.POSITIVE
-    difficulty: CaseDifficulty = CaseDifficulty.MEDIUM
+    category: CaseCategory | None = CaseCategory.POSITIVE
+    difficulty: CaseDifficulty | None = CaseDifficulty.MEDIUM
     tags: tuple[str, ...] = ()
     notes: str = ""
 

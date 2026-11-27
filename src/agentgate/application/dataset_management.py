@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, Literal
 from uuid import uuid4
 
 from agentgate.dataset.export import ExportedDataset, export_dataset
@@ -11,6 +11,7 @@ from agentgate.dataset.loader import load_cases, load_dataset
 from agentgate.dataset.versioning import (
     copy_case as copy_draft_case,
     create_draft as build_draft,
+    import_cases as import_draft_cases,
     publish_draft as build_publication,
     remove_case as remove_draft_case,
     reorder_cases as reorder_draft_cases,
@@ -18,6 +19,7 @@ from agentgate.dataset.versioning import (
     with_case,
 )
 from agentgate.domain import Case, Dataset, DatasetVersion, utcnow
+from agentgate.domain.dataset import DatasetDraftConflict
 from agentgate.storage.repository import AgentGateRepository
 from agentgate.server.user_context import get_user_info
 
@@ -191,13 +193,30 @@ class DatasetManagement:
         return draft
 
     def save_case(self, dataset_id: str, case: Case) -> DatasetVersion:
-        updated = with_case(self._draft(dataset_id), case, utcnow())
-        self.repository.save_dataset_version(updated)
+        draft = self._draft(dataset_id)
+        updated = with_case(draft, case, utcnow())
+        self.repository.save_dataset_version(updated, expected_hash=draft.content_sha256)
+        return updated
+
+    def import_cases(
+        self, dataset_id: str, draft_id: str, expected_hash: str,
+        cases: list[Case], mode: Literal["append", "replace"],
+    ) -> DatasetVersion:
+        user_team_id, _, _ = _user_context()
+        dataset = self.repository.get_dataset(dataset_id, user_team_id=user_team_id)
+        if dataset is None or dataset.archived:
+            raise DatasetDraftConflict()
+        draft = self.repository.get_dataset_draft(dataset_id, user_team_id=user_team_id)
+        if draft is None or draft.id != draft_id or draft.content_sha256 != expected_hash:
+            raise DatasetDraftConflict()
+        updated = import_draft_cases(draft, cases, mode, utcnow())
+        self.repository.save_dataset_version(updated, expected_hash=expected_hash)
         return updated
 
     def remove_case(self, dataset_id: str, case_id: str) -> DatasetVersion:
-        updated = remove_draft_case(self._draft(dataset_id), case_id, utcnow())
-        self.repository.save_dataset_version(updated)
+        draft = self._draft(dataset_id)
+        updated = remove_draft_case(draft, case_id, utcnow())
+        self.repository.save_dataset_version(updated, expected_hash=draft.content_sha256)
         return updated
 
     def copy_case(self, dataset_id: str, case_id: str) -> DatasetVersion:
@@ -219,14 +238,15 @@ class DatasetManagement:
             new_name=new_name,
             updated_at=utcnow(),
         )
-        self.repository.save_dataset_version(updated)
+        self.repository.save_dataset_version(updated, expected_hash=draft.content_sha256)
         return updated
 
     def reorder_cases(
         self, dataset_id: str, case_ids: list[str]
     ) -> DatasetVersion:
-        updated = reorder_draft_cases(self._draft(dataset_id), case_ids, utcnow())
-        self.repository.save_dataset_version(updated)
+        draft = self._draft(dataset_id)
+        updated = reorder_draft_cases(draft, case_ids, utcnow())
+        self.repository.save_dataset_version(updated, expected_hash=draft.content_sha256)
         return updated
 
     def publish_draft(self, dataset_id: str) -> DatasetVersion:

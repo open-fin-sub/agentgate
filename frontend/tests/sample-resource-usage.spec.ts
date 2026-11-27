@@ -15,7 +15,7 @@ async function setup(page: Page, fail = false) {
   const run = () => ({id:'run-1',created_at:'2026-11-07T00:00:00Z',status:state.status,manifest:{target:{ref:{external_version_id:'v1'}},
     dataset:{cases:[{id:'case-1',name:'sample one',tags:[],turns:[{id:'t1',input:{query:'hello'}}]}]},
     primary_evaluator_ids:['e1'],evaluator_specs:[{id:'e1',name:'Rule',kind:'rule'}]}});
-  const results = [{case_id:'case-1',evaluator_id:'e1',score:0.8,outcome:'pass'}];
+  const results = [{case_id:'case-1',evaluator_id:'e1',score:0.8,outcome:'pass',checks:[]}];
   await page.route('**/api/**', async route => {
     const path = new URL(route.request().url()).pathname;
     if (!path.startsWith('/api/')) return route.continue();
@@ -39,7 +39,7 @@ test('resource columns use summaries and full Excel also reads turn evidence',as
   const {calls}=await setup(page); await mount(page);
   await expect(page.getByRole('columnheader',{name:'总 Token'})).toBeVisible();
   await expect(page.getByRole('cell',{name:'14,351（部分）',exact:true})).toBeVisible();
-  await expect(page.getByRole('cell',{name:'5.850 秒',exact:true})).toBeVisible();
+  await expect(page.getByRole('cell',{name:'6 秒',exact:true})).toBeVisible();
   const download=page.waitForEvent('download');
   await page.getByRole('button',{name:'导出 Excel',exact:true}).click();
 
@@ -62,7 +62,7 @@ test('summary failure leaves scores visible and supports independent retry',asyn
 test('running refresh is throttled and completion fetches final summary then stops',async({page})=>{
   const {state,calls}=await setup(page); state.status='running';
   await page.clock.install(); await mount(page);
-  await expect(page.getByRole('cell',{name:'5.850 秒',exact:true})).toBeVisible();
+  await expect(page.getByRole('cell',{name:'6 秒',exact:true})).toBeVisible();
   await page.clock.fastForward(5000);
   await expect.poll(()=>calls.filter(p=>p.endsWith('/status')).length).toBe(2);
   expect(calls.filter(p=>p.endsWith('/sample-resource-usage'))).toHaveLength(1);

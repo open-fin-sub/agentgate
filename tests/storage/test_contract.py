@@ -1,7 +1,9 @@
 """The same public persistence workflows on SQLite and MySQL."""
 
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
+from threading import Barrier
 from uuid import uuid4
 
 import pytest
@@ -20,7 +22,7 @@ from agentgate.domain import (
     RunStatus,
     utcnow,
 )
-from agentgate.domain.dataset import ArchivedDatasetError
+from agentgate.domain.dataset import ArchivedDatasetError, DatasetDraftConflict
 from agentgate.domain.evaluation_task import EvaluationTask
 from agentgate.storage import mysql_schema
 from agentgate.storage.mysql import MySQLRepository
@@ -31,6 +33,32 @@ def test_mysql_implements_all_persistence_operations():
     for name, value in AgentGateRepository.__dict__.items():
         if callable(value) and not name.startswith("_"):
             assert callable(getattr(MySQLRepository, name, None)), name
+
+
+def test_draft_import_and_manual_edit_cannot_overwrite_each_other(repository, monkeypatch):
+    service = DatasetManagement(repository)
+    dataset = service.create_dataset("并行修改草稿")
+    draft = service.create_draft(dataset.id)
+    both_read = Barrier(2)
+    original_get = repository.get_dataset_draft
+
+    def synchronized_read(*args, **kwargs):
+        snapshot = original_get(*args, **kwargs)
+        both_read.wait(timeout=10)
+        return snapshot
+
+    monkeypatch.setattr(repository, "get_dataset_draft", synchronized_read)
+    manual = Case(name="手工", turns=(CaseTurn(input={"txt": "A"}),))
+    imported = Case(name="文件", turns=(CaseTurn(input={"txt": "B"}),))
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        outcomes = [
+            pool.submit(service.save_case, dataset.id, manual),
+            pool.submit(service.import_cases, dataset.id, draft.id, draft.content_sha256, [imported], "replace"),
+        ]
+    assert sum(isinstance(outcome.exception(), DatasetDraftConflict) for outcome in outcomes) == 1
+    winner, = (outcome.result() for outcome in outcomes if not outcome.exception())
+    assert original_get(dataset.id, user_team_id="") == winner
+    assert winner.cases in ((imported,), (manual,))
 
 
 def test_task_rerun_is_atomic_preserves_history_and_deletes_all_executions(repository, execute_demo):

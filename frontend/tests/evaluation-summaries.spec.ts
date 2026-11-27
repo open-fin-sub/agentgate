@@ -194,9 +194,11 @@ test('all-time tasks include older rows and preserve filters and pagination', as
   expect(Object.fromEntries(queries.at(-1)!)).toEqual({ page: '1', page_size: '20', keyword: 'task', kind: 'ab' });
   await expect(range.getByRole('button', { name: '全部', exact: true })).toHaveAttribute('aria-pressed', 'true');
 
-  await page.getByRole('button', { name: '下一页' }).click();
-  await expect(page.locator('footer')).toContainText('2 / 3');
-  expect(Object.fromEntries(queries.at(-1)!)).toEqual({ page: '2', page_size: '20', keyword: 'task', kind: 'ab' });
+  await page.getByLabel('跳转页码').fill('3');
+  await page.getByRole('button', { name: '跳转', exact: true }).click();
+  await expect(page.locator('footer')).toContainText('3 / 3');
+  await expect(page.getByRole('button', { name: '下一页' })).toBeDisabled();
+  expect(Object.fromEntries(queries.at(-1)!)).toEqual({ page: '3', page_size: '20', keyword: 'task', kind: 'ab' });
   await range.getByRole('button', { name: '今日', exact: true }).click();
   await expect(page.getByRole('button', { name: '查看任务 recent-task', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '查看任务 historical-task', exact: true })).toHaveCount(0);

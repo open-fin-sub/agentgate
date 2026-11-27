@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from datetime import datetime
+from typing import Literal
 
 from agentgate.domain import Case, Dataset, DatasetVersion, DatasetVersionStatus
 
@@ -98,6 +99,27 @@ def remove_case(
     if len(cases) == len(draft.cases):
         raise ValueError(f"unknown Case: {case_id}")
     return _update_draft(draft, updated_at, cases=cases)
+
+
+def import_cases(
+    draft: DatasetVersion, cases: Sequence[Case],
+    mode: Literal["append", "replace"], updated_at: datetime,
+) -> DatasetVersion:
+    """Validate all imported cases together before building a new draft."""
+
+    if not cases:
+        raise ValueError("导入文件至少需要一个样本。")
+    if mode not in ("append", "replace"):
+        raise ValueError("请选择覆盖或追加。")
+    combined = (*draft.cases, *cases) if mode == "append" else tuple(cases)
+    require_unique_case_names(combined)
+    seen_ids: set[str] = set()
+    for case in combined:
+        case_id = case.id.strip()
+        if case_id in seen_ids:
+            raise ValueError(f"样本编号已存在：{case_id}，请修改编号后重试。")
+        seen_ids.add(case_id)
+    return _update_draft(draft, updated_at, cases=combined)
 
 
 def copy_case(

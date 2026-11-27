@@ -134,7 +134,7 @@ export function toApiCase(item: EvaluationCase): ApiEvaluationCase {
         }
         const expectations: SerializedExpectation[] = [
           ...(preserved_skill_routes ?? []),
-          ...(expected_skill
+          ...(expected_skill != null
             ? [
                 reuse(
                   {
@@ -234,6 +234,18 @@ export const datasetApi = {
     request<ApiDatasetVersion>(`/api/datasets/${id(datasetId)}/drafts/current`).then(
       toEditorVersion,
     ),
+  importDraftCases: (
+    datasetId: string,
+    draftId: string,
+    expectedHash: string,
+    mode: 'replace' | 'append',
+    cases: EvaluationCase[],
+  ) =>
+    request<ApiDatasetVersion>(`/api/datasets/${id(datasetId)}/drafts/cases/import`, {
+      method: 'POST',
+      headers: { ...headers, 'If-Match': expectedHash },
+      body: JSON.stringify({ draft_id: draftId, mode, cases: cases.map(toApiCase) }),
+    }).then(toEditorVersion),
   createDraft: (datasetId: string, basedOnVersion?: number | null) =>
     request<ApiDatasetVersion>(`/api/datasets/${id(datasetId)}/drafts`, {
       method: 'POST',

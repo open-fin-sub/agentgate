@@ -38,7 +38,7 @@ from agentgate.domain import (
     utcnow,
 )
 from agentgate.domain.credential import ApiKeyMetadata
-from agentgate.domain.dataset import ArchivedDatasetError
+from agentgate.domain.dataset import ArchivedDatasetError, DatasetDraftConflict
 from agentgate.domain.evaluation_task import EvaluationTask, task_with_rerun
 from agentgate.domain.run import RunTiming
 from agentgate.evaluator.versioning import (
@@ -1462,8 +1462,23 @@ class SQLiteRepository:
             rows = db.execute(query, parameters).fetchall()
         return [Dataset.model_validate_json(row[0]) for row in rows]
 
-    def save_dataset_version(self, version: DatasetVersion) -> None:
+    def save_dataset_version(
+        self, version: DatasetVersion, *, expected_hash: str | None = None,
+    ) -> None:
         with self._connect() as db:
+            if expected_hash is not None:
+                db.execute("BEGIN IMMEDIATE")
+                writable = db.execute(
+                    f"""
+                    SELECT 1 FROM {_T_DATASET_VERSIONS} v
+                    JOIN {_T_DATASETS} d ON d.id = v.dataset_id AND d.user_team_id = v.user_team_id
+                    WHERE v.id=? AND v.dataset_id=? AND v.user_team_id=? AND v.status='draft'
+                      AND v.content_sha256=? AND d.archived=0
+                    """,
+                    (version.id, version.dataset_id, version.user_team_id, expected_hash),
+                ).fetchone()
+                if writable is None:
+                    raise DatasetDraftConflict()
             existing = db.execute(
                 f"SELECT payload FROM {_T_DATASET_VERSIONS} WHERE id = ?", (version.id,)
             ).fetchone()

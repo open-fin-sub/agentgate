@@ -20,7 +20,11 @@ const chineseHeaders = [
   '样本编号', '样本名称', '样本分类', '难度', '标签', '样本备注', '初始状态',
   '轮次编号', '轮次顺序', '输入内容', '期望结果', '轮次备注',
 ];
-const templateHeaders = ['样本名称', '输入内容', '样本分类', '难度', '初始变量', '期望结果', '轮次顺序'];
+const templateHeaders = ['样本名称', '输入内容', '样本分类', '难度', '初始变量_city_字符串_非必填',
+  '轮次顺序', '期望skill', '必须工具', '禁止工具',
+  '最终状态_字段路径', '最终状态_判定方式', '最终状态_期望值',
+  '工具参数_工具名', '工具参数_字段路径', '工具参数_调用范围', '工具参数_判定方式', '工具参数_期望值',
+  '最终输出_输出路径', '最终输出_判定方式', '最终输出_期望值'];
 const englishHeaders = [
   'case_id', 'case_name', 'category', 'difficulty', 'tags_json', 'case_notes',
   'initial_state_json', 'turn_id', 'turn_order', 'input_json', 'expectations_json', 'turn_notes',
@@ -35,6 +39,57 @@ async function tableFile(format: 'xlsx' | 'csv', headers: string[], rows: (strin
   const workbook = new ExcelJS.Workbook();
   workbook.addWorksheet('Cases').addRows([headers, ...rows]);
   return file('sample.xlsx', new Uint8Array(await workbook.xlsx.writeBuffer()));
+}
+
+for (const format of ['xlsx', 'csv', 'json'] as const) {
+  async function enumFile(
+    samples: { category?: string | null; difficulty?: string | null }[],
+    columns: ('category' | 'difficulty')[],
+  ) {
+    if (format === 'json') return file('samples.json', strToU8(JSON.stringify({
+      cases: samples.map((fields, i) => ({ name: '样本' + i, ...fields, turns: [{ input: '你好' }] })),
+    })));
+    const labels = { category: '样本分类', difficulty: '难度' };
+    return tableFile(format, ['样本名称', '输入内容', ...columns.map((key) => labels[key])],
+      samples.map((fields, i) => ['样本' + i, '你好', ...columns.map((key) => fields[key] ?? '')]));
+  }
+
+  test(format + ' keeps omitted or blank optional enums empty and preserves each explicit value', async () => {
+    const omitted = await enumFile([{}], []);
+    const categoryOnly = await enumFile([{ category: '边界' }], ['category']);
+    const difficultyOnly = await enumFile([{ difficulty: '困难' }], ['difficulty']);
+    const filled = await enumFile([
+      {}, { category: '', difficulty: ' ' }, { category: null, difficulty: null },
+      { category: ' 空 ', difficulty: '空' },
+      { category: '', difficulty: '简单' }, { category: '负例', difficulty: '' },
+      { category: ' 正例 ', difficulty: ' 中等 ' }, { category: 'boundary', difficulty: 'hard' },
+    ], ['category', 'difficulty']);
+    // The sample wizard generates fresh IDs; both draft modes preserve IDs when supplied.
+    for (const preserveCaseIds of [false, true]) {
+      const readEnums = async (input: typeof omitted) => {
+        const cases = await parseSampleFile(input, undefined, { preserveCaseIds });
+        return cases.map((item) => {
+          const { category, difficulty } = toApiCase(item);
+          return [category, difficulty];
+        });
+      };
+      expect(await readEnums(omitted)).toEqual([[null, null]]);
+      expect(await readEnums(categoryOnly)).toEqual([['boundary', null]]);
+      expect(await readEnums(difficultyOnly)).toEqual([[null, 'hard']]);
+      expect(await readEnums(filled)).toEqual([
+        [null, null], [null, null], [null, null], [null, null], [null, 'easy'], ['negative', null],
+        ['positive', 'medium'], ['boundary', 'hard'],
+      ]);
+    }
+  });
+
+  test(format + ' reports invalid optional enum values without silently clearing them', async () => {
+    const input = await enumFile([{ category: '其他', difficulty: '未知' }], ['category', 'difficulty']);
+    await expect(parseSampleFile(input)).rejects.toMatchObject({ issues: expect.arrayContaining([
+      expect.objectContaining({ sampleName: '样本0', field: '样本分类' }),
+      expect.objectContaining({ sampleName: '样本0', field: '难度' }),
+    ]) });
+  });
 }
 
 for (const format of ['xlsx', 'csv'] as const) {
@@ -205,9 +260,13 @@ test('downloadable Excel template contains one single-turn sample and field inst
   const guide = workbook.getWorksheet('填写说明')!;
   const examples = workbook.getWorksheet('测评项示例')!;
   expect((data.getRow(1).values as string[]).slice(1)).toEqual(templateHeaders);
+  expect(data.getCell('B2').value).toBe('你好');
   expect(data.getCell('C2').text).toBe('正例');
   expect(data.getCell('D2').text).toBe('中等');
-  expect(data.getCell('G2').value).toBe(1);
+  expect(data.getCell('F2').value).toBe(1);
+  expect(['R2', 'S2', 'T2'].map((cell) => data.getCell(cell).text)).toEqual([
+    '', '等于', '你好，请问有什么可以帮您？',
+  ]);
   const emptyRowHeight = data.getRow(7).height ?? data.properties.defaultRowHeight;
   for (const number of [3, 4, 5, 6]) {
     const row = data.getRow(number);
@@ -221,23 +280,60 @@ test('downloadable Excel template contains one single-turn sample and field inst
   for (const status of ['必填', '可选', '系统生成']) expect(guidance).toContain(status);
   expect(guide.getCell('B7').text).toContain('同一多轮样本的各行填写相同的样本名称');
   expect(guide.getCell('B8').text).toContain('从表格顶部往下首次出现的一行');
+  expect(guide.getCell('B18').text).toContain('直接填写用户原话');
+  expect(guide.getCell('B18').text).toMatch(/【输入字段】.*金额: 120.*期数: 3/);
+  expect(guide.getCell('B19').text).toMatch(/选填.*正例、负例、边界.*未填时保留为空.*也可填写“空”/);
+  expect(guide.getCell('B20').text).toMatch(/选填.*简单、中等、困难.*未填时保留为空.*也可填写“空”/);
   expect(guide.getCell('B23').text).toContain('单轮填 1，留空按 1 导入');
-  expect(JSON.parse(examples.getCell('C5').text)).toMatchObject({
-    kind: 'output', path: 'output', condition: { kind: 'matches_pattern' },
-  });
+  expect(['C5', 'C6', 'C7'].map((cell) => examples.getCell(cell).text)).toEqual([
+    'output', '正则匹配', '人工',
+  ]);
 });
 
 test('downloaded Excel template sorts turns while reading case fields from the first physical row', async () => {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(readFileSync(new URL('../src/assets/dataset-import-template.xlsx', import.meta.url)));
   const data = workbook.getWorksheet('Cases')!;
-  data.getRow(3).values = ['乱序多轮示例', '{"txt":"第二轮"}', '边界', '困难', '{"ready":true}', '', 2];
-  data.getRow(4).values = ['乱序多轮示例', '{"txt":"第一轮"}', '', '', '', '', 1];
+  data.getRow(3).values = ['乱序多轮示例', '第二轮', '边界', '困难', '广州', 2];
+  data.getRow(4).values = ['乱序多轮示例', '{"txt":"第一轮"}', '', '', '', 1];
   const bytes = await workbook.xlsx.writeBuffer();
   const samples = await parseSampleFile(file('filled-template.xlsx', new Uint8Array(bytes)));
   const multiTurn = samples.find((sample) => sample.name === '乱序多轮示例');
-  expect(multiTurn).toMatchObject({ category: 'boundary', difficulty: 'hard', initial_state: { ready: true } });
+  expect(multiTurn).toMatchObject({ category: 'boundary', difficulty: 'hard',
+    initial_state: { config_variables: [{ name: 'city', type: 'str', required: false, value: '广州' }] } });
   expect(multiTurn?.turns.map((turn) => turn.input.txt)).toEqual(['第一轮', '第二轮']);
+});
+
+test('the workbook examples for state, tools and output import as configured', async () => {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(readFileSync(new URL('../src/assets/dataset-import-template.xlsx', import.meta.url)));
+  const cases = workbook.getWorksheet('Cases')!;
+  const examples = workbook.getWorksheet('测评项示例')!;
+  const copyExamples = (targetRow: number, sourceRows: number[]) => {
+    for (const n of sourceRows) {
+      const label = examples.getCell('B' + n).text;
+      const index = templateHeaders.indexOf(label);
+      expect(index).toBeGreaterThanOrEqual(0);
+      cases.getRow(targetRow).getCell(index + 1).value = examples.getCell('C' + n).value;
+    }
+  };
+  copyExamples(2, [5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17]);
+  cases.getRow(3).values = ['多条规则', '{"txt":"检查状态"}'];
+  copyExamples(3, [35, 36, 37, 38, 39, 40]);
+  const samples = await parseSampleFile(file('examples.xlsx', new Uint8Array(await workbook.xlsx.writeBuffer())));
+  expect(samples[0].turns[0].expectations).toEqual(expect.arrayContaining([
+    expect.objectContaining({ kind: 'state', path: 'status', condition: { kind: 'equals', expected: 'pending_review' } }),
+    expect.objectContaining({ kind: 'tool_argument', tool: 'submit_application', path: 'arguments.amount',
+      occurrence: 'all', condition: { kind: 'equals', expected: 80000 } }),
+    expect.objectContaining({ kind: 'output', path: 'output',
+      condition: { kind: 'matches_pattern', pattern: '人工' } }),
+  ]));
+  expect(samples[1].turns[0].expectations).toMatchObject([
+    { kind: 'state', path: 'status', condition: { kind: 'equals', expected: 'ready' } },
+    { kind: 'state', path: 'review', condition: { kind: 'must_be_missing' } },
+    { kind: 'output', path: null, condition: { kind: 'matches_json_schema', json_schema: { type: 'object' } } },
+    { kind: 'output', path: 'answer', condition: { kind: 'equals', expected: '已受理' } },
+  ]);
 });
 
 test('downloadable CSV template documents required fields and defaults in the Chinese headers', () => {
@@ -247,8 +343,16 @@ test('downloadable CSV template documents required fields and defaults in the Ch
   const headers = csv.replace(/^\uFEFF/, '').split(/\r?\n/, 1)[0]
     .split(',').map((header) => header.replace(/^"|"$/g, ''));
   expect(headers.map((header) => header.split('｜')[0])).toEqual(templateHeaders);
-  expect(headers.filter((header) => header.includes('必填'))).toHaveLength(2);
-  expect(headers).toContain('期望结果｜选填，默认 []');
+  expect(headers.filter((header) => header.includes('｜必填'))).toHaveLength(2);
+  const inputHeader = headers.find((header) => header.startsWith('输入内容｜'))!;
+  expect(inputHeader).toContain('直接填写用户原话');
+  expect(inputHeader).toMatch(/【输入字段】.*金额: 120.*期数: 3/);
+  expect(headers).toContain('样本分类｜选填，正例/负例/边界，未填时保留为空，也可填写“空”');
+  expect(headers).toContain('难度｜选填，简单/中等/困难，未填时保留为空，也可填写“空”');
+  expect(parseCsv(csv)[0][inputHeader]).toBe('你好');
+  expect(headers).toContain('最终输出_输出路径｜选填，留空检查整个输出');
+  expect(headers).toContain('最终输出_判定方式｜配置输出检查时必填，与最终状态使用相同判定方式');
+  expect(headers).toContain('最终输出_期望值｜选填，按判定方式填写，字段不存在时留空');
   const orderHeader = headers.find((header) => header.startsWith('轮次顺序｜'))!;
   expect(parseCsv(csv)[0][orderHeader]).toBe('1');
 });
@@ -272,6 +376,13 @@ test('JSON and CSV templates match the complete Excel sample content', async () 
     const bytes = readFileSync(
       new URL('../src/assets/dataset-import-template.' + format, import.meta.url),
     );
+    if (format === 'json') {
+      const template = JSON.parse(bytes.toString('utf8'));
+      expect(template.cases[0].turns[0].input).toBe('你好');
+      expect(template.填写说明.必填['turns[].input']).toContain('【输入字段】\n金额: 120\n期数: 3');
+      expect(template.填写说明.可选.category).toContain('未填时保留为空，也可填写“空”');
+      expect(template.填写说明.可选.difficulty).toContain('未填时保留为空，也可填写“空”');
+    }
     const parsed = await parseSampleFile(file('template.' + format, bytes));
     expect(content(parsed)).toEqual(content(excel));
   }

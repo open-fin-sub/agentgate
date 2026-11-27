@@ -101,7 +101,6 @@ async function download() {
           </option>
         </select>
       </div>
-      <p>三种格式均导出完整样本字段。Excel、CSV 每行对应一轮，单轮样本的轮次顺序为 1。重新导入表格时，不同样本须使用不同名称。</p>
       <div v-if="scope === 'selected'" class="export-samples">
         <button class="link" :disabled="busy" @click="ids = version?.cases.map((c) => c.id) ?? []">
           全选
@@ -112,7 +111,6 @@ async function download() {
           <small>{{ c.turns.length }} 轮</small></label
         >
       </div>
-      <p>导出 {{ scope === 'all' ? (version?.cases.length ?? 0) : ids.length }} 条样本</p>
       <p v-if="error" class="error" role="alert">{{ error }}</p>
     </div>
     <template #footer
