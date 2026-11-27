@@ -1,4 +1,5 @@
 import { toEditorCase } from '../../../api/datasets';
+import { parseSampleInputBlock } from './sample-input-text';
 import { sameJson } from '../../evaluation/utils/report-presentation';
 import { caseCategoryLabels, caseDifficultyLabels } from '../types/index';
 import type { EvaluationCase, JsonObject } from '../types/index';
@@ -11,6 +12,7 @@ export const sampleFileFormats = [
   { value: 'csv', label: 'CSV' },
 ] as const;
 export type SampleFileFormat = (typeof sampleFileFormats)[number]['value'];
+const inputTextFields = ['txt', 'query', 'user_input_text'] as const;
 
 // Older spreadsheets store each type of rule in one JSON column.
 const importExpectationColumnLabels = {
@@ -29,7 +31,9 @@ export const sampleColumnLabels: Record<string, string> = {
   initial_state_json: '初始变量',
   turn_id: '轮次编号',
   turn_order: '轮次顺序',
-  input_json: '输入内容',
+  input_text: '输入内容',
+  input_text_field: '输入文本字段',
+  input_parameters: '结构化输入',
   expectations_json: '期望结果',
   ...importExpectationColumnLabels,
   turn_notes: '轮次备注',
@@ -85,6 +89,8 @@ const fieldNames: Record<string, string> = {
   turns: '轮次',
   turn_order: '轮次顺序',
   input: '输入内容',
+  input_parameters: '结构化输入',
+  input_text_field: '输入文本字段',
   expectations: '期望结果',
   case_id: '样本编号',
   case_notes: '样本备注',
@@ -288,7 +294,9 @@ function columnsFor(headers: string[]) {
       fileError('表头重复：' + (sampleColumnLabels[key] ?? header));
     columns[key] = columnName(i);
   });
-  if (!columns.input_json && columns.query) columns.input_json = columns.query;
+  if (columns.input_json && columns.input_text) fileError('表头重复：输入内容');
+  if (!columns.input_json && (columns.input_text || columns.query))
+    columns.input_json = columns.input_text || columns.query;
   return columns;
 }
 interface TableRow {
@@ -419,6 +427,76 @@ const splitExpectationKeys = Object.keys(importExpectationColumnLabels);
 function filled(value: unknown) {
   return value !== undefined && value !== null && value !== '';
 }
+
+function restoreInput(
+  text: unknown, key: unknown, parameters: unknown, source: Source, report: Diagnostics,
+  allowFieldBlock = true,
+) {
+  if (parameters !== undefined && !object(parameters)) {
+    report.add(source, 'input_parameters', '结构化输入必须是 JSON 对象');
+    source.invalid.add('input');
+    return null;
+  }
+  if (key !== undefined && !inputTextFields.some((name) => name === key)) {
+    report.add(source, 'input_text_field', '请使用 txt、query 或 user_input_text');
+    source.invalid.add('input');
+    return null;
+  }
+  if (typeof text !== 'string') {
+    if (key === undefined && parameters === undefined) return text;
+    report.add(source, 'input', '与结构化输入或输入文本字段一起填写时，输入内容须为文本');
+    source.invalid.add('input');
+    return null;
+  }
+  if (allowFieldBlock && key === undefined && parameters === undefined) {
+    try {
+      const fields = parseSampleInputBlock(text);
+      if (fields !== undefined) return fields;
+    } catch (error) {
+      report.add(source, 'input', messageOf(error));
+      source.invalid.add('input');
+      return null;
+    }
+  }
+  // Earlier files stored readable previews and typed values in separate columns.
+  if (parameters && key === undefined) return parameters;
+  const field = typeof key === 'string' ? key : 'txt';
+  if (parameters && Object.prototype.hasOwnProperty.call(parameters, field)) {
+    report.add(source, 'input_parameters', '结构化输入与输入内容重复定义了字段 ' + field);
+    source.invalid.add('input');
+    return null;
+  }
+  if (!text.trim() && key === undefined) return null;
+  return { ...parameters, [field]: text };
+}
+
+function tableInput(row: Record<string, unknown>, source: Source, report: Diagnostics) {
+  if (source.invalid.has('input')) return null;
+  const fallback = String(row.query ?? '').trim() ? { query: String(row.query) } : null;
+  if ('input_json' in row || !('input_text' in row || 'input_parameters' in row || 'input_text_field' in row))
+    return readJson(row.input_json, fallback, 'input', source, report);
+  const text = String(row.input_text ?? '');
+  const key = filled(row.input_text_field) ? row.input_text_field : undefined;
+  const parameters = readJson(row.input_parameters, undefined, 'input_parameters', source, report);
+  if (key === undefined && parameters === undefined) {
+    if (source.invalid.has('input_parameters')) {
+      source.invalid.add('input');
+      return null;
+    }
+    if (!text) return fallback;
+    // Only a valid object could have been a structured input in an older export.
+    // Brackets and incomplete JSON are also valid user utterances.
+    if (text.trimStart().startsWith('{')) {
+      try {
+        return JSON.parse(text);
+      } catch {
+        return { txt: text };
+      }
+    }
+  }
+  return restoreInput(text, key, parameters, source, report,
+    !('input_parameters' in row || 'input_text_field' in row));
+}
 function tableExpectations(row: Record<string, unknown>, source: Source, report: Diagnostics) {
   const splitKey = splitExpectationKeys.find((key) => {
     const value = row[key];
@@ -497,6 +575,7 @@ function tableSamples(
   rows: TableRow[],
   report: Diagnostics,
   draftNames?: ReadonlySet<string>,
+  preserveCaseIds = false,
 ): EvaluationCase[] {
   if (rows.length > 2000) fileError('请选择 1—2000 行样本');
   if (!rows.length) {
@@ -542,14 +621,12 @@ function tableSamples(
     }
     let group = groups.get(key);
     if (!group) {
-      // Exported rows carry a sample ID. Import templates omit it and supply enum defaults.
-      const preserveEmptyEnums = !!legacyId && !('turn_id' in r);
       source.path = 'cases[' + groups.size + ']';
       group = {
         value: {
           ...blankSample(name),
-          category: preserveEmptyEnums && !filled(r.category) ? null : r.category,
-          difficulty: preserveEmptyEnums && !filled(r.difficulty) ? null : r.difficulty,
+          category: r.category,
+          difficulty: r.difficulty,
           tags: readJson(r.tags_json, [], 'tags', source, report),
           notes: String(r.case_notes ?? ''),
           turns: [],
@@ -590,13 +667,7 @@ function tableSamples(
       else if (previous) report.add(turnSource, 'turn_order', `轮次顺序 ${order} 与第 ${previous.row} 行重复`);
       else group.orders.set(order, turnSource);
     }
-    const input = readJson(
-      r.input_json,
-      String(r.query ?? '').trim() ? { query: String(r.query) } : null,
-      'input',
-      turnSource,
-      report,
-    );
+    const input = tableInput(r, turnSource, report);
     c.turns.push({
       id: String(r.turn_id || crypto.randomUUID()),
       input,
@@ -619,10 +690,10 @@ function tableSamples(
     group.value.turns.sort((a: any, b: any) => a._order - b._order);
     group.source.turns = group.value.turns.map((turn: any) => turn._source);
     group.value.turns = group.value.turns.map(({ _order, _source, ...turn }: any) => turn);
-    values.push(group.value);
+    values.push({ ...group.value, id: group.legacyId });
     sources.push(group.source);
   }
-  return normalizedCases(values, report, sources, 'cases', draftNames);
+  return normalizedCases(values, report, sources, 'cases', draftNames, preserveCaseIds);
 }
 export function rowsToSamples(rows: Record<string, unknown>[]): EvaluationCase[] {
   const report = diagnostics();
@@ -645,10 +716,11 @@ export function rowsToSamples(rows: Record<string, unknown>[]): EvaluationCase[]
     report,
   );
 }
-function readEnum(value: unknown, labels: Record<string, string>, fallback: string): unknown {
-  if (value === undefined || (typeof value === 'string' && !value.trim())) return fallback;
+function readEnum(value: unknown, labels: Record<string, string>): unknown {
+  if (value == null) return null;
   if (typeof value !== 'string') return value;
   const text = value.trim();
+  if (!text || text === '空') return null;
   return Object.entries(labels).find(([, label]) => label === text)?.[0] ?? text;
 }
 function orderedTurnIndices(turns: unknown[], source: Source, report: Diagnostics): number[] {
@@ -674,11 +746,13 @@ function normalizedCases(
   sources?: CaseSource[],
   prefix = 'cases',
   draftNames?: ReadonlySet<string>,
+  preserveCaseIds = false,
 ): EvaluationCase[] {
   if (!Array.isArray(value) || !value.length || value.length > 1000)
     fileError('样本必须是包含 1—1000 项的数组');
   const cases: any[] = [];
   const names = new Map<string, Source>();
+  const ids = new Set<string>();
   value.forEach((raw, i) => {
     const source = sources?.[i]?.sample ?? {
       path: prefix + '[' + i + ']',
@@ -704,11 +778,19 @@ function normalizedCases(
         if (!first) names.set(name, source);
       }
     }
+    let caseId = '';
+    if (preserveCaseIds && raw.id != null) {
+      if (typeof raw.id === 'string') caseId = raw.id.trim();
+      else report.add(source, 'case_id', '样本编号须为文本；留空可自动生成', 'id');
+      if (caseId && ids.has(caseId))
+        report.add(source, 'case_id', `文件内样本编号“${caseId}”重复`, 'id');
+      if (caseId) ids.add(caseId);
+    }
     const c = {
-      id: crypto.randomUUID(),
+      id: caseId || crypto.randomUUID(),
       name,
-      category: readEnum(raw.category, caseCategoryLabels, 'positive'),
-      difficulty: readEnum(raw.difficulty, caseDifficultyLabels, 'medium'),
+      category: readEnum(raw.category, caseCategoryLabels),
+      difficulty: readEnum(raw.difficulty, caseDifficultyLabels),
       initial_state: raw.initial_state === undefined ? {} : raw.initial_state,
       tags: raw.tags === undefined ? [] : raw.tags,
       notes: raw.notes ?? '',
@@ -750,8 +832,10 @@ function normalizedCases(
         report.add(turnSource, '轮次', '轮次必须是 JSON 对象', '');
         return turn;
       }
-      if (!turnSource.invalid.has('input') && (!object(turn.input) || !Object.keys(turn.input).length))
-        report.add(turnSource, 'input', '输入内容必须是非空 JSON 对象，请填写 input_json 或 query');
+      const input = sources ? turn.input
+        : restoreInput(turn.input, turn.input_text_field, turn.input_parameters, turnSource, report);
+      if (!turnSource.invalid.has('input') && (!object(input) || !Object.keys(input).length))
+        report.add(turnSource, 'input', '请填写输入文本或非空的结构化输入对象');
       if (turn.notes != null && typeof turn.notes !== 'string')
         report.add(turnSource, 'turn_notes', '轮次备注必须是文本', 'notes');
       let extensions: { key: string; value: string }[] | undefined;
@@ -794,7 +878,7 @@ function normalizedCases(
       }
       return {
         id: crypto.randomUUID(),
-        input: turn.input,
+        input,
         expectations: Array.isArray(expectations)
           ? expectations.map((expectation: any) => ({
               ...expectation,
@@ -823,6 +907,7 @@ export function draftSampleNameConflict(name: string) {
 export async function parseSampleFile(
   file: { name: string; size: number; arrayBuffer: () => Promise<ArrayBuffer> },
   draftNames?: ReadonlySet<string>,
+  options: { preserveCaseIds?: boolean } = {},
 ): Promise<EvaluationCase[]> {
   if (file.size > 10 * 1024 * 1024) fileError('文件不能超过10MB');
   try {
@@ -841,6 +926,7 @@ export async function parseSampleFile(
         undefined,
         prefix,
         draftNames,
+        options.preserveCaseIds,
       );
     }
     if (/\.csv$/i.test(file.name)) {
@@ -849,6 +935,7 @@ export async function parseSampleFile(
         csvRows(new TextDecoder('utf-8', { fatal: true }).decode(bytes), report, 'dataset'),
         report,
         draftNames,
+        options.preserveCaseIds,
       );
     }
     if (/\.xlsx$/i.test(file.name)) {
@@ -897,7 +984,7 @@ export async function parseSampleFile(
         keys.forEach((key, j) => {
           if (!row.getCell(j + 1).formula) return;
           let field = Object.keys(fieldColumns).find((name) => fieldColumns[name] === key) ?? key;
-          if (key === 'query') field = 'input';
+          if (key === 'query' || key === 'input_text') field = 'input';
           if (sampleNameHeaders.includes(key)) field = 'name';
           formulas.push({ field, column: columnName(j) });
           if (field === 'name' && key !== nameHeader) return;
@@ -905,7 +992,7 @@ export async function parseSampleFile(
         });
         rows.push({ values, source, formulas });
       });
-      return tableSamples(rows, report, draftNames);
+      return tableSamples(rows, report, draftNames, options.preserveCaseIds);
     }
     fileError('仅支持 Excel (.xlsx)、JSON、CSV');
   } catch (error) {

@@ -187,6 +187,22 @@ test('mixed rule encodings and mismatched lists are reported at the affected spr
   }
 });
 
+test('Excel and CSV reject a partially filled tool argument check', async () => {
+  const rows = [
+    ['样本名称', '输入内容', '工具参数_工具名', '工具参数_字段路径', '工具参数_判定方式', '工具参数_等于_期望值'],
+    ['仅填工具名', '查订单', 'lookup', '', '', ''],
+    ['缺少路径', '查订单', 'lookup', '', '等于', '已完成'],
+    ['未配置检查', '查订单', '', '', '', ''],
+  ];
+  for (const input of await spreadsheetInputs(rows)) {
+    const error = await validationError(input);
+    expect(error.issues).toEqual([
+      expect.objectContaining({ row: 2, column: 'E', field: '工具参数_判定方式' }),
+      expect.objectContaining({ row: 3, column: 'D', field: '工具参数_字段路径' }),
+    ]);
+  }
+});
+
 test('aggregates independent input errors across samples without exposing partial results', async () => {
   const error = await validationError(csvFile([
     ['case_id', 'case_name', 'turn_order', 'input_json'],
@@ -247,18 +263,18 @@ test('Excel uses actual selected worksheet name and formula cell location', asyn
   expect(error.issues[0].message).toContain('公式');
 });
 
-test('Excel groups Chinese headers and reports invalid JSON and formula cells at their physical positions', async () => {
+test('Excel reports blank input and formula cells at their physical positions with Chinese headers', async () => {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Cases');
   sheet.addRow(['样本编号', '输入内容', '样本名称', '轮次顺序']);
-  sheet.getRow(3).values = ['shared', 'not JSON', '中文样本', 2];
+  sheet.getRow(3).values = ['shared', '', '中文样本', 2];
   sheet.getRow(7).values = ['shared', { formula: '1+1', result: 2 }, '中文样本', 1];
 
   const error = await validationError(file('samples.xlsx', new Uint8Array(await workbook.xlsx.writeBuffer())));
   expect(error.totalIssues).toBe(2);
   expect(error.sampleCount).toBe(1);
   expect(error.issues).toEqual(expect.arrayContaining([
-    expect.objectContaining({ location: 'Cases!B3', field: '输入内容', turn: 2, message: expect.stringContaining('JSON') }),
+    expect.objectContaining({ location: 'Cases!B3', field: '输入内容', turn: 2 }),
     expect.objectContaining({ location: 'Cases!B7', field: '输入内容', turn: 1, message: expect.stringContaining('公式') }),
   ]));
 });
@@ -424,7 +440,7 @@ test('import requires nonempty input and fills omitted fields as a new manual sa
     id: 'source-case', name: '最少字段', internal_metadata: 'ignored',
     turns: [{ id: 'source-turn', input: { custom: false } }],
   }] }));
-  expect(sample).toMatchObject({ category: 'positive', difficulty: 'medium', initial_state: {}, tags: [], notes: '',
+  expect(sample).toMatchObject({ category: null, difficulty: null, initial_state: {}, tags: [], notes: '',
     turns: [{ input: { custom: false }, expectations: [], notes: '' }] });
   expect(sample).not.toHaveProperty('internal_metadata');
   expect(sample.id).not.toBe('source-case');

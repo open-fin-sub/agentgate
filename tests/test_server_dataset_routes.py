@@ -105,6 +105,52 @@ def test_xlsx_routes_import_draft_and_stream_published_version(tmp_path) -> None
         assert downloaded.headers["etag"] == f'"{published.json()["content_sha256"]}"'
 
 
+def test_draft_file_import_keeps_optional_classifications_through_publication_and_reimport(tmp_path) -> None:
+    with _client(tmp_path) as client:
+        created = client.post("/api/datasets", json={"name": "可选分类"}).json()
+        path = f"/api/datasets/{created['dataset']['id']}"
+        turn = {"input": {"txt": "问"}}
+        cases = [
+            {"name": "未提供", "turns": [turn]},
+            {"name": "留空", "category": "  ", "difficulty": "空", "turns": [turn]},
+            {"name": "仅填分类", "category": "negative", "turns": [turn]},
+            {"name": "仅填难度", "category": None, "difficulty": "hard", "turns": [turn]},
+        ]
+        response = client.post(
+            f"{path}/drafts/cases/import", headers={"If-Match": created["draft"]["content_sha256"]},
+            json={"draft_id": created["draft"]["id"], "mode": "replace", "cases": cases},
+        )
+        response.raise_for_status()
+        published = client.post(f"{path}/drafts/publish").json()
+        exported = client.get(f"{path}/versions/1/export").json()
+        xlsx = client.get(f"{path}/versions/1/export/xlsx").content
+        imported = client.post(
+            "/api/datasets/import/xlsx", data={"name": "回导"}, files={"file": ("cases.xlsx", xlsx)}
+        )
+        imported.raise_for_status()
+        for version in (response.json(), published, exported["version"], imported.json()["version"]):
+            assert [(case["category"], case["difficulty"]) for case in version["cases"]] == [
+                (None, None), (None, None), ("negative", None), (None, "hard"),
+            ]
+
+
+def test_single_draft_case_create_and_update_use_the_same_empty_classifications(tmp_path) -> None:
+    with _client(tmp_path) as client:
+        created = client.post("/api/datasets", json={"name": "手工样本"}).json()
+        url = f"/api/datasets/{created['dataset']['id']}/drafts/cases"
+        case = {"id": "c", "name": "样本", "turns": [{"input": {"txt": "你好"}}]}
+        added = client.post(url, json={**case, "category": "positive"})
+        added.raise_for_status()
+        sample, = added.json()["cases"]
+        assert (sample["category"], sample["difficulty"]) == ("positive", None)
+        updated = client.put(f"{url}/c", json={**case, "difficulty": "易错值"})
+        assert updated.status_code == 422
+        updated = client.put(f"{url}/c", json={**case, "category": "空", "difficulty": ""})
+        updated.raise_for_status()
+        sample, = updated.json()["cases"]
+        assert (sample["category"], sample["difficulty"]) == (None, None)
+
+
 def test_whole_dataset_import_rejects_distinct_samples_with_same_name(tmp_path) -> None:
     dataset = Dataset(name="导入重名校验")
     cases = (

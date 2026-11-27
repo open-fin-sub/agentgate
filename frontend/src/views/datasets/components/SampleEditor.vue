@@ -390,7 +390,7 @@ defineExpose({ save, fetchingVariables });
 </script>
 <template>
   <section class="sample-editor">
-    <p v-if="!form" class="empty">选择数据样本，或点击新增样本。</p>
+    <p v-if="!form" class="empty">请选择数据样本。</p>
     <template v-else>
       <div class="sample-meta">
         <label>

@@ -44,6 +44,7 @@ from agentgate.domain import (
     utcnow,
 )
 from agentgate.domain.credential import ApiKeyMetadata
+from agentgate.domain.dataset import DatasetDraftConflict
 from agentgate.domain.evaluation_task import EvaluationTask, task_with_rerun
 from agentgate.domain.run import RunTiming
 from agentgate.evaluator.versioning import publish_evaluator_draft as build_publication
@@ -388,11 +389,20 @@ class MySQLRepository:
             [item for item in items if include_archived or not item.archived], "updated_at"
         )
 
-    def save_dataset_version(self, version: DatasetVersion) -> None:
+    def save_dataset_version(
+        self, version: DatasetVersion, *, expected_hash: str | None = None,
+    ) -> None:
         with self._transaction() as db:
-            if not _one(db, s.datasets, Dataset, id=version.dataset_id, lock=True):
-                raise ValueError("unknown Dataset")
+            dataset = _one(db, s.datasets, Dataset, id=version.dataset_id, lock=True)
             stored = _one(db, s.dataset_versions, DatasetVersion, id=version.id, lock=True)
+            if expected_hash is not None and (
+                dataset is None or dataset.archived or dataset.user_team_id != version.user_team_id
+                or stored is None or stored.status != DatasetVersionStatus.DRAFT
+                or stored.user_team_id != version.user_team_id or stored.content_sha256 != expected_hash
+            ):
+                raise DatasetDraftConflict()
+            if dataset is None:
+                raise ValueError("unknown Dataset")
             if stored:
                 if stored.status == DatasetVersionStatus.PUBLISHED:
                     if stored != version:

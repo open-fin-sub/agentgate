@@ -1,8 +1,24 @@
 import { toApiCase } from '../../../api/datasets';
-import { caseCategoryLabels, caseDifficultyLabels, type DatasetVersion } from '../types/index';
+import {
+  caseCategoryLabels, caseDifficultyLabels, type DatasetVersion,
+} from '../types/index';
 import { sampleColumnLabels, type SampleFileFormat } from './sample-import';
-import { expectationCells, expectationColumnLabels } from './sample-expectation-columns';
+import { formatSampleInput } from './sample-input-text';
+import {
+  expectationCells, expectationColumnGroups, expectationColumnLabels,
+} from './sample-expectation-columns';
 import { variableCells, variableOrderCells, variableOrderHeader } from './sample-variable-columns';
+
+const headerColors = {
+  required: 'FFFFF2CC',
+  expected_skill: 'FFE8DDF5',
+  required_tools: 'FFDDEED9',
+  forbidden_tools: 'FFF8DCDD',
+  final_state: 'FFDCEAF8',
+  tool_arguments: 'FFFBE3CD',
+  final_output: 'FFD5EFED',
+  other_expectations: 'FFE3E6EB',
+};
 
 export function exportSamples(version: DatasetVersion, ids?: string[]) {
   const selected = ids ? new Set(ids) : null;
@@ -16,7 +32,7 @@ export function exportSamples(version: DatasetVersion, ids?: string[]) {
       initial_state: item.initial_state,
       turns: toApiCase(item).turns.map((turn, index) => ({
         turn_order: index + 1,
-        input: turn.input,
+        input: formatSampleInput(turn.input),
         expectations: turn.expectations,
       })),
     }));
@@ -52,7 +68,7 @@ export function sampleRows(
       ),
       ...(variableOrders && { [variableOrderHeader]: index === 0 ? variableOrders[caseIndex] : '' }),
       turn_order: turn.turn_order,
-      input_json: JSON.stringify(turn.input),
+      input_text: turn.input,
       ...Object.fromEntries(checkKeys.map((key) => [key, checks[key] ?? ''])),
     })),
   );
@@ -72,7 +88,7 @@ function excelText(value: string): string {
 
 function excelCell(key: string, value: string | number): string | number {
   if (typeof value !== 'string' || value.search(excelEscapes) < 0) return value;
-  if (key === 'case_name' || key === 'case_id') return excelText(value);
+  if (key === 'case_name' || key === 'case_id' || key === 'input_text') return excelText(value);
 
   // An office editor can normalize CRs when saving again. Use the importer's
   // existing JSON cell syntax to keep these characters out of the XML text.
@@ -115,21 +131,55 @@ export async function sampleExportBlob(
   const ExcelJS = await import('exceljs');
   const book = new ExcelJS.default.Workbook();
   const sheet = book.addWorksheet('Cases');
-  const keys = Object.keys(rows[0]);
+  const requiredKeys = ['case_name', 'input_text'];
+  const leadingKeys = ['case_id', ...requiredKeys];
+  const keys = [...leadingKeys, ...Object.keys(rows[0]).filter((key) => !leadingKeys.includes(key))];
   sheet.columns = keys.map((key) => {
     const header = sampleColumnLabels[key] ?? key;
-    const wide = ['input_json', 'state_value', 'other_expectations'].includes(key);
+    const wide = ['input_text', 'state_value', 'other_expectations'].includes(key);
     return {
       header: excelText(header),
       key,
       width: Math.min(60, Math.max(wide ? 48 : 20, header.length * 2 + 2)),
     };
   });
-  for (const row of rows) {
-    sheet.addRow(keys.map((key) => excelCell(key, row[key])));
+  const headerRow = sheet.getRow(1);
+  headerRow.font = { bold: true };
+  for (const key of keys) {
+    const group = requiredKeys.includes(key) ? 'required' : expectationColumnGroups.get(key);
+    if (group) {
+      headerRow.getCell(key).fill = {
+        type: 'pattern', pattern: 'solid', fgColor: { argb: headerColors[group] },
+      };
+    }
   }
-  sheet.getRow(1).font = { bold: true };
+  for (const row of rows) {
+    const saved = sheet.addRow(keys.map((key) => excelCell(key, row[key])));
+    if (String(row.input_text).includes('\n')) {
+      saved.getCell('input_text').alignment = { wrapText: true, vertical: 'top' };
+    }
+  }
   sheet.views = [{ state: 'frozen', ySplit: 1 }];
+
+  const guide = book.addWorksheet('填写说明');
+  guide.columns = [
+    { header: '填写项', width: 20 },
+    { header: '填写规则（在 Cases 页编辑，淡黄色表头表示每行必填）', width: 80 },
+  ];
+  guide.addRows([
+    ['样本编号', '可以留空，导入时自动生成。复制现有样本来新增样本时，清空编号并改用新名称。'],
+    ['样本名称', '每行必填。同一样本的多轮对话使用同一名称，不同样本使用不同名称。'],
+    ['轮次顺序', '一行一轮。单轮填 1，多轮填写不重复的正整数，导入时按数字从小到大排列。'],
+    ['输入内容', '每轮必填，可直接写用户原话。若已有【输入字段】，保留其格式并修改对应的值。'],
+    ['样本分类、难度', '两项均可留空。分类可填正例、负例、边界，难度可填简单、中等、困难。'],
+    ['初始变量', '每个变量对应一个「初始变量_…」列，值在该列填写，每个样本只需填一次。'],
+    ['期望结果', '同色表头属于同一类期望结果。每轮按需选择检查项，按所选判定方式填写对应参数。可选字段可留空。'],
+  ]);
+  guide.getColumn(2).alignment = { vertical: 'middle', wrapText: true };
+  guide.getColumn(1).alignment = { vertical: 'middle' };
+  guide.properties.defaultRowHeight = 36;
+  guide.getRow(1).font = { bold: true };
+  guide.getRow(1).height = 24;
   return new Blob([new Uint8Array(await book.xlsx.writeBuffer())], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });

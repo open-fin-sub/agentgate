@@ -701,7 +701,11 @@ body {
 .version-actions {
   gap: 8px;
   align-items: center;
-  flex-wrap: wrap;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.version-actions > .el-button {
+  height: var(--el-component-size-small);
 }
 .version-actions .el-button + .el-button {
   margin-left: 0;
@@ -730,6 +734,10 @@ body {
   word-break: break-word;
 }
 @media (max-width: 768px) {
+  .version-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
   .el-dialog .form-grid,
   .el-dialog .check-list {
     grid-template-columns: 1fr;

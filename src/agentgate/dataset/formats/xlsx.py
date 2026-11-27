@@ -7,13 +7,14 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from io import BytesIO
 from typing import Any
-from zipfile import BadZipFile, ZipFile
 from xml.etree.ElementTree import ParseError
+from zipfile import BadZipFile, ZipFile
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.cell import WriteOnlyCell
 from openpyxl.utils.exceptions import IllegalCharacterError, InvalidFileException
 
+from agentgate.dataset.case_input import optional_classification
 
 SHEET_NAME = "Cases"
 HEADERS = (
@@ -176,15 +177,14 @@ def _parse_text(
     issues: list[XlsxIssue],
     *,
     required: bool = False,
-    default: str = "",
 ) -> str:
     if value is None or (isinstance(value, str) and not value.strip()):
         if required:
             _issue(issues, row, column, "value is required")
-        return default
+        return ""
     if not isinstance(value, str):
         _issue(issues, row, column, "must be text")
-        return default
+        return ""
     return value.strip() if required else value
 
 
@@ -277,19 +277,11 @@ def parse(source: bytes) -> list[dict[str, object]]:
                     issues,
                     required=True,
                 ),
-                "category": _parse_text(
-                    values.get("category"),
-                    row_number,
-                    "category",
-                    issues,
-                    default="positive",
+                "category": optional_classification(
+                    _parse_text(values.get("category"), row_number, "category", issues)
                 ),
-                "difficulty": _parse_text(
-                    values.get("difficulty"),
-                    row_number,
-                    "difficulty",
-                    issues,
-                    default="medium",
+                "difficulty": optional_classification(
+                    _parse_text(values.get("difficulty"), row_number, "difficulty", issues)
                 ),
                 "tags": _parse_json_cell(
                     values.get("tags_json"), [], list, row_number, "tags_json", issues
@@ -462,8 +454,8 @@ def dump(cases: Sequence[Mapping[str, Any]]) -> bytes:
                 row = (
                     case.get("id", ""),
                     case.get("name", ""),
-                    case.get("category", "positive"),
-                    case.get("difficulty", "medium"),
+                    case.get("category"),
+                    case.get("difficulty"),
                     _json_text(case.get("tags", [])),
                     case.get("notes", ""),
                     _json_text(case.get("initial_state", {})),

@@ -4,22 +4,24 @@ from __future__ import annotations
 
 import json
 from io import BytesIO
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Path, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
+from agentgate.dataset.case_input import CaseInput
 from agentgate.dataset.formats.xlsx import (
     MAX_INPUT_BYTES,
     SHEET_NAME,
     XlsxFormatError,
     XlsxIssue,
 )
-from agentgate.domain import Case, DatasetVersionStatus
+from agentgate.domain import DatasetVersionStatus
+from agentgate.domain.dataset import DatasetDraftConflict
 from agentgate.server.dependencies import ServerDependencies, get_dependencies
-from agentgate.server.errors import raise_not_found, raise_unprocessable, raise_xlsx_error
+from agentgate.server.errors import raise_conflict, raise_not_found, raise_unprocessable, raise_xlsx_error
 from agentgate.storage.evaluation_query_models import RelatedDatasetTaskPage, RelatedTaskCursor
 
 router = APIRouter(prefix="/api/datasets", tags=["datasets"])
@@ -48,6 +50,12 @@ class CreateDraftRequest(BaseModel):
 
 class ReorderCasesRequest(BaseModel):
     case_ids: list[str]
+
+
+class ImportDraftCasesRequest(BaseModel):
+    draft_id: str
+    mode: Literal["replace", "append"]
+    cases: list[CaseInput] = Field(min_length=1)
 
 
 @router.post("/import", status_code=201)
@@ -314,24 +322,48 @@ def publish_draft(dataset_id: str, dependencies: Dependencies):
 
 
 @router.post("/{dataset_id}/drafts/cases", status_code=201)
-def add_case(dataset_id: str, case: Case, dependencies: Dependencies):
+def add_case(dataset_id: str, case: CaseInput, dependencies: Dependencies):
     try:
         return dependencies.datasets.save_case(dataset_id, case)
+    except DatasetDraftConflict as error:
+        raise_conflict(error)
     except ValueError as error:
         raise_unprocessable(error)
+
+
+@router.post("/{dataset_id}/drafts/cases/import")
+def import_draft_cases(
+    dataset_id: str,
+    request: ImportDraftCasesRequest,
+    if_match: Annotated[str, Header(pattern=r'^(?:[0-9a-f]{64}|"[0-9a-f]{64}")$')],
+    response: Response,
+    dependencies: Dependencies,
+):
+    try:
+        updated = dependencies.datasets.import_cases(
+            dataset_id, request.draft_id, if_match.strip('"'), request.cases, request.mode,
+        )
+    except DatasetDraftConflict as error:
+        raise_conflict(error)
+    except ValueError as error:
+        raise_unprocessable(error)
+    response.headers["ETag"] = f'"{updated.content_sha256}"'
+    return updated
 
 
 @router.put("/{dataset_id}/drafts/cases/{case_id}")
 def update_case(
     dataset_id: str,
     case_id: str,
-    case: Case,
+    case: CaseInput,
     dependencies: Dependencies,
 ):
     if case.id != case_id:
         raise HTTPException(status_code=422, detail="Case ID cannot be changed")
     try:
         return dependencies.datasets.save_case(dataset_id, case)
+    except DatasetDraftConflict as error:
+        raise_conflict(error)
     except ValueError as error:
         raise_unprocessable(error)
 
@@ -340,6 +372,8 @@ def update_case(
 def delete_case(dataset_id: str, case_id: str, dependencies: Dependencies):
     try:
         return dependencies.datasets.remove_case(dataset_id, case_id)
+    except DatasetDraftConflict as error:
+        raise_conflict(error)
     except ValueError as error:
         raise_not_found(error)
 
@@ -348,6 +382,8 @@ def delete_case(dataset_id: str, case_id: str, dependencies: Dependencies):
 def copy_case(dataset_id: str, case_id: str, dependencies: Dependencies):
     try:
         return dependencies.datasets.copy_case(dataset_id, case_id)
+    except DatasetDraftConflict as error:
+        raise_conflict(error)
     except ValueError as error:
         raise_not_found(error)
 
@@ -360,6 +396,8 @@ def reorder_cases(
 ):
     try:
         return dependencies.datasets.reorder_cases(dataset_id, request.case_ids)
+    except DatasetDraftConflict as error:
+        raise_conflict(error)
     except ValueError as error:
         raise_unprocessable(error)
 

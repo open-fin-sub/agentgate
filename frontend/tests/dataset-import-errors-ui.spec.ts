@@ -63,6 +63,9 @@ test('collects multiple errors, focuses their location and blocks draft writes',
     apiWrites.push(route.request().url()); return route.abort();
   });
   const runtimeErrors = await open(page);
+  await expect(page.getByLabel('样本导入文件')).toBeAttached();
+  await expect(page.getByText('模板下载与填写说明', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /下载测评集模板/, includeHidden: true })).toHaveCount(0);
   await upload(page, { cases: [
     { name: '贷款申请', turns: [{ input: null, expectations: [] }] },
     { name: '账户查询', turns: [{ input: { txt: 'hi' }, expectations: [{ kind: 'unknown' }] }] },

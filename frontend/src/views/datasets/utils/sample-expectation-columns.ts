@@ -88,6 +88,15 @@ function isRuleGroup(column: Column | undefined): column is RuleGroup {
   return column !== undefined && column in ruleFields;
 }
 
+export const expectationColumnGroups = new Map<string, Column>(
+  columns.flatMap((group): [string, Column][] => {
+    const keys = isRuleGroup(group)
+      ? [...Object.values(ruleFields[group]), ...operandColumns[group].map(({ key }) => key)]
+      : [group];
+    return keys.map((key) => [key, group]);
+  }),
+);
+
 function columnFor(check: SerializedExpectation): Column {
   switch (check.kind) {
     case 'skill_route':

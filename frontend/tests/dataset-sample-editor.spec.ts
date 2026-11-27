@@ -200,16 +200,6 @@ function expectationRow(page: Page, index = 0) {
   return page.getByTestId(`expectation-${index}`);
 }
 
-async function namedExpectation(page: Page, name: string) {
-  const rows = page.locator('.expectation-row');
-  const names = await rows.getByPlaceholder('检查名称（可选）').evaluateAll(
-    inputs => inputs.map(input => (input as HTMLInputElement).value),
-  );
-  const index = names.indexOf(name);
-  expect(index, `Expected a visible rule named ${name}`).toBeGreaterThanOrEqual(0);
-  return rows.nth(index);
-}
-
 function expectationInput(page: Page, field: 'value' | 'path' | 'tool' | 'allowed' | 'schema', index = 0) {
   return page.getByTestId(`expectation-${field}-${index}`);
 }
@@ -1240,18 +1230,18 @@ test('editing the primary expected output preserves every visible secondary cond
   })).ok()).toBeTruthy();
   await page.reload();
   await expect(page.locator('.expectation-row')).toHaveCount(5);
-  await expect((await namedExpectation(page, '完整输出')).getByTestId(/^expectation-value-/)).toHaveValue('"old answer"');
+  await expect(expectationInput(page, 'value', 4)).toHaveValue('"old answer"');
   await expect(expectationInput(page, 'path', 1)).toHaveValue('answer');
   await expect(expectationRow(page, 1).getByPlaceholder('正则表达式')).toHaveValue('^old$');
   await expect(page.getByText('期望评估方式', { exact: true })).toHaveCount(0);
-  await (await namedExpectation(page, '完整输出')).getByTestId(/^expectation-value-/).fill('"new answer"');
+  await expectationInput(page, 'value', 4).fill('"new answer"');
   const saved = await save(page, datasetId);
   expect(saved.turns[0].expectations).toEqual([
     ...rules.slice(0, -1), { ...primary, condition: { kind: 'equals', expected: 'new answer' } },
   ]);
   await page.reload();
   await expect(page.locator('.expectation-row')).toHaveCount(5);
-  await expect((await namedExpectation(page, '完整输出')).getByTestId(/^expectation-value-/)).toHaveValue('"new answer"');
+  await expect(expectationInput(page, 'value', 4)).toHaveValue('"new answer"');
 });
 
 test('missing required input blocks switching and adding turns without losing drafts', async ({ page }) => {
@@ -1380,7 +1370,7 @@ test('the import preview and editor distinguish a stored empty-string Skill from
   expect((await save(page, datasetId)).turns[0].expectations).toEqual([]);
 });
 
-test('file import fills omitted fields and the sample editor reads the saved draft', async ({ page }) => {
+test('file import generates IDs and keeps omitted category and difficulty empty after reload', async ({ page }) => {
   const datasetId = await open(page);
   await page.getByRole('button', { name: 'Open manual sample wizard' }).click();
   const wizard = page.getByRole('dialog');
@@ -1396,13 +1386,14 @@ test('file import fills omitted fields and the sample editor reads the saved dra
   const response = await page.request.get(baseUrl + `/api/datasets/${datasetId}/drafts/current`);
   expect(response.ok()).toBeTruthy();
   expect((await response.json()).data.cases).toMatchObject([{
-    id: expect.any(String), name: '导入的样本', category: 'positive', difficulty: 'medium',
+    id: expect.any(String), name: '导入的样本', category: null, difficulty: null,
     tags: [], initial_state: {}, turns: [{ id: expect.any(String), input: { txt: '你好' }, expectations: [] }],
   }]);
   await page.reload();
   await expect(page.getByLabel('样本名称', { exact: true })).toHaveValue('导入的样本');
   await expect(page.getByLabel('用户输入', { exact: true })).toHaveValue('你好');
-  await expect(page.getByLabel('难度', { exact: true })).toHaveValue('medium');
+  await expect(page.getByLabel('样本分类', { exact: true }).locator('option:checked')).toHaveText('空');
+  await expect(page.getByLabel('难度', { exact: true }).locator('option:checked')).toHaveText('空');
 });
 
 test('Chinese classification and difficulty options persist and become read-only when published', async ({ page }) => {
@@ -1591,13 +1582,46 @@ test('nested JSON objects remain raw while editing and persist as typed objects'
   }
 });
 
+test('required markers follow the selected expectation kind and condition', async ({ page }) => {
+  await open(page);
+  const state = await addExpectation(page, 'state');
+  const tool = await addExpectation(page, 'tool_argument');
+  const output = await addExpectation(page, 'output');
+
+  async function expectMarked(index: number, fields: RegExp[]) {
+    const row = expectationRow(page, index);
+    await expect(row.locator('.required')).toHaveCount(fields.length);
+    for (const field of fields) await expect(row).toContainText(field);
+  }
+  const common = [/期望类型\s*\*/, /判定方式\s*\*/];
+  await expectMarked(state, [...common, /字段路径\s*\*/]);
+  await expectMarked(tool, [...common, /工具名\s*\*/, /字段路径\s*\*/, /调用范围\s*\*/]);
+  await expectMarked(output, common);
+  const requiredColor = await page.locator('.message-card.user .required').evaluate(el => getComputedStyle(el).color);
+  await expect(expectationRow(page, output).locator('.required').first()).toHaveCSS('color', requiredColor);
+
+  await selectCondition(page, output, '数值容差');
+  await expectMarked(output, [...common, /期望值\s*\*/, /容差\s*\*/]);
+  await selectCondition(page, output, '数值范围');
+  await expectMarked(output, [...common, /范围边界\s*(?:（至少填写一项）\s*)?\*/]);
+  await expect(expectationRow(page, output)).toContainText('至少填写一项');
+  await selectCondition(page, output, '属于集合');
+  await expectMarked(output, [...common, /允许值\s*(?:（JSON 数组）\s*)?\*/]);
+  await selectCondition(page, output, 'JSON Schema');
+  await expectMarked(output, [...common, /JSON Schema\s*\*/]);
+  await selectCondition(page, output, '正则匹配');
+  await expectMarked(output, common);
+  await selectCondition(page, output, '字段不存在');
+  await expectMarked(output, common);
+});
+
 test('all three expectation kinds are created through the editor, reloaded and published with other sample fields', async ({ page }) => {
   const datasetId = await open(page);
   await page.getByLabel('样本名称', { exact: true }).fill('完整期望手动创建');
   await page.getByLabel('样本分类', { exact: true }).selectOption('boundary');
   await page.getByLabel('用户输入', { exact: true }).fill('检查完整期望');
   const fullOutputIndex = await addExpectation(page, 'output');
-  await expectationRow(page, fullOutputIndex).getByPlaceholder('检查名称（可选）').fill('完整输出确认');
+  await expect(page.getByPlaceholder('检查名称（可选）')).toHaveCount(0);
   await expectationInput(page, 'value', fullOutputIndex).fill('"完整输出"');
   await addInitializationVariable(page, 'centreId', '810000');
   await page.getByLabel('必需工具（逗号分隔）').fill('lookup');
@@ -1607,16 +1631,13 @@ test('all three expectation kinds are created through the editor, reloaded and p
   await expect(page.locator('.simple-expectations')).toHaveCount(0);
 
   const stateIndex = await addExpectation(page, 'state');
-  await expectationRow(page, stateIndex).getByPlaceholder('检查名称（可选）').fill('状态确认');
   await expectationInput(page, 'path', stateIndex).fill('status');
   await expectationInput(page, 'value', stateIndex).fill('"done"');
   const toolIndex = await addExpectation(page, 'tool_argument');
-  await expectationRow(page, toolIndex).getByPlaceholder('检查名称（可选）').fill('工具参数确认');
   await expectationInput(page, 'tool', toolIndex).fill('lookup');
   await expectationInput(page, 'path', toolIndex).fill('arguments.limit');
   await expectationInput(page, 'value', toolIndex).fill('10');
   const outputIndex = await addExpectation(page, 'output');
-  await expectationRow(page, outputIndex).getByPlaceholder('检查名称（可选）').fill('输出字段确认');
   await expectationInput(page, 'path', outputIndex).fill('answer');
   await expectationInput(page, 'value', outputIndex).fill('"通过"');
 
@@ -1626,10 +1647,10 @@ test('all three expectation kinds are created through the editor, reloaded and p
   expect(saved.initial_state).toEqual({ config_variables: [{ name: 'centreId', value: '810000', type: 'str' }] });
   expect(saved.turns[0].input).toEqual({ txt: '检查完整期望' });
   expect(saved.turns[0].expectations).toEqual(expect.arrayContaining([
-    expect.objectContaining({ kind: 'state', name: '状态确认', path: 'status', condition: { kind: 'equals', expected: 'done' } }),
-    expect.objectContaining({ kind: 'tool_argument', name: '工具参数确认', tool: 'lookup', path: 'arguments.limit', occurrence: 'last', condition: { kind: 'equals', expected: 10 } }),
-    expect.objectContaining({ kind: 'output', name: '输出字段确认', path: 'answer', condition: { kind: 'equals', expected: '通过' } }),
-    expect.objectContaining({ kind: 'output', path: null, condition: { kind: 'equals', expected: '完整输出' } }),
+    expect.objectContaining({ kind: 'state', name: null, path: 'status', condition: { kind: 'equals', expected: 'done' } }),
+    expect.objectContaining({ kind: 'tool_argument', name: null, tool: 'lookup', path: 'arguments.limit', occurrence: 'last', condition: { kind: 'equals', expected: 10 } }),
+    expect.objectContaining({ kind: 'output', name: null, path: 'answer', condition: { kind: 'equals', expected: '通过' } }),
+    expect.objectContaining({ kind: 'output', name: null, path: null, condition: { kind: 'equals', expected: '完整输出' } }),
     expect.objectContaining({ kind: 'skill_route', condition: { kind: 'equals', expected: 'review' } }),
     expect.objectContaining({ kind: 'tool_call', tool: 'lookup', mode: 'required' }),
     expect.objectContaining({ kind: 'tool_call', tool: 'erase', mode: 'forbidden' }),
@@ -1637,10 +1658,10 @@ test('all three expectation kinds are created through the editor, reloaded and p
   expect(saved.turns[0].expectations).toHaveLength(7);
   await page.reload();
   await expect(page.locator('.expectation-row')).toHaveCount(4);
-  await expect((await namedExpectation(page, '完整输出确认')).getByTestId(/^expectation-value-/)).toHaveValue('"完整输出"');
-  await expect((await namedExpectation(page, '状态确认')).getByTestId(/^expectation-value-/)).toHaveValue('"done"');
-  await expect((await namedExpectation(page, '工具参数确认')).getByTestId(/^expectation-value-/)).toHaveValue('10');
-  await expect((await namedExpectation(page, '输出字段确认')).getByTestId(/^expectation-value-/)).toHaveValue('"通过"');
+  await expect(expectationInput(page, 'value', fullOutputIndex)).toHaveValue('"完整输出"');
+  await expect(expectationInput(page, 'value', stateIndex)).toHaveValue('"done"');
+  await expect(expectationInput(page, 'value', toolIndex)).toHaveValue('10');
+  await expect(expectationInput(page, 'value', outputIndex)).toHaveValue('"通过"');
   expect(await save(page, datasetId)).toEqual(saved);
   await expect(page.getByTestId('add-expectation')).toHaveCSS('color', 'rgb(7, 172, 142)');
   const screenshots = await mkdtemp(join(tmpdir(), 'agentgate-expectations-review-'));
@@ -1731,10 +1752,10 @@ test('primary output and additional output edits and deletions do not overwrite 
   })).ok()).toBeTruthy();
   await page.reload();
   await expect(page.locator('.expectation-row')).toHaveCount(4);
-  await (await namedExpectation(page, '基本输出')).getByTestId(/^expectation-value-/).fill('"new answer"');
-  await (await namedExpectation(page, '输出正则')).getByPlaceholder('正则表达式').fill('^new$');
-  await (await namedExpectation(page, '输出正则')).getByTestId(/^expectation-path-/).fill('response.answer');
-  await (await namedExpectation(page, '删除输出')).getByRole('button', { name: '删除', exact: true }).click();
+  await expectationInput(page, 'value', 1).fill('"new answer"');
+  await expectationRow(page, 2).getByPlaceholder('正则表达式').fill('^new$');
+  await expectationInput(page, 'path', 2).fill('response.answer');
+  await expectationRow(page, 3).getByRole('button', { name: '删除', exact: true }).click();
   const added = await addExpectation(page, 'output');
   await expectationInput(page, 'path', added).fill('private');
   await selectCondition(page, added, '字段不存在');
@@ -1749,9 +1770,9 @@ test('primary output and additional output edits and deletions do not overwrite 
   expect(saved.turns[0].expectations.some((rule: any) => rule.id === 'removed')).toBeFalsy();
   await page.reload();
   await expect(page.locator('.expectation-row')).toHaveCount(4);
-  const fullOutput = await namedExpectation(page, '基本输出');
+  const fullOutput = expectationRow(page, 1);
   await expect(fullOutput.getByTestId(/^expectation-value-/)).toHaveValue('"new answer"');
-  await expect((await namedExpectation(page, '输出正则')).getByPlaceholder('正则表达式')).toHaveValue('^new$');
+  await expect(expectationRow(page, 2).getByPlaceholder('正则表达式')).toHaveValue('^new$');
   await fullOutput.getByRole('button', { name: '删除', exact: true }).click();
   const cleared = await save(page, datasetId);
   expect(cleared.turns[0].expectations).toEqual(saved.turns[0].expectations.filter((rule: any) => rule.id !== 'primary'));
@@ -1899,9 +1920,8 @@ test('condition controls validate raw collections, numeric bounds and schema wit
   expect(saved.turns[0].expectations[1]).toEqual(sample('state').turns[0].expectations[1]);
 });
 
-test('state paths are required while plain text equality and an omitted check name remain supported', async ({ page }) => {
+test('state paths are required while editing plain text equality preserves a historical check name', async ({ page }) => {
   const datasetId = await open(page, 'state');
-  await expectationRow(page).getByPlaceholder('检查名称（可选）').fill('');
   await expectationInput(page, 'path').fill(' ');
   await expectationInput(page, 'value').fill('普通文本，无需 JSON 引号');
   await page.getByRole('button', { name: '保存样本', exact: true }).click();
@@ -1909,7 +1929,7 @@ test('state paths are required while plain text equality and an omitted check na
   await expectationInput(page, 'path').fill('status');
   const saved = await save(page, datasetId);
   expect(saved.turns[0].expectations[0]).toEqual({
-    ...sample('state').turns[0].expectations[0], name: null,
+    ...sample('state').turns[0].expectations[0],
     condition: { kind: 'equals', expected: '普通文本，无需 JSON 引号' },
   });
   await page.reload();
@@ -1920,30 +1940,27 @@ test('a full-output rule can change value, method and path without losing its id
   const datasetId = await open(page);
   await page.getByLabel('用户输入', { exact: true }).fill('完整输出生命周期');
   const index = await addExpectation(page, 'output');
-  await expectationRow(page, index).getByPlaceholder('检查名称（可选）').fill('完整输出规则');
   await expectationInput(page, 'value', index).fill('"first answer"');
   const created = await save(page, datasetId, 'POST');
   expect(created.turns[0].expectations).toHaveLength(1);
   const originalRule = created.turns[0].expectations[0];
-  expect(originalRule).toMatchObject({ kind: 'output', name: '完整输出规则', path: null,
+  expect(originalRule).toMatchObject({ kind: 'output', name: null, path: null,
     condition: { kind: 'equals', expected: 'first answer' } });
   await page.reload();
   await expect(page.locator('.expectation-row')).toHaveCount(1);
   await expect(expectationInput(page, 'value')).toHaveValue('"first answer"');
   await expect(expectationRow(page).getByRole('button', { name: '删除', exact: true })).toBeVisible();
-  await expect(expectationRow(page).getByPlaceholder('检查名称（可选）')).toHaveValue('完整输出规则');
   await expectationInput(page, 'value').fill('"second answer"');
   let saved = await save(page, datasetId);
   expect(saved.turns[0].expectations).toEqual([
     { ...originalRule, condition: { kind: 'equals', expected: 'second answer' } },
   ]);
   await expect(expectationInput(page, 'value')).toHaveValue('"second answer"');
-  await expectationRow(page).getByPlaceholder('检查名称（可选）').fill('完整输出模式');
   await selectCondition(page, 0, '正则匹配');
   await expectationRow(page).getByPlaceholder('正则表达式').fill('^third');
   saved = await save(page, datasetId);
   expect(saved.turns[0].expectations).toEqual([
-    { ...originalRule, name: '完整输出模式', condition: { kind: 'matches_pattern', pattern: '^third' } },
+    { ...originalRule, condition: { kind: 'matches_pattern', pattern: '^third' } },
   ]);
   await expect(expectationRow(page).getByPlaceholder('正则表达式')).toHaveValue('^third');
   await expectationInput(page, 'path').fill('answer');

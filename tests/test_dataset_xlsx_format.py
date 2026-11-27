@@ -104,14 +104,39 @@ def test_xlsx_accepts_simple_required_columns() -> None:
         {
             "id": "case-1",
             "name": "Simple",
-            "category": "positive",
-            "difficulty": "medium",
+            "category": None,
+            "difficulty": None,
             "tags": [],
             "notes": "",
             "initial_state": {},
             "turns": [{"input": {"message": "hello"}, "expectations": [], "notes": ""}],
         }
     ]
+
+
+def test_xlsx_missing_classifications_round_trip_as_blank_cells() -> None:
+    sample = case_payload()
+    del sample["category"], sample["difficulty"]
+    content = dump([sample])
+    workbook = openpyxl.load_workbook(BytesIO(content), read_only=True)
+    try:
+        for values in workbook[SHEET_NAME].iter_rows(min_row=2, values_only=True):
+            assert values[2:4] == (None, None)
+    finally:
+        workbook.close()
+    parsed, = parse(content)
+    assert parsed == {**sample, "category": None, "difficulty": None}
+
+
+def test_xlsx_treats_empty_markers_alike_across_turns() -> None:
+    headers = ("case_id", "case_name", "category", "difficulty", "turn_order", "input_json")
+    content = workbook_bytes((
+        ("c", "样本", "空", None, 1, '{"txt":"a"}'),
+        ("c", "样本", "  ", "  空 ", 2, '{"txt":"b"}'),
+    ), headers)
+    case, = parse(content)
+    assert (case["category"], case["difficulty"]) == (None, None)
+    assert len(case["turns"]) == 2
 
 
 def test_xlsx_groups_and_orders_turns_by_case_id() -> None:

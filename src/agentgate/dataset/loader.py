@@ -9,6 +9,7 @@ from pydantic import TypeAdapter
 
 from agentgate.domain import Case, Dataset, DatasetVersion
 
+from .case_input import normalize_case_input
 from .formats.json import parse as parse_json
 from .formats.xlsx import parse as parse_xlsx
 
@@ -27,7 +28,12 @@ def load_dataset(
 
     document = parse_json(source)
     dataset = Dataset.model_validate(document["dataset"])
-    version = DatasetVersion.model_validate(document["version"])
+    version_data = document["version"]
+    # Content-addressed snapshots must be validated with their original domain defaults.
+    cases = version_data.get("cases")
+    if not version_data.get("content_sha256") and isinstance(cases, (list, tuple)):
+        version_data = {**version_data, "cases": [normalize_case_input(case) for case in cases]}
+    version = DatasetVersion.model_validate(version_data)
     if dataset.id != version.dataset_id:
         raise ValueError("Dataset and DatasetVersion identities do not match")
     return dataset, version

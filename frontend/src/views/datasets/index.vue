@@ -16,7 +16,7 @@ import VersionSelector from './components/VersionSelector.vue';
 import CaseEditor from './components/SampleEditor.vue';
 import SampleImportWizard from './components/SampleImportWizard.vue';
 import { blankSample } from './utils/sample-import';
-import { caseCategoryLabels, hasPublicationHistory } from './types/index';
+import { caseCategoryLabels, caseDifficultyLabels, hasPublicationHistory } from './types/index';
 import type {
   DatasetExport,
   DatasetSummary,
@@ -193,9 +193,14 @@ const loading = ref(true);
 const validationIssues = ref<ValidationIssue[]>([]);
 const datasetDialog = ref(false);
 const createV2Dialog = ref(false);
-const sampleWizard = ref(false),
+const sampleWizard = ref<'choose' | 'manual' | null>(null),
   sampleView = ref(false),
   sampleQuery = ref('');
+const draftImportTarget = shallowRef<DatasetVersion | null>(null);
+watch([showingDetail, activeVersionId, () => auth.loginMode, () => auth.teamId, () => auth.userId], () => {
+  draftImportTarget.value = null;
+  if (sampleWizard.value === 'manual') sampleWizard.value = null;
+});
 const filteredSamples = computed(
   () =>
     activeVersion.value?.cases.filter((c) =>
@@ -206,15 +211,38 @@ async function createdDataset(id: string, withImport: boolean) {
   createV2Dialog.value = false;
   if (!(await openDataset(id))) return;
   sampleView.value = false;
-  sampleWizard.value = withImport;
+  sampleWizard.value = withImport ? 'choose' : null;
 }
 async function samplesImported() {
-  await selectDataset(activeDatasetId.value);
+  if (!(await selectDataset(activeDatasetId.value))) return;
+  detailTab.value = 'samples';
   sampleView.value = false;
+  sampleQuery.value = '';
+  editorDirty.value = false;
 }
-function openSampleWizard() {
-  if (!canDiscard()) return;
-  sampleWizard.value = true;
+function openManualSample() {
+  if (!editable.value || busy.value || !canDiscard()) return;
+  sampleWizard.value = 'manual';
+}
+function openDraftImport() {
+  if (!editable.value || busy.value) return;
+  if (dirty.value) {
+    ElMessage.warning('请先保存当前样本或放弃未保存的修改，再导入测评集。');
+    return;
+  }
+  draftImportTarget.value = activeVersion.value;
+}
+function finishDraftImport(draft: DatasetVersion) {
+  if (draftImportTarget.value?.id !== draft.id || draft.dataset_id !== activeDatasetId.value) return;
+  draftImportTarget.value = null;
+  versions.value = versions.value.map((version) => (version.id === draft.id ? draft : version));
+  datasets.value = datasets.value.map((item) =>
+    item.id === draft.dataset_id ? { ...item, draft_case_count: draft.cases.length } : item,
+  );
+  showVersion(draft);
+  detailTab.value = 'samples';
+  sampleQuery.value = '';
+  ElMessage.success(`导入成功，草稿现有 ${draft.cases.length} 条样本`);
 }
 const dialogMode = ref<'create' | 'copy' | 'edit'>('create');
 const copyVersion = ref<number | null>(null);
@@ -331,7 +359,7 @@ function setDatasetId(datasetId: string) {
   editorDirty.value = false;
   versionHistoryDialog.value = false;
   datasetDialog.value = false;
-  sampleWizard.value = false;
+  sampleWizard.value = null;
   sampleQuery.value = '';
   exportTarget.value = '';
 }
@@ -373,6 +401,10 @@ async function selectDataset(datasetId: string, preferredVersionId = '') {
 
 function selectVersion(version: DatasetVersion) {
   if (!canDiscard()) return;
+  showVersion(version);
+}
+
+function showVersion(version: DatasetVersion) {
   activeVersionId.value = version.id;
   sampleView.value = false;
   selectedSampleIds.value = [];
@@ -726,11 +758,21 @@ onMounted(() => {
       @close="exportTarget = ''"
     />
     <SampleImportWizard
+      v-if="draftImportTarget && showingDetail && editable"
+      :key="draftImportTarget.id"
+      :dataset-id="draftImportTarget.dataset_id"
+      :dataset-name="activeDataset?.name ?? ''"
+      :draft-import-target="draftImportTarget"
+      @close="draftImportTarget = null"
+      @draft-imported="finishDraftImport"
+    />
+    <SampleImportWizard
       v-if="sampleWizard"
       :dataset-id="activeDatasetId"
       :dataset-name="activeDataset?.name ?? ''"
       :draft-cases="activeVersion?.cases"
-      @close="sampleWizard = false"
+      :manual-only="sampleWizard === 'manual'"
+      @close="sampleWizard = null"
       @imported="samplesImported"
     />
     <section v-if="showingDetail && detailState !== 'ready'" class="card">
@@ -762,6 +804,8 @@ onMounted(() => {
         @create-draft="createDraft"
         @publish="publishDraft"
         @discard="discardDraft"
+        @add-sample="openManualSample"
+        @import-draft="openDraftImport"
       />
 
       <p v-if="!activeVersion" role="status">当前没有可用版本。</p>
@@ -926,9 +970,7 @@ onMounted(() => {
             class="secondary"
             @click="openExport(activeDatasetId, activeVersionId, selectedSampleIds)"
           >
-            导出已选（{{ selectedSampleIds.length }}）</button
-          ><button class="primary" :disabled="!editable || busy" @click="openSampleWizard">
-            ＋ 新增样本
+            导出已选（{{ selectedSampleIds.length }}）
           </button>
         </div>
         <p v-if="activeDataset?.archived" class="muted">测评集已归档，当前版本只读。</p>
@@ -957,7 +999,7 @@ onMounted(() => {
               <th>用户输入</th>
               <th>轮次</th>
               <th>分类</th>
-              <th>标签</th>
+              <th>难度</th>
               <th>操作</th>
             </tr>
           </thead>
@@ -977,7 +1019,7 @@ onMounted(() => {
               <td class="input-preview">{{ JSON.stringify(c.turns[0]?.input ?? {}) }}</td>
               <td>{{ c.turns.length }}</td>
               <td>{{ c.category ? caseCategoryLabels[c.category] : '—' }}</td>
-              <td>{{ c.tags.join('、') || '—' }}</td>
+              <td>{{ c.difficulty ? caseDifficultyLabels[c.difficulty] : '—' }}</td>
               <td>
                 <button class="link" @click="selectCase(c)">{{ editable ? '编辑' : '查看' }}</button
                 ><button v-if="editable" class="link" @click="copyCase(c)">复制</button
@@ -987,7 +1029,7 @@ onMounted(() => {
           </tbody>
         </table>
         <p v-if="!sampleView && !filteredSamples.length" class="empty">
-          {{ editable ? '暂无样本，点击新增样本进行手动创建或文件导入。' : '暂无匹配的样本。' }}
+          {{ sampleQuery || !editable ? '暂无匹配的样本。' : '暂无样本。可点击「手动新增样本」或「导入测评集到样本」。' }}
         </p>
         <CaseEditor
           v-if="sampleView"

@@ -101,11 +101,6 @@ async function download() {
           </option>
         </select>
       </div>
-      <p v-if="format !== 'json'">
-        每行对应一轮。表头按所选样本生成，只列出用到的分类、难度、初始变量和测评项。
-        工具参数和最终输出按判定方式分列。例如，选择“数值容差”会导出“期望值”和“容差”两列。
-      </p>
-      <p v-else>JSON 文件按样本保存初始变量，按轮次保存输入内容和期望结果。</p>
       <div v-if="scope === 'selected'" class="export-samples">
         <button class="link" :disabled="busy" @click="ids = version?.cases.map((c) => c.id) ?? []">
           全选
@@ -116,7 +111,6 @@ async function download() {
           <small>{{ c.turns.length }} 轮</small></label
         >
       </div>
-      <p>导出 {{ scope === 'all' ? (version?.cases.length ?? 0) : ids.length }} 条样本</p>
       <p v-if="error" class="error" role="alert">{{ error }}</p>
     </div>
     <template #footer

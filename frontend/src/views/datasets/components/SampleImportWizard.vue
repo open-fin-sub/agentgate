@@ -11,21 +11,36 @@ import {
   SampleImportError,
   draftSampleNameConflict,
 } from '../utils/sample-import';
-import importTemplateUrl from '../../../assets/dataset-import-template.xlsx?url';
-import jsonTemplateUrl from '../../../assets/dataset-import-template.json?url';
-import csvTemplateUrl from '../../../assets/dataset-import-template.csv?url';
-import type { EvaluationCase } from '../types/index';
-import type { Trace } from '../../../api/client';
+import type { DatasetVersion, EvaluationCase } from '../types/index';
+import { ApiError, type Trace } from '../../../api/client';
 import type { EvaluationRun } from '../../evaluation/types/run';
 const props = defineProps<{
   datasetId: string;
   datasetName: string;
   draftCases?: readonly Pick<EvaluationCase, 'id' | 'name'>[];
+  draftImportTarget?: DatasetVersion;
+  manualOnly?: boolean;
 }>();
+// Preview and submit against the same draft, including after a failed request.
+const target = props.draftImportTarget;
+const draft = target && {
+  id: target.id,
+  hash: target.content_sha256,
+  cases: target.cases.map(({ id, name }) => ({ id, name })),
+};
+const chooseMethod = !draft && !props.manualOnly;
+const dialogTitle = draft ? '导入测评集到样本' : props.manualOnly ? '手动新增样本' : '新增样本';
+const importMode = ref<'replace' | 'append'>('replace');
+const staleDraft = ref(false);
 const acceptedFiles = sampleFileFormats.map((format) => '.' + format.value).join(',');
-const emit = defineEmits<{ close: []; manual: []; imported: [] }>();
-const method = ref('manual'),
-  step = ref(1),
+const emit = defineEmits<{
+  close: [];
+  manual: [];
+  imported: [];
+  draftImported: [version: DatasetVersion];
+}>();
+const method = ref(draft ? 'file' : 'manual'),
+  step = ref(chooseMethod ? 1 : 2),
   busy = ref(false),
   error = ref(''),
   items = ref<EvaluationCase[]>([]),
@@ -42,6 +57,18 @@ const importIssues = computed(() => importFailure.value?.issues ?? []);
 const totalImportIssues = computed(() => importFailure.value?.totalIssues ?? 0);
 const fileLevelFailure = computed(() => fileFailure.value || importFailure.value?.fileLevel);
 const turnCount = computed(() => items.value.reduce((n, item) => n + item.turns.length, 0));
+const conflicts = computed(() => {
+  if (!draft || importMode.value !== 'append') return [];
+  const existingNames = new Set(draft.cases.map((item) => item.name.trim()));
+  const existingIds = new Map(draft.cases.map((item) => [item.id.trim(), item.name]));
+  return items.value.flatMap((item) => {
+    const reasons: string[] = [];
+    if (existingNames.has(item.name.trim())) reasons.push('样本名称已存在');
+    if (existingIds.has(item.id))
+      reasons.push('样本编号 ' + item.id + ' 已被草稿样本“' + existingIds.get(item.id) + '”使用');
+    return reasons.length ? [{ id: item.id, name: item.name, reasons: reasons.join('；') }] : [];
+  });
+});
 const fileDescription = computed(() => {
   if (!selectedFile.value) return '';
   const format = selectedFile.value.name.split('.').pop()?.toUpperCase() || '文件';
@@ -57,21 +84,6 @@ const sessions = computed(() => [
   ),
 ]);
 const done = new Set<string>();
-async function downloadTemplate(url: string, format: string) {
-  error.value = '';
-  try {
-    const response = await fetch(url);
-    if (!response.ok) throw Error('模板下载失败，请稍后重试');
-    const objectUrl = URL.createObjectURL(await response.blob());
-    const link = document.createElement('a');
-    link.href = objectUrl;
-    link.download = '测评集导入模板.' + format;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-  } catch (e) {
-    error.value = String(e);
-  }
-}
 function reset() {
   items.value = [];
   error.value = '';
@@ -111,15 +123,16 @@ async function fileChanged(event: Event) {
   selectedFile.value = { name: file.name, size: file.size };
   busy.value = true;
   try {
-    const names = new Set(props.draftCases?.map((item) => item.name.trim()));
-    items.value = await parseSampleFile(file, names);
+    items.value = draft
+      ? await parseSampleFile(file, undefined, { preserveCaseIds: true })
+      : await parseSampleFile(file, new Set(props.draftCases?.map((item) => item.name.trim())));
   } catch (e) {
     if (e instanceof SampleImportError) importFailure.value = e;
     else fileFailure.value = e instanceof Error ? e.message : String(e);
   } finally {
     busy.value = false;
     await nextTick();
-    if (hasImportErrors.value) {
+    if (hasImportErrors.value || conflicts.value.length) {
       validationSummary.value?.focus({ preventScroll: true });
       validationSummary.value?.scrollIntoView({ block: 'nearest' });
     }
@@ -230,6 +243,36 @@ async function save() {
     busy.value = false;
   }
 }
+const canImportDraft = computed(
+  () =>
+    !busy.value &&
+    !staleDraft.value &&
+    items.value.length > 0 &&
+    !hasImportErrors.value &&
+    !conflicts.value.length,
+);
+async function importDraft() {
+  if (!draft || !canImportDraft.value) return;
+  busy.value = true;
+  error.value = '';
+  try {
+    const version = await datasetApi.importDraftCases(
+      props.datasetId,
+      draft.id,
+      draft.hash,
+      importMode.value,
+      items.value,
+    );
+    saved.value = items.value.length;
+    step.value = 3;
+    emit('draftImported', version);
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 409) staleDraft.value = true;
+    else error.value = e instanceof Error ? e.message : String(e);
+  } finally {
+    busy.value = false;
+  }
+}
 function close() {
   if (busy.value) return;
   if (manualDirty.value && !window.confirm('放弃未保存的样本？')) return;
@@ -239,7 +282,7 @@ function close() {
 <template>
   <el-dialog
     :model-value="true"
-    title="新增样本"
+    :title="dialogTitle"
     class="sample-wizard-dialog"
     :width="method === 'file' && step === 2 ? 'min(1040px,96vw)' : 'min(800px,96vw)'"
     :close-on-click-modal="false"
@@ -248,19 +291,30 @@ function close() {
     :before-close="close"
   >
     <div class="sample-wizard">
-      <div class="steps">
+      <div v-if="chooseMethod" class="steps">
         <b :class="{ active: step === 1 }">1 选择方式</b><span>—</span
         ><b :class="{ active: step === 2 }">2 配置填写</b><span>—</span
         ><b :class="{ active: step === 3 }">3 完成</b>
       </div>
-      <h3>{{ datasetName }} · 新增样本</h3>
+      <h3>{{ chooseMethod ? datasetName + ' · 新增样本' : datasetName }}</h3>
       <section v-if="method === 'file' && step === 2" class="file-import">
+        <fieldset v-if="draft" class="import-mode" :disabled="busy || staleDraft">
+          <legend>导入方式</legend>
+          <label><input v-model="importMode" type="radio" name="draft-import-mode" value="replace" /> 覆盖</label>
+          <label><input v-model="importMode" type="radio" name="draft-import-mode" value="append" /> 追加</label>
+          <p v-if="importMode === 'replace'">
+            用文件中的样本替换当前草稿的全部 {{ draft.cases.length }} 个样本。
+          </p>
+          <p v-else>
+            保留当前草稿的 {{ draft.cases.length }} 个样本。文件中的样本名称和编号须与草稿中的样本不同。
+          </p>
+        </fieldset>
         <div v-if="selectedFile" class="uploaded-file">
           <div class="uploaded-file-info">
             <strong>{{ selectedFile.name }}</strong
             ><span>{{ fileDescription }}</span>
           </div>
-          <button class="secondary" :disabled="busy || saved > 0" @click="fileInput?.click()">
+          <button class="secondary" :disabled="busy || staleDraft || saved > 0" @click="fileInput?.click()">
             重新上传
           </button>
         </div>
@@ -271,7 +325,7 @@ function close() {
             type="file"
             :accept="acceptedFiles"
             aria-label="样本导入文件"
-            :disabled="busy || saved > 0"
+            :disabled="busy || staleDraft || saved > 0"
             @change="fileChanged"
           />
         </label>
@@ -285,8 +339,8 @@ function close() {
           data-testid="import-validation-summary"
           class="import-summary"
           tabindex="-1"
-          :class="hasImportErrors ? 'import-summary-error' : 'import-summary-success'"
-          :role="hasImportErrors ? 'alert' : 'status'"
+          :class="hasImportErrors || conflicts.length ? 'import-summary-error' : 'import-summary-success'"
+          :role="hasImportErrors || conflicts.length ? 'alert' : 'status'"
         >
           <template v-if="hasImportErrors">
             <strong v-if="fileLevelFailure">无法读取这个文件</strong>
@@ -297,11 +351,23 @@ function close() {
             <p v-if="fileLevelFailure">{{ fileFailure || importFailure?.message }}</p>
             <p v-else>请按下方位置修正文件后重新上传，当前文件尚未写入草稿。</p>
           </template>
+          <template v-else-if="conflicts.length">
+            <strong>{{ conflicts.length }} 个样本与当前草稿冲突，整批无法追加。</strong>
+            <p>请修改文件中的冲突名称或编号，再重新上传。</p>
+          </template>
           <template v-else>
             <strong>文件格式校验通过</strong>
-            <p>已解析 {{ items.length }} 个样本、{{ turnCount }} 轮对话，可以确认导入。</p>
+            <p v-if="draft">
+              文件包含 {{ items.length }} 个样本、{{ turnCount }} 轮对话。
+              {{ importMode === 'replace' ? '覆盖' : '追加' }}后，草稿共有
+              {{ (importMode === 'append' ? draft.cases.length : 0) + items.length }} 个样本。
+            </p>
+            <p v-else>已解析 {{ items.length }} 个样本、{{ turnCount }} 轮对话，可以确认导入。</p>
           </template>
         </div>
+        <ul v-if="conflicts.length" class="draft-conflicts" aria-label="与草稿冲突的样本">
+          <li v-for="item in conflicts" :key="item.id">{{ item.name }}：{{ item.reasons }}</li>
+        </ul>
         <template v-if="importIssues.length">
           <p class="mobile-issues-hint">左右滑动表格可查看字段和问题。</p>
           <div class="import-issues-scroll" tabindex="0" aria-label="导入错误列表，可滚动查看更多">
@@ -338,47 +404,6 @@ function close() {
           </p>
         </template>
       </section>
-      <details v-if="method === 'file' && step === 2" class="import-template" :open="!selectedFile">
-        <summary>模板下载与填写说明</summary>
-        <div class="template-downloads">
-          <a
-            :href="importTemplateUrl"
-            download="测评集导入模板.xlsx"
-            class="template-download"
-            @click.prevent="downloadTemplate(importTemplateUrl, 'xlsx')"
-          >
-            下载测评集模板（Excel）
-          </a>
-          <a
-            :href="jsonTemplateUrl"
-            download="测评集导入模板.json"
-            class="template-download"
-            @click.prevent="downloadTemplate(jsonTemplateUrl, 'json')"
-          >
-            下载测评集模板（JSON）
-          </a>
-          <a
-            :href="csvTemplateUrl"
-            download="测评集导入模板.csv"
-            class="template-download"
-            @click.prevent="downloadTemplate(csvTemplateUrl, 'csv')"
-          >
-            下载测评集模板（CSV）
-          </a>
-        </div>
-        <p class="file-hint">
-          每个模板包含一条单轮示例和字段填写说明。样本名称和每轮输入必填，其他字段可留空。
-          导入后会在草稿中补齐默认值，并生成样本、轮次和测评项编号。
-        </p>
-        <p class="file-hint">
-          Excel 和 CSV 中，单轮样本的轮次顺序填 1，留空按 1 导入。多轮样本各行填写相同名称和不重复的正整数轮次顺序。不同样本使用不同名称。
-        </p>
-        <p class="file-hint">
-          每个初始变量占一列，表头注明名称、类型和是否必填。如果导出文件含有“初始变量顺序”，保留该列即可还原各样本的变量顺序，新增变量按表头顺序追加。期望 Skill、必须工具、禁止工具填名称。最终状态分列填写字段路径、判定方式和期望值。
-          回导页面导出的工具参数和最终输出时，在对应判定方式的列中填写，例如“工具参数_数值容差_容差”。同一轮有多条同类检查时，数组元素按检查顺序填写，不适用的位置填 null。
-          输出路径留空表示检查完整输出。工具参数的调用范围留空时按最后一次调用处理。使用下载模板时，请参照模板中的填写说明。
-        </p>
-      </details>
       <div v-if="step === 1" class="methods">
         <button
           v-for="m in [
@@ -496,17 +521,18 @@ function close() {
             </tr>
           </tbody>
         </table>
-        <p v-if="items.length && method !== 'manual'">
+        <p v-if="!draft && items.length && method !== 'manual'">
           预览
           {{ items.length }}
-          条；导入只新增草稿样本，不覆盖已有样本、不自动发布。批量接口尚未提供，逐条写入并报告成功数量。
+          条，将逐条新增到当前草稿。
         </p>
       </template>
       <div v-if="step === 3" class="complete">
         <h2>✓ {{ method === 'manual' ? '创建完成' : '导入完成' }}</h2>
         <p>{{ saved }} 条样本已保存到数据库草稿，可继续管理、编辑和发布。</p>
       </div>
-      <p v-if="error" role="alert" class="error">{{ error }}</p>
+      <p v-if="staleDraft" role="alert" class="error">草稿已发生变化，请关闭对话框，刷新测评集后重新确认导入。</p>
+      <p v-else-if="error" role="alert" class="error">{{ error }}</p>
     </div>
     <template #footer
       ><div class="wizard-actions">
@@ -525,7 +551,7 @@ function close() {
           {{ step === 3 ? '返回数据样本' : '取消' }}</button
         ><button v-if="step === 1" class="primary" @click="next">下一步</button
         ><template v-if="step === 2"
-          ><button class="secondary" :disabled="busy || saved > 0" @click="previous">上一步</button
+          ><button v-if="chooseMethod" class="secondary" :disabled="busy || saved > 0" @click="previous">上一步</button
           ><button
             v-if="method === 'manual'"
             class="primary"
@@ -534,6 +560,12 @@ function close() {
             @click="manualEditor?.save()"
           >
             {{ busy ? '保存中…' : '保存样本' }}</button
+          ><button
+            v-else-if="draft"
+            class="primary"
+            :disabled="!canImportDraft"
+            @click="importDraft"
+          >{{ importMode === 'replace' ? '确认覆盖导入' : '确认追加导入' }}</button
           ><button
             v-else
             class="primary"
@@ -550,6 +582,25 @@ function close() {
 <style scoped>
 .file-import {
   margin: 16px 0;
+}
+.import-mode {
+  margin: 0 0 18px;
+  border: 0;
+  padding: 0;
+}
+.import-mode legend {
+  font-weight: 600;
+}
+.sample-wizard .import-mode label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 20px 0 0;
+}
+.draft-conflicts {
+  max-height: 240px;
+  overflow: auto;
+  overflow-wrap: anywhere;
 }
 .uploaded-file {
   display: flex;
@@ -657,33 +708,6 @@ function close() {
   margin-right: auto;
   text-align: left;
   align-self: center;
-}
-.import-template {
-  padding: 14px 18px;
-  margin: 14px 0;
-  border: 1px solid #cce9e3;
-  border-radius: 8px;
-  background: #f2faf7;
-}
-.template-download {
-  color: #008b76;
-  font-weight: 600;
-}
-.template-downloads {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 20px;
-}
-.import-template > summary {
-  margin: 0 0 8px;
-}
-.import-template:not([open]) > summary {
-  margin-bottom: 0;
-}
-.import-template summary {
-  cursor: pointer;
-  color: #008b76;
-  font-weight: 600;
 }
 .wizard-actions {
   display: flex;

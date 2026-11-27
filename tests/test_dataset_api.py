@@ -32,6 +32,75 @@ class RecordingDispatcher:
         self.run_ids.append(run_id)
 
 
+def _file_case(identifier, name, message):
+    return Case(id=identifier, name=name, turns=(CaseTurn(input={"txt": message}),)).model_dump(mode="json")
+
+
+@pytest.mark.parametrize("team", ["", "bank-team"])
+def test_draft_import_replaces_or_appends_without_changing_published_version(tmp_path, team):
+    with TestClient(create_app(tmp_path / "import.db", RecordingDispatcher())) as client:
+        client.headers["X-Team-Id"] = team
+        created = client.post("/api/datasets", json={"name": "文件导入"}).json()["data"]
+        path = f"/api/datasets/{created['dataset']['id']}"
+        original = _file_case("stable", "原样本", "原始输入")
+        client.post(f"{path}/drafts/cases", json=original).raise_for_status()
+        omitted = _file_case("omitted", "仅旧版保留", "旧输入")
+        client.post(f"{path}/drafts/cases", json=omitted).raise_for_status()
+        published = client.post(f"{path}/drafts/publish").json()["data"]
+        draft = client.post(f"{path}/drafts", json={"based_on_version": 1}).json()["data"]
+        url = f"{path}/drafts/cases/import"
+        edited = _file_case("stable", "原样本", "文件中的更新")
+        body = {"draft_id": draft["id"], "mode": "replace", "cases": [edited]}
+        headers = {"If-Match": draft["content_sha256"]}
+        assert client.post(url, json=body, headers={**headers, "X-Team-Id": "other-team"}).status_code == 409
+        changed = client.post(url, json=body, headers=headers)
+        assert changed.status_code == 200
+        replaced = changed.json()["data"]
+        assert replaced["id"] == draft["id"] and replaced["cases"] == [edited]
+        assert published["cases"] == [original, omitted]
+        assert changed.headers["etag"] == f'"{replaced["content_sha256"]}"'
+        new_case = _file_case("two", "新样本", "新输入")
+        body.update(mode="append", cases=[new_case])
+        assert client.post(url, json=body, headers=headers).status_code == 409
+        added = client.post(url, json=body, headers={"If-Match": changed.headers["etag"]})
+        assert added.json()["data"]["cases"] == [edited, new_case]
+        assert client.get(f"{path}/versions/1").json()["data"] == published
+
+        client.delete(f"{path}/drafts/current").raise_for_status()
+        another = client.post(f"{path}/drafts", json={"based_on_version": 1}).json()["data"]
+        assert another["content_sha256"] == draft["content_sha256"] and another["id"] != draft["id"]
+        assert client.post(url, json=body, headers=headers).status_code == 409
+        assert client.get(f"{path}/drafts/current").json()["data"] == another
+        client.delete(path).raise_for_status()
+        assert client.post(url, json={**body, "draft_id": another["id"]}, headers=headers).status_code == 409
+
+
+def test_draft_import_rejects_entire_invalid_file_and_missing_revision(tmp_path):
+    with TestClient(create_app(tmp_path / "invalid-import.db", RecordingDispatcher())) as client:
+        created = client.post("/api/datasets", json={"name": "原子校验"}).json()["data"]
+        path = f"/api/datasets/{created['dataset']['id']}"
+        original = _file_case("old", "原样本", "原输入")
+        draft = client.post(f"{path}/drafts/cases", json=original).json()["data"]
+        url = f"{path}/drafts/cases/import"
+        headers = {"If-Match": draft["content_sha256"]}
+        fresh = _file_case("fresh", "新样本", "新输入")
+        body = {"draft_id": draft["id"], "mode": "replace", "cases": [fresh]}
+        assert client.post(url, json=body).status_code == 422
+        for mode, cases, detail in (
+            ("replace", [fresh, {**fresh, "id": "second", "name": " 新样本 "}], "样本名称已存在"),
+            ("replace", [fresh, {**fresh, "id": " fresh ", "name": "另一名称"}], "样本编号已存在"),
+            ("append", [fresh, {**fresh, "id": "second", "name": " 原样本 "}], "样本名称已存在"),
+            ("append", [fresh, {**fresh, "id": " old ", "name": "另一名称"}], "样本编号已存在"),
+            ("replace", [fresh, {**fresh, "turns": []}], None),
+            ("replace", [], None),
+        ):
+            response = client.post(url, json={**body, "mode": mode, "cases": cases}, headers=headers)
+            assert response.status_code == 422
+            if detail:
+                assert detail in response.json()["message"]
+            assert client.get(f"{path}/drafts/current").json()["data"] == draft
+
+
 @pytest.mark.parametrize(
     ("category", "difficulty"),
     [(CaseCategory.BOUNDARY, CaseDifficulty.HARD), (None, None)],
