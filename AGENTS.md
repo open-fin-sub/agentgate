@@ -90,6 +90,24 @@ documentation reflects the result, and no required work within its scope remains
 
 Every architecture/refactor progress response begins with a short `Where are we` block.
 
+## Cross-Conversation Handoff and PR Verification
+
+- Use a dedicated branch or worktree for parallel changes. At handoff, record the scope,
+  checkout path, branch, commit SHA or uncommitted paths, and verification results. When
+  committing is authorized, make a focused local commit after verification.
+- Before preparing a commit or PR for the project, use `git worktree list` and the
+  relevant project conversations to locate checkouts used for the requested scope.
+  Inspect each linked worktree and any identified standalone clone of this repository.
+  Check local commits and staged, unstaged, and untracked files. Report any relevant
+  checkout you could not inspect.
+- Compare the actual diffs against the current remote target branch and existing PRs.
+  Account for changes already merged, changes in open PRs, and local-only changes.
+  Include the authorized release scope, preserve newer target-branch behavior, and
+  leave unrelated work and local runtime artifacts out of the submission.
+- After pushing, verify on the remote that the PR targets the requested branch and that
+  its head commit and file diff match the intended submission. Report the PR link,
+  verification results, and any relevant changes still local or awaiting a decision.
+
 ## Engineering Philosophy
 
 Follow a Unix-style design: each component has one clear responsibility, explicit inputs
