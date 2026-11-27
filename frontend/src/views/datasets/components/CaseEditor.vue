@@ -272,7 +272,7 @@ defineExpose({ save });
         <el-collapse-item v-for="(turn, index) in form.turns" :key="turn.id" :name="turn.id">
           <template #title>
             <b>第 {{ Number(index) + 1 }} 轮</b>
-            <span class="turn-summary">{{ turn.expected_skill || '未设置期望 Skill' }}</span>
+            <span class="turn-summary">{{ turn.expected_skill === '' ? '等于空字符串' : (turn.expected_skill ?? '未设置期望 Skill') }}</span>
           </template>
           <div class="turn-form">
             <div class="turn-actions">
@@ -307,7 +307,8 @@ defineExpose({ save });
               <summary>
                 {{ editable ? '添加其他期望' : '其他期望' }} · 已配置
                 {{
-                  (turn.expected_skill ? 1 : 0) +
+                  Number(turn.expected_skill != null) +
+                  (turn.preserved_skill_routes?.length ?? 0) +
                   (turn.required_tools?.length ?? 0) +
                   (turn.forbidden_tools?.length ?? 0) +
                   (turn.policy_rules?.length ?? 0) +
@@ -321,10 +322,15 @@ defineExpose({ save });
               </p>
               <el-form-item label="期望 Skill">
                 <el-input
-                  v-model="turn.expected_skill"
+                  :model-value="turn.expected_skill ?? ''"
+                  @update:model-value="turn.expected_skill = $event || null"
                   :data-testid="`expected-skill-${index}`"
                   placeholder="例如 loan_approval；可留空"
                 />
+                <div v-if="turn.expected_skill === ''">
+                  <span>等于空字符串</span>
+                  <el-button v-if="editable" text @click="turn.expected_skill = null">移除 Skill 检查</el-button>
+                </div>
               </el-form-item>
               <div class="case-meta-grid">
                 <el-form-item label="必须调用工具">

@@ -23,7 +23,6 @@ const props = defineProps<{
   draftCases?: readonly Pick<EvaluationCase, 'id' | 'name'>[];
 }>();
 const acceptedFiles = sampleFileFormats.map((format) => '.' + format.value).join(',');
-const formatDescription = sampleFileFormats.map((format) => format.label).join(' / ');
 const emit = defineEmits<{ close: []; manual: []; imported: [] }>();
 const method = ref('manual'),
   step = ref(1),
@@ -374,12 +373,25 @@ function close() {
         <p class="file-hint">
           Excel 和 CSV 中，单轮样本的轮次顺序填 1，留空按 1 导入。多轮样本各行填写相同名称和不重复的正整数轮次顺序。不同样本使用不同名称。
         </p>
+        <p class="file-hint">
+          每个初始变量占一列，表头注明名称、类型和是否必填。如果导出文件含有“初始变量顺序”，保留该列即可还原各样本的变量顺序，新增变量按表头顺序追加。期望 Skill、必须工具、禁止工具填名称。最终状态分列填写字段路径、判定方式和期望值。
+          回导页面导出的工具参数和最终输出时，在对应判定方式的列中填写，例如“工具参数_数值容差_容差”。同一轮有多条同类检查时，数组元素按检查顺序填写，不适用的位置填 null。
+          输出路径留空表示检查完整输出。工具参数的调用范围留空时按最后一次调用处理。使用下载模板时，请参照模板中的填写说明。
+        </p>
       </details>
       <div v-if="step === 1" class="methods">
         <button
           v-for="m in [
-            { id: 'file', name: '⇧ 导入测评集', description: formatDescription },
-            { id: 'manual', name: '＋ 手动创建', description: '多轮对话、期望输出与工具调用' },
+            {
+              id: 'manual',
+              name: '＋ 手动创建',
+              description: '请先手动创建样本，完成后导出，可作为测评集模版批量线下编辑',
+            },
+            {
+              id: 'file',
+              name: '⇧ 导入测评集',
+              description: '导入线下已完成批量编辑的测评集',
+            },
             {
               id: 'annotation',
               name: '✓ 从标注导入',
@@ -400,7 +412,6 @@ function close() {
           v-if="method === 'manual'"
           ref="manualEditor"
           hide-save-button
-          hide-basic-expected-output
           :item="manualItem"
           :draft-cases="draftCases"
           :editable="true"
@@ -474,7 +485,7 @@ function close() {
                       t.required_tools.length +
                       t.forbidden_tools.length +
                       t.policy_rules.length +
-                      Number(Boolean(t.expected_skill)) +
+                      Number(t.expected_skill != null) +
                       (t.preserved_skill_routes?.length ?? 0) +
                       (t.original_expectations?.filter((e) => e.kind === 'execution_path').length ??
                         0),

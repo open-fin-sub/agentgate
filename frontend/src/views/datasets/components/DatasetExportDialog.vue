@@ -101,7 +101,11 @@ async function download() {
           </option>
         </select>
       </div>
-      <p>三种格式均导出完整样本字段。Excel、CSV 每行对应一轮，单轮样本的轮次顺序为 1。重新导入表格时，不同样本须使用不同名称。</p>
+      <p v-if="format !== 'json'">
+        每行对应一轮。表头按所选样本生成，只列出用到的分类、难度、初始变量和测评项。
+        工具参数和最终输出按判定方式分列。例如，选择“数值容差”会导出“期望值”和“容差”两列。
+      </p>
+      <p v-else>JSON 文件按样本保存初始变量，按轮次保存输入内容和期望结果。</p>
       <div v-if="scope === 'selected'" class="export-samples">
         <button class="link" :disabled="busy" @click="ids = version?.cases.map((c) => c.id) ?? []">
           全选

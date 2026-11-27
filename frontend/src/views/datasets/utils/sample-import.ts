@@ -1,6 +1,9 @@
 import { toEditorCase } from '../../../api/datasets';
+import { sameJson } from '../../evaluation/utils/report-presentation';
 import { caseCategoryLabels, caseDifficultyLabels } from '../types/index';
 import type { EvaluationCase, JsonObject } from '../types/index';
+import { expectationColumnLabels, readExpectationCells } from './sample-expectation-columns';
+import { isVariableColumn, readVariableColumns, variableOrderHeader } from './sample-variable-columns';
 
 export const sampleFileFormats = [
   { value: 'xlsx', label: 'Excel (.xlsx)' },
@@ -9,6 +12,13 @@ export const sampleFileFormats = [
 ] as const;
 export type SampleFileFormat = (typeof sampleFileFormats)[number]['value'];
 
+// Older spreadsheets store each type of rule in one JSON column.
+const importExpectationColumnLabels = {
+  ...expectationColumnLabels,
+  final_state: '最终状态',
+  tool_arguments: '工具参数',
+  final_output: '最终输出',
+};
 export const sampleColumnLabels: Record<string, string> = {
   case_id: '样本编号',
   case_name: '样本名称',
@@ -21,6 +31,7 @@ export const sampleColumnLabels: Record<string, string> = {
   turn_order: '轮次顺序',
   input_json: '输入内容',
   expectations_json: '期望结果',
+  ...importExpectationColumnLabels,
   turn_notes: '轮次备注',
   turn_extensions_json: '轮次扩展',
 };
@@ -81,6 +92,7 @@ const fieldNames: Record<string, string> = {
   turn_notes: '轮次备注',
   extensions: '轮次扩展',
   expected: '预期输出',
+  ...importExpectationColumnLabels,
 };
 const fieldColumns: Record<string, string> = {
   name: 'case_name',
@@ -147,8 +159,8 @@ export function blankSample(name = '新样本'): EvaluationCase {
   return {
     id: crypto.randomUUID(),
     name,
-    category: 'positive',
-    difficulty: 'medium',
+    category: null,
+    difficulty: null,
     tags: [],
     notes: '',
     initial_state: {},
@@ -259,6 +271,7 @@ const tableColumnKeys = new Map(
 tableColumnKeys.set('初始状态', 'initial_state_json');
 function tableHeaderKey(header: string) {
   const trimmed = header.trim();
+  if (isVariableColumn(trimmed)) return trimmed.replace(/｜(?:选填|必填|可选)$/, '');
   // CSV templates put their field instructions after a fullwidth separator.
   const label = trimmed.split('｜', 1)[0].trim();
   if (label === sampleColumnLabels.case_name) return label;
@@ -394,6 +407,92 @@ function readJson(
     return fallback;
   }
 }
+function readTurnOrder(value: unknown, fallback: number): number {
+  if (typeof value === 'number') return value;
+  if (value == null) return fallback;
+  if (typeof value !== 'string') return NaN;
+  const text = value.trim();
+  if (!text) return fallback;
+  return /^\d+$/.test(text) ? Number(text) : NaN;
+}
+const splitExpectationKeys = Object.keys(importExpectationColumnLabels);
+function filled(value: unknown) {
+  return value !== undefined && value !== null && value !== '';
+}
+function tableExpectations(row: Record<string, unknown>, source: Source, report: Diagnostics) {
+  const splitKey = splitExpectationKeys.find((key) => {
+    const value = row[key];
+    return (typeof value === 'string' ? !!value.trim() : filled(value)) && !source.invalid.has(key);
+  });
+  if (splitKey) {
+    if (filled(row.expectations_json) || filled(row.expected)) {
+      report.add(source, splitKey, '同一轮不能同时填写旧版期望结果与拆分后的期望列');
+      return [];
+    }
+    return readExpectationCells(row, (key, message) => {
+      if (!source.invalid.has(key)) report.add(source, key, message);
+    }, validateExpectation);
+  }
+  const expectations = readJson(row.expectations_json, [], 'expectations', source, report);
+  if (Array.isArray(expectations) && filled(row.expected))
+    expectations.push({
+      id: crypto.randomUUID(),
+      name: '人工期望输出',
+      kind: 'output',
+      path: null,
+      condition: { kind: 'equals', expected: String(row.expected) },
+    });
+  return expectations;
+}
+
+type InitialCells = Map<string, { value: unknown; source: Source }>;
+function comparableCell(value: unknown) {
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+function collectInitialCells(cells: InitialCells, row: Record<string, unknown>, source: Source, report: Diagnostics) {
+  for (const [key, value] of Object.entries(row)) {
+    const initialField = key === 'initial_state_json' || key === variableOrderHeader || isVariableColumn(key);
+    if (!initialField || !filled(value)) continue;
+    const field = key === 'initial_state_json' ? 'initial_state' : key;
+    if (source.invalid.has(field)) continue;
+    const previous = cells.get(key);
+    if (!previous) cells.set(key, { value, source });
+    else if (value !== previous.value && !sameJson(comparableCell(value), comparableCell(previous.value))) {
+      const label = key === variableOrderHeader ? variableOrderHeader : '初始变量值';
+      report.add(source, field, `同一样本各轮的${label}须一致，与第 ${previous.source.row} 行冲突`);
+    }
+  }
+}
+function tableInitialState(cells: InitialCells, report: Diagnostics) {
+  const legacy = cells.get('initial_state_json');
+  if (legacy) {
+    cells.delete('initial_state_json');
+    if (cells.size) {
+      const [key, firstSplit] = cells.entries().next().value!;
+      if (Number(legacy.source.row) > Number(firstSplit.source.row))
+        report.add(legacy.source, 'initial_state', '同一样本不能同时填写旧版初始变量与拆分变量列');
+      else report.add(firstSplit.source, key, '同一样本不能同时填写旧版初始变量与拆分变量列');
+    }
+    const value = readJson(legacy.value, {}, 'initial_state', legacy.source, report);
+    if (object(value)) return value;
+    report.add(legacy.source, 'initial_state', '初始变量必须是 JSON 对象');
+    return {};
+  }
+  const order = cells.get(variableOrderHeader);
+  // Values may have been entered on later turns. New variable names follow the file's column order.
+  const headers = order ? new Set([...Object.keys(order.source.columns ?? {}), ...cells.keys()]) : cells.keys();
+  const row: Record<string, unknown> = Object.create(null);
+  for (const key of headers) {
+    const cell = cells.get(key);
+    if (cell) row[key] = cell.value;
+  }
+  return readVariableColumns(row, (key, message) => report.add(cells.get(key)!.source, key, message));
+}
 function tableSamples(
   rows: TableRow[],
   report: Diagnostics,
@@ -415,6 +514,7 @@ function tableSamples(
     source: CaseSource;
     legacyId: string;
     orders: Map<number, Source>;
+    initialCells: InitialCells;
   }>();
   rows.forEach(({ values: r, source, formulas = [] }) => {
     const nameHeader = sampleNameHeader(r);
@@ -442,20 +542,22 @@ function tableSamples(
     }
     let group = groups.get(key);
     if (!group) {
+      // Exported rows carry a sample ID. Import templates omit it and supply enum defaults.
+      const preserveEmptyEnums = !!legacyId && !('turn_id' in r);
       source.path = 'cases[' + groups.size + ']';
       group = {
         value: {
           ...blankSample(name),
-          category: r.category || 'positive',
-          difficulty: r.difficulty || 'medium',
+          category: preserveEmptyEnums && !filled(r.category) ? null : r.category,
+          difficulty: preserveEmptyEnums && !filled(r.difficulty) ? null : r.difficulty,
           tags: readJson(r.tags_json, [], 'tags', source, report),
-          initial_state: readJson(r.initial_state_json, {}, 'initial_state', source, report),
           notes: String(r.case_notes ?? ''),
           turns: [],
         },
         source: { sample: source, turns: [] },
         legacyId,
         orders: new Map(),
+        initialCells: new Map(),
       };
       groups.set(key, group);
     } else if (legacyId) {
@@ -464,13 +566,14 @@ function tableSamples(
       else group.legacyId = legacyId;
     }
     const c = group.value;
-    const order = !orderText ? c.turns.length + 1 : /^\d+$/.test(orderText) ? Number(orderText) : NaN;
+    const order = readTurnOrder(orderText, c.turns.length + 1);
     const validOrder = Number.isSafeInteger(order) && order > 0;
     const turnSource: Source = {
       ...source,
       path: group.source.sample.path + '.turns[' + c.turns.length + ']',
       turn: validOrder ? order : c.turns.length + 1,
     };
+    collectInitialCells(group.initialCells, r, turnSource, report);
     formulas.forEach(({ field, column }) =>
       report.add(
         {
@@ -494,19 +597,10 @@ function tableSamples(
       turnSource,
       report,
     );
-    const expectations = readJson(r.expectations_json, [], 'expectations', turnSource, report);
-    if (Array.isArray(expectations) && r.expected != null && r.expected !== '')
-      expectations.push({
-        id: crypto.randomUUID(),
-        name: '人工期望输出',
-        kind: 'output',
-        path: null,
-        condition: { kind: 'equals', expected: String(r.expected) },
-      });
     c.turns.push({
       id: String(r.turn_id || crypto.randomUUID()),
       input,
-      expectations,
+      expectations: tableExpectations(r, turnSource, report),
       notes: String(r.turn_notes ?? ''),
       extensions: readJson(r.turn_extensions_json, undefined, 'extensions', turnSource, report),
       _order: order,
@@ -516,6 +610,7 @@ function tableSamples(
   const values: unknown[] = [],
     sources: CaseSource[] = [];
   for (const group of groups.values()) {
+    group.value.initial_state = tableInitialState(group.initialCells, report);
     if (group.value.turns.length === 1 && group.orders.size === 1) {
       const [turn] = group.value.turns;
       if (turn._order !== 1 && turn._source.sampleName && !turn._source.invalid.has('name'))
@@ -555,6 +650,23 @@ function readEnum(value: unknown, labels: Record<string, string>, fallback: stri
   if (typeof value !== 'string') return value;
   const text = value.trim();
   return Object.entries(labels).find(([, label]) => label === text)?.[0] ?? text;
+}
+function orderedTurnIndices(turns: unknown[], source: Source, report: Diagnostics): number[] {
+  const indices = turns.map((_, index) => index);
+  if (!turns.some((turn) => object(turn) && turn.turn_order !== undefined)) return indices;
+  const seen = new Set<number>();
+  const orders = turns.map((turn, index) => {
+    const order = readTurnOrder(object(turn) ? turn.turn_order : undefined, index + 1);
+    const location = { ...source, path: source.path + '.turns[' + index + ']', turn: index + 1 };
+    if (!Number.isSafeInteger(order) || order < 1)
+      report.add(location, 'turn_order', '轮次顺序必须为正整数');
+    else if (turns.length === 1 && order !== 1)
+      report.add(location, 'turn_order', '单轮样本的轮次顺序必须为 1');
+    else if (seen.has(order)) report.add(location, 'turn_order', `轮次顺序 ${order} 重复`);
+    seen.add(order);
+    return order;
+  });
+  return indices.sort((left, right) => orders[left] - orders[right]);
 }
 function normalizedCases(
   value: unknown,
@@ -604,10 +716,11 @@ function normalizedCases(
     };
     if (
       !source.invalid.has('category') &&
+      c.category !== null &&
       (typeof c.category !== 'string' || !Object.keys(caseCategoryLabels).includes(c.category))
     )
       report.add(source, 'category', '样本分类须为正例、负例或边界');
-    if (!source.invalid.has('difficulty') &&
+    if (!source.invalid.has('difficulty') && c.difficulty !== null &&
         (typeof c.difficulty !== 'string' || !Object.keys(caseDifficultyLabels).includes(c.difficulty)))
       report.add(source, 'difficulty', '难度须为简单、中等或困难');
     if (!source.invalid.has('initial_state') && !object(c.initial_state))
@@ -624,7 +737,9 @@ function normalizedCases(
       report.add(source, 'turns', '缺少轮次，请至少填写一轮对话');
       return;
     }
-    c.turns = raw.turns.map((turn: any, j: number) => {
+    const turns = raw.turns;
+    c.turns = orderedTurnIndices(turns, source, report).map((j) => {
+      const turn = turns[j];
       const turnSource = sources?.[i]?.turns[j] ?? {
         ...source,
         path: source.path + '.turns[' + j + ']',

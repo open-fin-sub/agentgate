@@ -13,7 +13,7 @@
       "notes": "样本备注，默认空白",
       "turns[].expectations": "测评项数组，默认 []",
       "turns[].notes": "轮次备注，默认空白",
-      "turns[].extensions": "完整导出中的轮次扩展，可留空"
+      "turns[].extensions": "轮次扩展，可省略"
     },
     "系统生成": "导入时生成样本、轮次和测评项 ID。轮次按数组中的顺序排列。"
   },

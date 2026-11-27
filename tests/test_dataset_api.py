@@ -1,5 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
+import pytest
 from fastapi.testclient import TestClient
 
 from agentgate.application.run_scheduling import RunScheduling
@@ -31,7 +32,13 @@ class RecordingDispatcher:
         self.run_ids.append(run_id)
 
 
-def test_web_dataset_workflow_persists_and_runs_selected_version(tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    ("category", "difficulty"),
+    [(CaseCategory.BOUNDARY, CaseDifficulty.HARD), (None, None)],
+)
+def test_web_dataset_workflow_persists_and_runs_selected_version(
+    tmp_path, monkeypatch, category, difficulty,
+):
     database_path = tmp_path / "dataset-api.db"
     dispatcher = RecordingDispatcher()
     monkeypatch.setenv("AGENTGATE_DB", str(database_path))
@@ -45,8 +52,8 @@ def test_web_dataset_workflow_persists_and_runs_selected_version(tmp_path, monke
         case = Case(
             id="ui-high-risk",
             name="UI high risk",
-            category=CaseCategory.BOUNDARY,
-            difficulty=CaseDifficulty.HARD,
+            category=category,
+            difficulty=difficulty,
             turns=(CaseTurn(
                 id="ui-turn",
                 input={
@@ -97,6 +104,12 @@ def test_web_dataset_workflow_persists_and_runs_selected_version(tmp_path, monke
         report = client.get(f"/api/runs/{run_id}").json()["data"]
         assert report["run"]["manifest"]["dataset"]["dataset_id"] == dataset_id
         assert report["run"]["manifest"]["dataset"]["version"] == 1
+        pinned_case = report["run"]["manifest"]["dataset"]["cases"][0]
+        assert pinned_case["category"] == category
+        assert pinned_case["difficulty"] == difficulty
+        analytics = client.get(f"/api/runs/{run_id}/analytics").json()["data"]
+        assert analytics["by_category"]["available"] == (category is not None)
+        assert analytics["by_difficulty"]["available"] == (difficulty is not None)
         output = next(item for item in report["results"] if item["evaluator_id"] == "final-output")
         assert output["outcome"] == "pass"
         assert output["checks"][0]["expected"]["expected"] == "pending_review"

@@ -28,6 +28,23 @@ export type Condition =
   | { kind: 'must_be_missing' }
   | { kind: 'matches_json_schema'; json_schema: JsonObject };
 
+export const conditionLabels = {
+  equals: '等于',
+  within_tolerance: '数值容差',
+  within_range: '数值范围',
+  matches_pattern: '正则匹配',
+  one_of: '属于集合',
+  must_be_missing: '字段不存在',
+  matches_json_schema: 'JSON Schema',
+} as const satisfies Record<Condition['kind'], string>;
+
+export const toolOccurrenceLabels = {
+  last: '最后一次调用',
+  first: '第一次调用',
+  any: '任意一次通过',
+  all: '所有调用通过',
+} as const;
+
 interface ExpectationBase {
   id: string;
   name: string | null;
@@ -40,7 +57,7 @@ export type Expectation =
       kind: 'tool_argument';
       tool: string;
       path: string;
-      occurrence: 'first' | 'last' | 'any' | 'all';
+      occurrence: keyof typeof toolOccurrenceLabels;
     })
   | (ExpectationBase & { kind: 'output'; path: string | null });
 
@@ -87,8 +104,8 @@ export interface EvaluationCase {
   name: string;
   turns: CaseTurn[];
   initial_state: JsonObject;
-  category: CaseCategory;
-  difficulty: CaseDifficulty;
+  category: CaseCategory | null;
+  difficulty: CaseDifficulty | null;
   tags: string[];
   notes: string;
 }

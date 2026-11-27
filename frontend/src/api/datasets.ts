@@ -134,7 +134,7 @@ export function toApiCase(item: EvaluationCase): ApiEvaluationCase {
         }
         const expectations: SerializedExpectation[] = [
           ...(preserved_skill_routes ?? []),
-          ...(expected_skill
+          ...(expected_skill != null
             ? [
                 reuse(
                   {

@@ -228,20 +228,10 @@ def calculate_result_analytics(
             result.case_id,
             result,
         )
-        _add(
-            category_groups,
-            case.category.value,
-            case.category.value,
-            result.case_id,
-            result,
-        )
-        _add(
-            difficulty_groups,
-            case.difficulty.value,
-            case.difficulty.value,
-            result.case_id,
-            result,
-        )
+        if case.category is not None:
+            _add(category_groups, case.category, case.category, result.case_id, result)
+        if case.difficulty is not None:
+            _add(difficulty_groups, case.difficulty, case.difficulty, result.case_id, result)
         for tag in case.tags:
             _add(tag_groups, tag, tag, result.case_id, result)
         if result.outcome is Outcome.FAIL:

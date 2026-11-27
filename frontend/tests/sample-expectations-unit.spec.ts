@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test';
-import type { Expectation } from '../src/views/datasets/types';
+import { toApiCase, toEditorCase } from '../src/api/datasets';
+import type { DatasetVersion, Expectation, SerializedExpectation } from '../src/views/datasets/types';
+import { sampleExportBlob } from '../src/views/datasets/utils/sample-export';
+import { blankSample, parseSampleFile } from '../src/views/datasets/utils/sample-import';
 import {
   expectationFieldsFromText,
   expectationFieldsText,
@@ -60,3 +63,25 @@ test('blank clears rules while invalid JSON, paths, and conditions reject saving
   expect(() => expectationFieldsFromText('{"":10}', [tool], () => 'unused', 'arguments.')).toThrow();
   expect(() => expectationFieldsFromText('[{"path":"score","condition":{"kind":"within_range","minimum":10,"maximum":1}}]', [], () => 'new')).toThrow();
 });
+
+for (const format of ['xlsx', 'csv', 'json'] as const) {
+  test(format + ' distinguishes an empty-string Skill check from a turn with no Skill check', async () => {
+    const stored = toApiCase(blankSample('Skill 空值回归'));
+    const rules: SerializedExpectation[] = [
+      { id: 'before', name: null, kind: 'tool_call', mode: 'required', tool: 'lookup' },
+      { id: 'skill', name: '保留空字符串', kind: 'skill_route', condition: { kind: 'equals', expected: '' } },
+      { id: 'another-skill', name: null, kind: 'skill_route', condition: { kind: 'matches_pattern', pattern: '^route' } },
+    ];
+    stored.turns[0].input = { txt: '首轮' };
+    stored.turns.push({ ...stored.turns[0], id: 'second', input: { txt: '次轮' }, expectations: [] });
+    stored.turns[0].expectations = rules;
+    const sample = toEditorCase(stored);
+    expect(sample.turns.map(turn => turn.expected_skill)).toEqual(['', null]);
+    expect(toApiCase(sample)).toEqual(stored);
+    const blob = await sampleExportBlob({ dataset_name: 'Skill 验收', version: 1, cases: [sample] } as DatasetVersion, undefined, format);
+    const [imported] = await parseSampleFile({ name: 'Skill.' + format, size: blob.size, arrayBuffer: () => blob.arrayBuffer() });
+    const turns = toApiCase(imported).turns;
+    expect(turns[0].expectations.map(({ id, ...rule }) => rule)).toEqual(rules.map(({ id, ...rule }) => rule));
+    expect(turns[1].expectations).toEqual([]);
+  });
+}

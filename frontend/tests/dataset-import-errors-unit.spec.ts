@@ -32,6 +32,161 @@ async function validationError(input: ReturnType<typeof file>): Promise<ImportEr
 }
 const validTurn = () => ({ input: { query: '你好' }, expectations: [] });
 
+async function spreadsheetInputs(rows: string[][]) {
+  const book = new ExcelJS.Workbook();
+  book.addWorksheet('Cases').addRows(rows);
+  return [csvFile(rows), file('samples.xlsx', new Uint8Array(await book.xlsx.writeBuffer()))];
+}
+
+test('old and new output cells can describe different turns in the same Excel or CSV sample', async () => {
+  const old = { name: '历史输出', path: 'answer', condition: { kind: 'equals', expected: false } };
+  const rows = [
+    ['样本名称', 'query', '轮次顺序', '最终输出', '最终输出_输出路径', '最终输出_判定方式', '最终输出_期望值'],
+    ['查询', '普通查询', '1', JSON.stringify(old), '', '', ''],
+    ['查询', '查询详情', '2', '', '[null,"answer"]', '["等于","属于集合"]', '[null,["已完成","处理中"]]'],
+    ['查询', '整体验证', '3', '', '', '["等于","字段不存在"]', '[false,null]'],
+    ['查询', '字段验证', '4', '', 'data.answer', '等于', '[1,2]'],
+    ['查询', '无检查', '5', '', '', '', ''],
+  ];
+  for (const input of await spreadsheetInputs(rows)) {
+    const [sample] = await parseSampleFile(input);
+    expect(sample.turns.map((turn) => turn.expectations.map(({ id, kind, path, condition }) =>
+      ({ kind, path, condition })))).toEqual([
+      [{ kind: 'output', path: 'answer', condition: old.condition }],
+      [
+        { kind: 'output', path: null, condition: { kind: 'equals', expected: null } },
+        { kind: 'output', path: 'answer', condition: { kind: 'one_of', allowed: ['已完成', '处理中'] } },
+      ],
+      [
+        { kind: 'output', path: null, condition: { kind: 'equals', expected: false } },
+        { kind: 'output', path: null, condition: { kind: 'must_be_missing' } },
+      ],
+      [{ kind: 'output', path: 'data.answer', condition: { kind: 'equals', expected: [1, 2] } }],
+      [],
+    ]);
+    expect(sample.turns[0].expectations[0].name).toBe('历史输出');
+  }
+});
+
+test('mixed legacy output cells and invalid split output checks identify the editable row and column', async () => {
+  const rows = [
+    ['样本名称', 'query', '最终输出', '最终输出_输出路径', '最终输出_判定方式', '最终输出_期望值'],
+    ['新旧混填', '问', '{"condition":{"kind":"equals","expected":0}}', '', '等于', '1'],
+    ['路径数不匹配', '问', '', '["answer"]', '["等于","等于"]', '[1,2]'],
+    ['缺少判定方式', '问', '', 'answer', '', 'yes'],
+    ['缺少期望值', '问', '', '', '等于', ''],
+    ['非法输出路径', '问', '', '[null,7]', '["等于","等于"]', '[1,2]'],
+  ];
+  const coordinates = [
+    [2, 'E', '最终输出_判定方式'], [3, 'D', '最终输出_输出路径'], [4, 'E', '最终输出_判定方式'],
+    [5, 'F', '最终输出_期望值'], [6, 'D', '最终输出_输出路径'],
+  ] as const;
+  for (const input of await spreadsheetInputs(rows)) {
+    const error = await validationError(input);
+    expect(error.issues).toEqual(coordinates.map(([row, column, field]) => expect.objectContaining({
+      row, column, field, location: input.name.endsWith('.xlsx') ? 'Cases!' + column + row : 'CSV 第 ' + row + ' 行',
+    })));
+  }
+});
+
+test('offline edits in method-specific columns preserve one-sided ranges, numeric zero and legacy rows', async () => {
+  const headers = [
+    '样本名称', 'query', '轮次顺序', '最终输出_判定方式', '最终输出_期望值',
+    '最终输出_数值容差_期望值', '最终输出_数值容差_容差', '最终输出_数值范围_最小值', '最终输出_数值范围_最大值',
+  ];
+  const rows = [headers,
+    ['编辑示例', '历史', '1', '等于', '"0"', '', '', '', ''],
+    ['编辑示例', '混合检查', '2', '["数值范围","数值容差","数值范围"]', '',
+      '[null,0,null]', '[null,0.5,null]', '[null,null,0]', '[8,null,null]'],
+    ['编辑示例', '无参数', '3', '字段不存在', '', '', '', '', ''],
+  ];
+  for (const input of await spreadsheetInputs(rows)) {
+    const [sample] = await parseSampleFile(input);
+    expect(sample.turns.map((turn) => turn.expectations.map((rule) => rule.condition))).toEqual([
+      [{ kind: 'equals', expected: '0' }],
+      [{ kind: 'within_range', minimum: null, maximum: 8 }, { kind: 'within_tolerance', expected: 0, epsilon: 0.5 },
+        { kind: 'within_range', minimum: 0, maximum: null }],
+      [{ kind: 'must_be_missing' }],
+    ]);
+  }
+});
+
+test('method-specific fields reject mismatched methods, duplicate values and invalid numeric tolerance', async () => {
+  const rows = [
+    ['样本名称', 'query', '最终输出_判定方式', '最终输出_期望值', '最终输出_数值容差_期望值', '最终输出_数值容差_容差'],
+    ['方法不符', '问', '字段不存在', '', '', '1'],
+    ['重复输入', '问', '数值容差', '{"expected":2,"epsilon":1}', '2', '1'],
+    ['非法容差', '问', '数值容差', '', '0', '0'],
+    ['多项数量冲突', '问', '["数值容差","数值容差"]', '', '[0,1]', '[0.5]'],
+  ];
+  for (const input of await spreadsheetInputs(rows)) {
+    const { issues } = await validationError(input);
+    expect(new Set(issues.map(({ row }) => row))).toEqual(new Set([2, 3, 4, 5]));
+    expect(issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ row: 2, column: 'F', field: '最终输出_数值容差_容差' }),
+      expect.objectContaining({ row: 4, column: 'F', field: '最终输出_数值容差_容差' }),
+      expect.objectContaining({ row: 5, column: 'F', field: '最终输出_数值容差_容差' }),
+    ]));
+  }
+});
+
+test('spreadsheet rule fields preserve multiple checks per turn and allow legacy cells of a different kind', async () => {
+  const header = ['样本名称', 'query', '轮次顺序', '最终状态_字段路径', '最终状态_判定方式', '最终状态_期望值',
+    '工具参数_工具名', '工具参数_字段路径', '工具参数_调用范围', '工具参数_判定方式', '工具参数_期望值',
+    '最终状态', '工具参数'];
+  const previousTool = JSON.stringify({ tool: 'quote', path: 'fee', occurrence: 'first',
+    condition: { kind: 'equals', expected: 0 } });
+  const previousState = JSON.stringify({
+    期望顺序: ['工具参数', '最终状态'],
+    检查项: [{ name: '审批状态', path: 'ready', condition: { kind: 'equals', expected: false } }],
+  });
+  const rows = [header,
+    ['报价', '审核', '2', '', '', '', 'book', 'currency', '任意一次通过', '属于集合',
+      '["CNY","USD"]', previousState, ''],
+    ['报价', '查询', '1', '["status","payload"]', '["等于","等于"]', '["open",[0,false]]',
+      '', '', '', '', '', '', previousTool],
+  ];
+  for (const input of await spreadsheetInputs(rows)) {
+    const [sample] = await parseSampleFile(input);
+    expect(sample.turns[0].expectations).toHaveLength(3);
+    expect(sample.turns[0].expectations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'state', path: 'status', condition: { kind: 'equals', expected: 'open' } }),
+      expect.objectContaining({ kind: 'state', path: 'payload', condition: { kind: 'equals', expected: [0, false] } }),
+      expect.objectContaining({ kind: 'tool_argument', tool: 'quote', path: 'fee', occurrence: 'first',
+        condition: { kind: 'equals', expected: 0 } }),
+    ]));
+    expect(sample.turns[1].expectations).toEqual([
+      expect.objectContaining({ kind: 'tool_argument', tool: 'book', path: 'currency', occurrence: 'any',
+        condition: { kind: 'one_of', allowed: ['CNY', 'USD'] } }),
+      expect.objectContaining({ kind: 'state', name: '审批状态', path: 'ready', condition: { kind: 'equals', expected: false } }),
+    ]);
+  }
+});
+
+test('mixed rule encodings and mismatched lists are reported at the affected spreadsheet cells', async () => {
+  const rows = [
+    ['样本名称', 'query', '最终状态', '最终状态_字段路径', '最终状态_判定方式', '最终状态_期望值', '工具参数',
+      '工具参数_工具名', '工具参数_字段路径', '工具参数_调用范围', '工具参数_判定方式', '工具参数_期望值', '期望结果'],
+    ['新旧状态混填', '问', '{"path":"x","condition":{"kind":"equals","expected":0}}', 'x', '等于', '1', '', '', '', '', '', '', ''],
+    ['新旧参数混填', '问', '', '', '', '', '{"tool":"t","path":"x","condition":{"kind":"equals","expected":0}}', 't', 'x', '最后一次调用', '等于', '22', ''],
+    ['缺少对应值', '问', '', '["count","fee"]', '["等于","等于"]', '[1]', '', '', '', '', '', '', ''],
+    ['最早版混填', '问', '', 'count', '等于', '9', '', '', '', '', '', '', '[]'],
+    ['范围非法', '问', '', '', '', '', '', 'quote', 'currency', '每隔一次', '等于', 'CNY', ''],
+    ['多路径仅一个判定', '问', '', '["count","fee"]', '等于', '[1,2]', '', '', '', '', '', '', ''],
+  ];
+  for (const input of await spreadsheetInputs(rows)) {
+    const error = await validationError(input);
+    expect(error.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ row: 2, column: 'D', field: '最终状态_字段路径' }),
+      expect.objectContaining({ row: 3, column: 'H', field: '工具参数_工具名' }),
+      expect.objectContaining({ row: 4, column: 'F', field: '最终状态_期望值' }),
+      expect.objectContaining({ row: 5, column: 'D', field: '最终状态_字段路径' }),
+      expect.objectContaining({ row: 6, column: 'J', field: '工具参数_调用范围' }),
+      expect.objectContaining({ row: 7, column: 'D', field: '最终状态_字段路径' }),
+    ]));
+  }
+});
+
 test('aggregates independent input errors across samples without exposing partial results', async () => {
   const error = await validationError(csvFile([
     ['case_id', 'case_name', 'turn_order', 'input_json'],
@@ -130,6 +285,58 @@ test('CSV locates records by starting physical line through blanks and quoted mu
   expect(error.totalIssues).toBe(1);
   expect(error.issues[0]).toMatchObject({ row: 5, column: 'C', sampleName: '错误', field: '输入内容' });
   expect(error.issues[0].location).toContain('5');
+});
+
+test('split variables merge across turns and annotated headers preserve punctuation in names', async () => {
+  const rows = [
+    ['样本名称｜必填', '轮次顺序', 'query', '初始变量_客(户)｜组_字符串_必填｜选填', '初始变量___proto___未指定_未指定_顶层', '期望skill｜选填'],
+    ['咨询', '2', '确认', '', '{"b":2,"a":1}', '确认技能'],
+    ['咨询', '1', '你好', '测试用户', '{ "a": 1, "b": 2 }', '接待技能'],
+  ];
+  const workbook = new ExcelJS.Workbook();
+  workbook.addWorksheet('Cases').addRows(rows);
+  for (const input of [csvFile(rows), file('samples.xlsx', new Uint8Array(await workbook.xlsx.writeBuffer()))]) {
+    const [sample] = await parseSampleFile(input);
+    expect(sample.initial_state.config_variables).toEqual([
+      { name: '客(户)｜组', type: 'str', required: true, value: '测试用户' },
+    ]);
+    expect(Object.prototype.hasOwnProperty.call(sample.initial_state, '__proto__')).toBe(true);
+    expect(sample.initial_state.__proto__).toEqual({ a: 1, b: 2 });
+    expect(sample.turns.map((turn) => turn.expected_skill)).toEqual(['接待技能', '确认技能']);
+  }
+});
+
+test('reports incompatible initial values, split expectation validation and mixed formats at the offending cells', async () => {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('Cases');
+  const city = '初始变量_城市_字符串_非必填';
+  sheet.addRow(['样本名称', '轮次顺序', 'query', city, '最终状态', '初始状态', '期望结果', '期望skill']);
+  sheet.getRow(3).values = ['甲', '1', '你好', '上海'];
+  sheet.getRow(6).values = ['甲', '2', '确认', '北京', '{"condition":{"kind":"must_be_missing"}}'];
+  sheet.getRow(8).values = ['乙', '1', '你好', '', '', '{"legacy":1}'];
+  sheet.getRow(9).values = ['乙', '2', '确认', '上海', '', '', '[]', '确认'];
+  const err = await validationError(file('samples.xlsx', new Uint8Array(await workbook.xlsx.writeBuffer())));
+  expect(err.totalIssues).toBe(4);
+  expect(err.issues).toEqual(expect.arrayContaining([
+    expect.objectContaining({ location: 'Cases!D6', field: city, message: expect.stringContaining('第 3 行') }),
+    expect.objectContaining({ location: 'Cases!E6', field: '最终状态', message: expect.stringContaining('path') }),
+    expect.objectContaining({ location: 'Cases!D9', field: city, message: expect.stringContaining('旧版初始变量') }),
+    expect.objectContaining({ location: 'Cases!H9', field: '期望skill', message: expect.stringContaining('旧版期望结果') }),
+  ]));
+});
+
+test('old and split columns may coexist when only one representation is filled for each sample or turn', async () => {
+  const [old, split] = await parseSampleFile(csvFile([
+    ['样本名称', '轮次顺序', 'query', '初始变量', '初始变量_城市_字符串_非必填', '期望结果', '必须工具'],
+    ['旧样本', '1', '你好', '{"legacy":1}', '', '[]', ''],
+    ['新样本', '1', '开始', '', '上海', '', '天气'],
+    ['新样本', '2', '确认', '', '', '[{"kind":"tool_call","tool":"出行"}]', ''],
+  ]));
+  expect(old.initial_state).toEqual({ legacy: 1 });
+  expect(split.initial_state.config_variables).toEqual([
+    { name: '城市', type: 'str', required: false, value: '上海' },
+  ]);
+  expect(split.turns.map((turn) => turn.required_tools)).toEqual([['天气'], ['出行']]);
 });
 
 test('JSON diagnostics keep sample index, turn index and nested expectation index', async () => {

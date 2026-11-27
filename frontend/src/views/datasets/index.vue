@@ -15,6 +15,7 @@ import DatasetExportDialog from './components/DatasetExportDialog.vue';
 import VersionSelector from './components/VersionSelector.vue';
 import CaseEditor from './components/SampleEditor.vue';
 import SampleImportWizard from './components/SampleImportWizard.vue';
+import { blankSample } from './utils/sample-import';
 import { caseCategoryLabels, hasPublicationHistory } from './types/index';
 import type {
   DatasetExport,
@@ -387,34 +388,10 @@ function selectCase(item: EvaluationCase) {
   editedCase.value = cloneJson(item);
 }
 
-function newCase(): EvaluationCase {
-  return {
-    id: crypto.randomUUID(),
-    name: '新用例',
-    category: 'positive',
-    difficulty: 'medium',
-    tags: [],
-    notes: '',
-    initial_state: {},
-    turns: [
-      {
-        id: crypto.randomUUID(),
-        input: { query: '' },
-        expected_skill: null,
-        expectations: [],
-        required_tools: [],
-        forbidden_tools: [],
-        policy_rules: [],
-        notes: '',
-      },
-    ],
-  };
-}
-
 function addCase() {
   if (!canDiscard()) return;
   sampleView.value = true;
-  const item = newCase();
+  const item = blankSample('新用例');
   activeCaseId.value = item.id;
   editedCase.value = item;
   validationIssues.value = [];
@@ -999,7 +976,7 @@ onMounted(() => {
               </td>
               <td class="input-preview">{{ JSON.stringify(c.turns[0]?.input ?? {}) }}</td>
               <td>{{ c.turns.length }}</td>
-              <td>{{ caseCategoryLabels[c.category] }}</td>
+              <td>{{ c.category ? caseCategoryLabels[c.category] : '—' }}</td>
               <td>{{ c.tags.join('、') || '—' }}</td>
               <td>
                 <button class="link" @click="selectCase(c)">{{ editable ? '编辑' : '查看' }}</button

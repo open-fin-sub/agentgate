@@ -60,8 +60,12 @@ function move(index: number, offset: number) {
         <div class="case-list-main">
           <b>{{ item.name }}</b>
           <span>
-            <el-tag size="small" effect="plain">{{ labels[item.category] }}</el-tag>
-            <el-tag size="small" effect="plain" type="info">{{ labels[item.difficulty] }}</el-tag>
+            <el-tag v-if="item.category" size="small" effect="plain">{{
+              labels[item.category]
+            }}</el-tag>
+            <el-tag v-if="item.difficulty" size="small" effect="plain" type="info">{{
+              labels[item.difficulty]
+            }}</el-tag>
             <small>{{ item.turns.length }} 轮</small>
           </span>
           <small>{{ item.notes || item.tags.join(' · ') || '暂无备注' }}</small>

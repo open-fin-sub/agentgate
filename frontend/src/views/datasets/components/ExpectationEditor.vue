@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, toRaw, watch } from 'vue';
 import type { Condition, Expectation, JsonObject, JsonValue } from '../types/index';
+import { conditionLabels, toolOccurrenceLabels } from '../types/index';
 
 const props = defineProps<{ modelValue: Expectation[]; disabled?: boolean }>();
 const emit = defineEmits<{
@@ -271,14 +272,7 @@ defineExpose({ validate });
         <label v-if="row.kind === 'tool_argument'"
           >调用范围
           <el-select v-model="row.occurrence" :disabled="disabled" aria-label="调用范围">
-            <el-option label="最后一次调用" value="last" /><el-option
-              label="第一次调用"
-              value="first"
-            />
-            <el-option label="任意一次通过" value="any" /><el-option
-              label="所有调用通过"
-              value="all"
-            />
+            <el-option v-for="(label, value) in toolOccurrenceLabels" :key="value" :label="label" :value="value" />
           </el-select>
         </label>
         <label
@@ -289,19 +283,7 @@ defineExpose({ validate });
             aria-label="判定方式"
             @update:model-value="changeCondition(row, $event)"
           >
-            <el-option label="等于" value="equals" /><el-option
-              label="数值容差"
-              value="within_tolerance"
-            />
-            <el-option label="数值范围" value="within_range" /><el-option
-              label="正则匹配"
-              value="matches_pattern"
-            />
-            <el-option label="属于集合" value="one_of" /><el-option
-              label="字段不存在"
-              value="must_be_missing"
-            />
-            <el-option label="JSON Schema" value="matches_json_schema" />
+            <el-option v-for="(label, value) in conditionLabels" :key="value" :label="label" :value="value" />
           </el-select>
         </label>
         <label v-if="row.condition.kind === 'equals'" class="value-field"

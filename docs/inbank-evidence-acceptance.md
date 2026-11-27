@@ -123,10 +123,27 @@ The runtime owns the HTTP envelope, authentication, session ID and request ID.
 Business fields never overwrite those transport fields. The existing **背景知识**
 and **自定义变量** annotations are not sent to the Agent.
 
-JSON and Excel exports preserve the Case configuration and each turn's complete input.
-The Excel headers are `初始状态`, `输入内容`, `样本编号`, and `轮次顺序`
-(imports also accept `initial_state_json`, `input_json`, `case_id`, and `turn_order`);
-no separate column is required for each Agent's business fields.
+The sample editor exports one Excel or CSV row per turn. Each initial variable has a
+column for its value, with its name, type, and required flag in the header
+(e.g. `初始变量_city_字符串_非必填`). The sample's first row carries these values.
+When the shared columns cannot express every sample's declaration order, the export
+also puts the ordered variable names for each group in `初始变量顺序` on the first row
+of each sample. Import restores that order, skips removed names and appends new
+variables in sheet order.
+Each row includes the sample ID, sample name, turn order, and complete input.
+Optional columns are drawn from the selected samples across all their turns.
+Final-state checks use `最终状态_字段路径`, `最终状态_判定方式`, and `最终状态_期望值`.
+Tool-argument checks include the tool name, field path, call scope and method.
+Final-output checks include the output path and method. A blank output path checks
+the complete output. Both groups add columns for the fields of each method used.
+For example, numeric tolerance adds `工具参数_数值容差_期望值` and `工具参数_数值容差_容差`
+for tool arguments. A missing-field check needs only the group’s common fields.
+When a turn has multiple checks of the same group, the cells use arrays in check
+order, with null placeholders for fields that apply to another method.
+Older policy, execution-path, or ordering information is preserved when present.
+The JSON download retains the nested case and turn structure. The spreadsheet importer
+also accepts older files with combined initial-variable and expectation columns
+or one shared expected-value column per group.
 
 Local acceptance uses a temporary SQLite database and simulated customer responses.
 It verifies both passing and deliberately failing expectations and unchanged rerun
