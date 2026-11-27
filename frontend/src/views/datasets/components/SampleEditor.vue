@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { caseCategoryLabels, caseDifficultyLabels } from '../types/index';
-import type { EvaluationCase, ValidationIssue, Expectation, JsonObject } from '../types/index';
+import type { EvaluationCase, ValidationIssue, JsonObject } from '../types/index';
 import { blankSample, draftSampleNameConflict } from '../utils/sample-import';
-import { outputEditorValue, outputCondition } from '../utils/sample-output';
 import JsonCodeEditor from '../../../components/JsonCodeEditor.vue';
 import ExpectationEditor from './ExpectationEditor.vue';
 import AgentTargetPicker, {
@@ -17,7 +16,6 @@ const props = defineProps<{
   saving?: boolean;
   persisted?: boolean;
   hideSaveButton?: boolean;
-  hideBasicExpectedOutput?: boolean;
   validationIssues?: ValidationIssue[];
   draftCases?: readonly Pick<EvaluationCase, 'id' | 'name'>[];
 }>();
@@ -118,9 +116,7 @@ const form = ref<EvaluationCase | null>(null),
 const requiredTools = ref<string[]>([]),
   forbiddenTools = ref<string[]>([]);
 const inputs = ref<string[]>([]),
-  inputJson = ref<boolean[]>([]),
-  outputs = ref<string[]>([]),
-  outputJson = ref<boolean[]>([]);
+  inputJson = ref<boolean[]>([]);
 type ConfigVariableRow = {
   id: string;
   name: string;
@@ -154,27 +150,16 @@ function requiredHint(variable: ConfigVariableRow) {
   const required = variable.extra.required;
   return typeof required === 'boolean' ? (required ? '是' : '否') : '-';
 }
-type OutputRule = Extract<Expectation, { kind: 'output' }>;
-const outputRules = ref<OutputRule[]>([]);
-const originalOutputs = ref<{ text: string; json: boolean }[]>([]);
 const ruleEditor = ref<{ validate: () => void } | null>(null);
 const ruleDraftDirty = ref(false);
 const editorRevision = ref(0);
 const baseline = ref(''),
   inputField = ref<'query' | 'txt'>('txt');
 const turn = computed(() => form.value?.turns[index.value]);
-const basicOutput = computed({
-  get: () => outputs.value[index.value],
+const skillInput = computed({
+  get: () => turn.value?.expected_skill ?? '',
   set: (value: string) => {
-    outputs.value[index.value] = value;
-    syncBasicOutput();
-  },
-});
-const basicOutputJson = computed({
-  get: () => outputJson.value[index.value],
-  set: (value: boolean) => {
-    outputJson.value[index.value] = value;
-    syncBasicOutput();
+    if (turn.value) turn.value.expected_skill = value || null;
   },
 });
 function snapshot() {
@@ -182,9 +167,6 @@ function snapshot() {
     form.value,
     inputs.value,
     inputJson.value,
-    outputs.value,
-    outputJson.value,
-    outputRules.value,
     inputField.value,
     requiredTools.value,
     forbiddenTools.value,
@@ -227,18 +209,6 @@ watch(
           ? JSON.stringify(t.input, null, 2)
           : String(t.input.query ?? t.input.txt),
       ) ?? [];
-    outputRules.value =
-      form.value?.turns.map((t) => {
-        const primary = t.expectations.find(
-          (e): e is OutputRule =>
-            e.kind === 'output' && e.path === null && e.condition.kind === 'equals',
-        );
-        return primary ? JSON.parse(JSON.stringify(primary)) : emptyOutputRule();
-      }) ?? [];
-    const values = outputRules.value.map((r) => outputEditorValue(r.condition));
-    originalOutputs.value = values.map((v) => ({ ...v }));
-    outputs.value = values.map((v) => v.text);
-    outputJson.value = values.map((v) => v.json);
     baseline.value = snapshot();
     emit('dirtyChange', false);
   },
@@ -280,33 +250,6 @@ function addConfigVariable(key: InitializationField) {
     extra: { type: 'str' },
   });
 }
-function emptyOutputRule(): Extract<Expectation, { kind: 'output' }> {
-  return {
-    id: crypto.randomUUID(),
-    kind: 'output',
-    name: '人工期望输出',
-    path: null,
-    condition: { kind: 'equals', expected: '' },
-  };
-}
-function syncBasicOutput() {
-  if (!turn.value) return;
-  const i = index.value;
-  try {
-    const rule = outputRules.value[i];
-    const condition = outputCondition(outputs.value[i], outputJson.value[i], rule.condition);
-    const position = turn.value.expectations.findIndex((e) => e.id === rule.id);
-    if (condition) {
-      const updated = { ...rule, condition };
-      if (position < 0) turn.value.expectations.push(updated);
-      else turn.value.expectations.splice(position, 1, updated);
-      outputRules.value[i] = JSON.parse(JSON.stringify(updated));
-    } else if (position >= 0) turn.value.expectations.splice(position, 1);
-    originalOutputs.value[i] = { text: outputs.value[i], json: outputJson.value[i] };
-  } catch {
-    // Keep the basic field's invalid JSON draft visible; save reports its parse error.
-  }
-}
 function validateRules() {
   try {
     ruleEditor.value?.validate();
@@ -347,11 +290,6 @@ function add() {
   form.value!.turns.push(blankSample().turns[0]);
   inputs.value.push('');
   inputJson.value.push(false);
-  outputs.value.push('');
-  outputJson.value.push(false);
-  const rule = emptyOutputRule();
-  outputRules.value.push(rule);
-  originalOutputs.value.push({ text: '', json: false });
   requiredTools.value.push('');
   forbiddenTools.value.push('');
   index.value = form.value!.turns.length - 1;
@@ -363,10 +301,6 @@ function remove() {
   for (const list of [
     inputs.value,
     inputJson.value,
-    outputs.value,
-    outputJson.value,
-    outputRules.value,
-    originalOutputs.value,
     requiredTools.value,
     forbiddenTools.value,
   ])
@@ -446,60 +380,28 @@ function save() {
         .split(/[,，]/)
         .map((s) => s.trim())
         .filter(Boolean);
-      const rule = outputRules.value[i];
-      const unchanged =
-        outputs.value[i] === originalOutputs.value[i].text &&
-        outputJson.value[i] === originalOutputs.value[i].json;
-      const position = t.expectations.findIndex((e) => e.id === rule.id);
-      const condition =
-        unchanged && position >= 0
-          ? rule.condition
-          : outputCondition(outputs.value[i], outputJson.value[i], rule.condition);
-      if (condition) {
-        if (position >= 0) t.expectations.splice(position, 1, { ...rule, condition });
-        else t.expectations.push({ ...rule, condition });
-      } else if (position >= 0) t.expectations.splice(position, 1);
     });
     emit('save', item);
   } catch (e) {
     error.value = '保存失败：' + String(e);
   }
 }
-function updateExpectations(values: Expectation[]) {
-  if (!turn.value) return;
-  turn.value.expectations = values;
-  const i = index.value;
-  const previous = outputRules.value[i];
-  const candidates = values.filter(
-    (e): e is OutputRule => e.kind === 'output' && e.path === null && e.condition.kind === 'equals',
-  );
-  const primary =
-    candidates.find((e) => e.id === previous.id) ?? candidates[0] ?? emptyOutputRule();
-  if (
-    primary.id !== previous.id ||
-    JSON.stringify(primary.condition) !== JSON.stringify(previous.condition)
-  ) {
-    const value = outputEditorValue(primary.condition);
-    outputs.value[i] = value.text;
-    outputJson.value[i] = value.json;
-    originalOutputs.value[i] = value;
-  }
-  outputRules.value[i] = JSON.parse(JSON.stringify(primary));
-}
 defineExpose({ save, fetchingVariables });
 </script>
 <template>
   <section class="sample-editor">
-    <p v-if="!form" class="empty">选择数据样本，或点击新增样本。</p>
+    <p v-if="!form" class="empty">请选择数据样本。</p>
     <template v-else>
       <div class="sample-meta">
-        <label
-          >样本名称<input v-model="form.name" :disabled="!editable" aria-label="样本名称"
-        /></label>
+        <label>
+          <span>样本名称 <em class="required" aria-hidden="true">*</em></span>
+          <input v-model="form.name" :disabled="!editable" aria-label="样本名称" required />
+        </label>
         <label
           title="正例：应正常完成；负例：应正确拒绝或处理异常；边界：临界条件。分类不会直接决定测评通过与否。"
           >分类
           <select v-model="form.category" :disabled="!editable" aria-label="样本分类">
+            <option :value="null">空</option>
             <option v-for="(label, value) in caseCategoryLabels" :key="value" :value="value">
               {{ label }}
             </option>
@@ -508,6 +410,7 @@ defineExpose({ save, fetchingVariables });
         <label>
           难度
           <select v-model="form.difficulty" :disabled="!editable" aria-label="难度">
+            <option :value="null">空</option>
             <option v-for="(label, value) in caseDifficultyLabels" :key="value" :value="value">
               {{ label }}
             </option>
@@ -676,29 +579,6 @@ defineExpose({ save, fetchingVariables });
                   placeholder="请输入用户提问内容"
                 />
               </div>
-              <div v-if="!hideBasicExpectedOutput" class="message-card expected">
-                <header>
-                  <b>期望输出</b><span>{{ outputs[index].length }} 字</span>
-                </header>
-                <label
-                  ><input type="checkbox" v-model="basicOutputJson" :disabled="!editable" />结构化
-                  JSON 期望</label
-                ><JsonCodeEditor
-                  v-if="outputJson[index]"
-                  :key="turn.id + 'output'"
-                  :model-value="basicOutput"
-                  :disabled="!editable"
-                  label="期望输出 JSON"
-                  @update:model-value="basicOutput = $event"
-                /><textarea
-                  v-else
-                  v-model="basicOutput"
-                  :disabled="!editable"
-                  rows="5"
-                  aria-label="期望输出"
-                  placeholder="人工确认的期望输出，不自动复制实际回答"
-                />
-              </div>
             </div>
           </section>
           <section class="evaluation-section" aria-label="高级测评项">
@@ -718,18 +598,21 @@ defineExpose({ save, fetchingVariables });
               <label
                 >期望 Skill<input
                   class="skill-input"
-                  v-model="turn.expected_skill"
+                  v-model="skillInput"
                   :disabled="!editable"
               /></label>
+              <div v-if="turn.expected_skill === ''">
+                <span>等于空字符串</span>
+                <el-button v-if="editable" text @click="turn.expected_skill = null">移除 Skill 检查</el-button>
+              </div>
             </div>
             <div class="advanced">
               <ExpectationEditor
                 :key="`${editorRevision}:${turn.id}`"
                 ref="ruleEditor"
                 @draft-change="ruleDraftDirty = $event"
-                :model-value="turn.expectations"
+                v-model="turn.expectations"
                 :disabled="!editable"
-                @update:model-value="updateExpectations($event)"
               />
               <details v-if="turn.original_expectations?.some((e) => e.kind === 'execution_path')">
                 <summary>执行路径与 Skill 检查（保存时保留）</summary>
@@ -1029,14 +912,10 @@ aside {
 }
 .basic-messages {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
 }
 .basic-messages > .message-card {
   min-width: 0;
-}
-.basic-messages > .message-card:only-child {
-  grid-column: 1 / -1;
 }
 .message-card {
   background: #fff;
@@ -1055,9 +934,6 @@ aside {
 .message-card header span {
   font-size: 11px;
   color: #9da7b7;
-}
-.expected {
-  border-top-color: #7ed9b8;
 }
 .tools {
   border-top-color: #b294ff;
@@ -1097,9 +973,6 @@ aside {
   color: #93a0b3;
 }
 @media (max-width: 760px) {
-  .basic-messages {
-    grid-template-columns: 1fr;
-  }
   .conversation-layout {
     grid-template-columns: 1fr;
   }

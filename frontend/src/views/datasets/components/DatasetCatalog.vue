@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import PageJump from '../../../components/PageJump.vue';
 import { hasPublicationHistory, type DatasetSummary } from '../types/index';
 const props = defineProps<{ items: DatasetSummary[]; loading?: boolean }>();
 const emit = defineEmits<{
@@ -23,12 +24,13 @@ const filtered = computed(() =>
     )
     .sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at)),
 );
-watch([query, status], () => (page.value = 1));
-watch(
-  () => filtered.value.length,
-  () => (page.value = Math.min(page.value, Math.max(1, Math.ceil(filtered.value.length / 10)))),
+const pageSize = 10;
+const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)));
+const rows = computed(() =>
+  filtered.value.slice((page.value - 1) * pageSize, page.value * pageSize),
 );
-const rows = computed(() => filtered.value.slice((page.value - 1) * 10, page.value * 10));
+watch([query, status], () => (page.value = 1));
+watch(pageCount, (count) => (page.value = Math.min(page.value, count)));
 </script>
 <template>
   <section class="dataset-catalog" v-loading="loading" data-testid="dataset-catalog">
@@ -125,10 +127,11 @@ const rows = computed(() => filtered.value.slice((page.value - 1) * 10, page.val
     </div>
     <el-empty v-if="!loading && !filtered.length" description="暂无符合条件的测评集" />
     <div class="catalog-pagination">
-      <span>共 {{ filtered.length }} 个</span
-      ><button class="link" :disabled="page <= 1" @click="page--">上一页</button
-      ><span>{{ page }} / {{ Math.max(1, Math.ceil(filtered.length / 10)) }}</span
-      ><button class="link" :disabled="page * 10 >= filtered.length" @click="page++">下一页</button>
+      <span>共 {{ filtered.length }} 个</span>
+      <button class="link" :disabled="page <= 1" @click="page--">上一页</button>
+      <span>{{ page }} / {{ pageCount }}</span>
+      <button class="link" :disabled="page >= pageCount" @click="page++">下一页</button>
+      <PageJump :page="page" :page-count="pageCount" @jump="page = $event" />
     </div>
   </section>
 </template>
@@ -286,6 +289,7 @@ td:last-child button + button {
 }
 .catalog-pagination {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   align-items: center;
   gap: 16px;

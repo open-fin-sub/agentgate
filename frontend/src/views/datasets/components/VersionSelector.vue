@@ -11,6 +11,8 @@ const emit = defineEmits<{
   createDraft: [base: number | null];
   publish: [];
   discard: [];
+  addSample: [];
+  importDraft: [];
 }>();
 </script>
 
@@ -36,6 +38,14 @@ const emit = defineEmits<{
     </div>
     <div class="version-actions">
       <template v-if="versions.find((item) => item.id === activeId)?.status === 'draft'">
+        <el-button size="small" :disabled="busy" @click="emit('addSample')">手动新增样本</el-button>
+        <el-button
+          size="small"
+          :disabled="busy"
+          data-testid="import-draft-cases"
+          @click="emit('importDraft')"
+          >导入测评集到样本</el-button
+        >
         <el-button size="small" @click="emit('discard')">放弃草稿</el-button>
         <el-button
           type="success"

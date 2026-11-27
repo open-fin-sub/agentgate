@@ -19,6 +19,13 @@ class ArchivedDatasetError(ValueError):
         super().__init__("该测评集已归档，请恢复后重试或选择其他测评集。")
 
 
+class DatasetDraftConflict(ValueError):
+    """The draft is no longer writable at the revision the editor observed."""
+
+    def __init__(self) -> None:
+        super().__init__("草稿已变更或不可编辑，请刷新测评集后重试。")
+
+
 class DatasetVersionStatus(StrEnum):
     """Lifecycle state of a Dataset version record."""
 

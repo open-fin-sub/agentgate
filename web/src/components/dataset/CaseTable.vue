@@ -51,10 +51,10 @@ function move(index: number, offset: number) {
           <b>{{ item.name }}</b>
           <span>
             <el-tag size="small" effect="plain">{{ labels[item.category] }}</el-tag>
-            <el-tag size="small" effect="plain" type="info">{{ labels[item.difficulty] }}</el-tag>
+            <el-tag size="small" effect="plain" type="info" title="难度">{{ labels[item.difficulty] ?? '—' }}</el-tag>
             <small>{{ item.turns.length }} 轮</small>
           </span>
-          <small>{{ item.notes || item.tags.join(' · ') || '暂无备注' }}</small>
+          <small>{{ item.notes || '暂无备注' }}</small>
         </div>
         <div v-if="editable" class="case-row-actions" @click.stop>
           <el-button link size="small" :disabled="index === 0" @click="move(index, -1)">↑</el-button>

@@ -11,6 +11,7 @@ import {
   type EvaluatorSummary,
 } from '../../../api/evaluations';
 import { ApiError } from '../../../utils/request';
+import PageJump from '../../../components/PageJump.vue';
 import RuleEvaluatorCreate from './RuleEvaluatorCreate.vue';
 import CodeRuleDialog from './CodeRuleDialog.vue';
 import { dimensionNames, isLlmEvaluator, ruleExamples } from '../utils/evaluator-display';
@@ -163,6 +164,15 @@ const visibleGroupTemplates = computed(() =>
       )
     : [],
 );
+const pageSize = 10;
+const page = ref(1);
+const catalogCards = computed(() => [...visibleGroupTemplates.value, ...entries.value]);
+const pageCount = computed(() => Math.max(1, Math.ceil(catalogCards.value.length / pageSize)));
+const pageCards = computed(() =>
+  catalogCards.value.slice((page.value - 1) * pageSize, page.value * pageSize),
+);
+watch([category, query], () => (page.value = 1));
+watch(pageCount, (count) => (page.value = Math.min(page.value, count)));
 const models = computed(() =>
   Array.from(
     new Map(
@@ -683,18 +693,17 @@ const templateLabels1: Record<string, string> = {
     </div>
     <p v-if="assetsLoading">正在读取…</p>
     <div v-else class="asset-grid" :class="{ 'llm-catalogue-grid': category === 'llm_judge' }">
-      <LLMGroupTemplateCard
-        v-for="template in visibleGroupTemplates"
-        :key="'template:' + template.id"
-        class="catalogue-template-card"
-        :template="template"
-        action="view"
-        :disabled="busy"
-        @view="previewTemplateId = $event"
-      />
-      <template v-for="e in entries" :key="e.id">
+      <template v-for="e in pageCards" :key="'source' in e ? e.id : 'template:' + e.id">
         <LLMGroupTemplateCard
-          v-if="isLlmEvaluator(e.kind)"
+          v-if="!('source' in e)"
+          class="catalogue-template-card"
+          :template="e"
+          action="view"
+          :disabled="busy"
+          @view="previewTemplateId = $event"
+        />
+        <LLMGroupTemplateCard
+          v-else-if="isLlmEvaluator(e.kind)"
           class="asset-card custom-evaluator-card"
           :evaluator="e"
           action="view"
@@ -771,6 +780,15 @@ const templateLabels1: Record<string, string> = {
         </article>
       </template>
     </div>
+    <nav v-if="!assetsLoading" class="catalog-pagination" aria-label="评估器分页">
+      <span>共 {{ catalogCards.length }} 个</span>
+      <button type="button" class="asset-link" :disabled="page <= 1" @click="page--">上一页</button>
+      <span>{{ page }} / {{ pageCount }}</span>
+      <button type="button" class="asset-link" :disabled="page >= pageCount" @click="page++">
+        下一页
+      </button>
+      <PageJump :page="page" :page-count="pageCount" @jump="page = $event" />
+    </nav>
   </section>
   <LLMGroupTemplatePreview
     v-if="previewTemplate"
@@ -1164,6 +1182,14 @@ const templateLabels1: Record<string, string> = {
 }
 .evaluator-toolbar > .asset-primary {
   flex-shrink: 0;
+}
+.catalog-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  padding: 0 24px 20px;
 }
 .evaluator-more {
   font-size: 24px;

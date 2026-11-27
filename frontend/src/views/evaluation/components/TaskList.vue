@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import PageJump from '../../../components/PageJump.vue';
 import { request, statusLabel, score } from '../../../api/evaluations';
 import {
   getTaskSummaries,
@@ -95,10 +96,10 @@ function timeTooltip(row: TaskListSummary, column: (typeof timeColumns)[number])
     .join('\n');
 }
 const total = computed(() => data.value?.total ?? 0);
+const pageCount = computed(() => Math.max(1, Math.ceil(total.value / 20)));
 watch(data, (value) => {
   if (!value) return;
-  const last = Math.max(1, Math.ceil(value.total / 20));
-  if (page.value > last) page.value = last;
+  if (page.value > pageCount.value) page.value = pageCount.value;
 });
 const identityColumns = ['target', 'dataset'] as const;
 function comparisonSides(row: TaskListSummary, column: (typeof identityColumns)[number]) {
@@ -425,9 +426,10 @@ onUnmounted(() => clearTimeout(debounce));
       <footer>
         <span>共 {{ total }} 个任务</span><span class="time-zone">北京时间</span>
         <button v-if="timingError" class="link" @click="retryTimings">重试时间</button>
-        <button class="secondary" :disabled="page === 1" @click="page--">上一页</button
-        ><span>{{ page }} / {{ Math.max(1, Math.ceil(total / 20)) }}</span
-        ><button class="secondary" :disabled="page * 20 >= total" @click="page++">下一页</button>
+        <button class="secondary" :disabled="page === 1" @click="page--">上一页</button>
+        <span>{{ page }} / {{ pageCount }}</span>
+        <button class="secondary" :disabled="page >= pageCount" @click="page++">下一页</button>
+        <PageJump :page="page" :page-count="pageCount" @jump="page = $event" />
       </footer>
     </section>
   </div>

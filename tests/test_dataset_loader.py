@@ -1,8 +1,11 @@
+import json
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
 
+from agentgate.dataset.export import export_dataset
 from agentgate.dataset.formats.json import dump
 from agentgate.dataset.formats.xlsx import dump as dump_xlsx
 from agentgate.dataset.loader import load_cases, load_dataset
@@ -86,6 +89,27 @@ def test_load_json_builds_domain_objects_from_mapping_and_bytes() -> None:
         loaded_version.cases[0].turns[1].expectations[0],
         OutputExpectation,
     )
+
+
+def test_json_omitted_classifications_follow_the_content_hash_when_present() -> None:
+    example = Path(__file__).resolve().parents[1] / "examples/llm-conciseness/dataset.json"
+    payload = json.loads(example.read_text(encoding="utf-8"))
+    version = payload["version"]
+    assert all("category" not in case and "difficulty" not in case for case in version["cases"])
+    _, historical = load_dataset(payload, "json")
+    assert all((case.category, case.difficulty) == ("positive", "medium") for case in historical.cases)
+    assert historical.content_sha256 == version["content_sha256"]
+
+    version.pop("content_sha256")
+    dataset, fresh = load_dataset(payload, "json")
+    assert all((case.category, case.difficulty) == (None, None) for case in fresh.cases)
+    exported = export_dataset(dataset, fresh, "json")
+    assert load_dataset(exported.content, "json")[1] == fresh
+
+    version["content_sha256"] = historical.content_sha256
+    version["cases"][0]["category"] = None
+    with pytest.raises(ValidationError, match="content hash mismatch"):
+        load_dataset(payload, "json")
 
 
 def test_load_rejects_unknown_format() -> None:
